@@ -25,6 +25,7 @@ cover for metered energy data:
 | Reproducible JSON quality reports | `assess_quality`, `QualityReport`, `fingerprint_series` |
 | Deterministic synthetic test series | `make_synthetic_series` |
 | Command line: JSON report (and flagged CSV) for a CSV file | `energydata-kit report` |
+| Supporting types and constants | `Aggregation`, `IntervalLabel`, `TimestampSummary`, `FLAG_COLUMN` / `VALUE_COLUMN` (column names in `flag_series` output); errors `TimestampError`, `UnitError` (both `ValueError`s) |
 | Export/import metadata as a Frictionless Table Schema (no extra dependency) | `to_table_schema`, `from_table_schema` |
 | The same checks as Pandera checks and a ready `SeriesSchema` (optional extra) | `energydata_kit.pandera_checks.series_schema` and check factories |
 

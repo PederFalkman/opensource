@@ -14,7 +14,7 @@ dependencies, tests and version.
 
 | Package | Status | Description |
 |---|---|---|
-| [`energydata-kit`](packages/energydata-kit) | pre-alpha | Quality checks for energy time series: UTC timestamp normalization, gap/duplicate detection, unit metadata, non-destructive quality flags, reproducible reports |
+| [`energydata-kit`](packages/energydata-kit) | pre-alpha | Quality checks for energy time series: UTC timestamp normalization, gap/duplicate detection (UTC or local-calendar grids), interval semantics, unit metadata, non-destructive quality flags, reproducible reports, optional Pandera checks and an `energydata-kit report` command line |
 
 ## Quick start
 
@@ -32,5 +32,6 @@ pytest && ruff check . && mypy
   [duplication register](docs/architecture/DUPLICATION_REGISTER.md)
 - [Roadmap](docs/architecture/ROADMAP.md)
 - [IP boundary](docs/governance/IP_BOUNDARY.md): read this before contributing
-- [Release gates](docs/governance/RELEASE_GATES.md)
+- [Release gates](docs/governance/RELEASE_GATES.md) and
+  [release checklist](docs/governance/RELEASE_CHECKLIST.md)
 - [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
