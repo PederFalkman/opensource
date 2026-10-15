@@ -65,7 +65,10 @@ flagged = ek.flag_series(series, freq="15min", insert_missing=True)
 print(flagged[flagged["quality_flag"] != 0])
 ```
 
-See `examples/basic_quality_report.py` for a runnable version using synthetic data.
+See `examples/basic_quality_report.py` for a runnable version using synthetic data,
+and the [guide](examples/GUIDE.md) for worked examples of every feature (DST
+timestamps, gaps, flags, metadata, local days, reports, Pandera and the command
+line). The test suite runs every code block in the guide.
 
 ### Daily or monthly data in local time
 

@@ -45,6 +45,9 @@ python -m pytest tools/tests
   randomness only. Use `energydata_kit.make_synthetic_series` for data.
   Property-based tests (Hypothesis) use `derandomize=True` and no example
   database, so every run sees the same cases.
+- Code blocks in `packages/energydata-kit/examples/GUIDE.md` are executed by
+  `tests/test_guide.py`. Keep them runnable, and show results as `assert`
+  lines rather than prose claims.
 - Never add real, customer or site data to the repository.
 - **New dependencies** must be added to the package `pyproject.toml` *and* to
   the allowlist in `tools/ip_boundary.toml`, with a one-line justification in

@@ -53,6 +53,9 @@ versioning: [SemVer](https://semver.org/).
   Available on `flag_series`, `assess_quality` (recorded in report
   `parameters`), the CLI (`--jump-max-delta`) and Pandera (`jump_check`,
   `series_schema(jump_max_delta=...)`) (OSS-11).
+- `examples/GUIDE.md`: worked examples from raw local meter timestamps to a
+  reproducible report, the command line and Pandera. `tests/test_guide.py`
+  runs every code block, so the guide fails CI when it goes stale (OSS-12).
 - Report fields `metadata_issues` and `local_days`, and the
   `truncated.incomplete_local_days` flag. The report schema stays at version 1
   because it has not been released yet.
