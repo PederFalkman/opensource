@@ -32,6 +32,7 @@ Repository-level checks:
 python tools/check_ip_boundary.py
 python tools/check_workflow_pins.py
 python tools/check_docs.py
+python tools/check_third_party.py
 python tools/check_release_readiness.py   # informational until the release gates pass
 python -m pytest tools/tests
 ```
@@ -51,7 +52,8 @@ python -m pytest tools/tests
 - Never add real, customer or site data to the repository.
 - **New dependencies** must be added to the package `pyproject.toml` *and* to
   the allowlist in `tools/ip_boundary.toml`, with a one-line justification in
-  the PR. Prefer no new dependency.
+  the PR, *and* get a row with its licence in
+  `docs/governance/THIRD_PARTY_LICENSES.md`. Prefer no new dependency.
 - Keep PRs small and focused. Update docs and the duplication register in the
   same PR when adding a capability.
 - Public API changes, including `QualityFlag` values and the report schema,
