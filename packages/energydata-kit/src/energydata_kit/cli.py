@@ -93,6 +93,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     checks.add_argument("--stale-min-run", type=int, help="flag runs of at least N repeated values")
     checks.add_argument("--cumulative", action="store_true", help="treat values as a cumulative counter")
+    checks.add_argument(
+        "--jump-max-delta", type=float, help="flag changes larger than this from the previous value"
+    )
 
     meta = rep.add_argument_group("measurement metadata (enabled by --unit)")
     meta.add_argument("--unit", help="unit, e.g. kW or kWh; adds metadata to the report")
@@ -186,6 +189,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
         bounds=bounds,
         stale_min_run=args.stale_min_run,
         cumulative=args.cumulative,
+        jump_max_delta=args.jump_max_delta,
         origin=origin,
         tz=args.tz,
         max_listed=args.max_listed,
@@ -205,6 +209,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
             insert_missing=args.insert_missing,
             stale_min_run=args.stale_min_run,
             cumulative=args.cumulative,
+            jump_max_delta=args.jump_max_delta,
             origin=origin,
             tz=args.tz,
         )

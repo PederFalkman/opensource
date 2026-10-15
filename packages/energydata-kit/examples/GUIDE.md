@@ -172,7 +172,7 @@ assert [g.start.isoformat() for g in gaps] == ["2024-03-31T22:00:00+00:00"]  # 1
 Grid and gap timestamps are always reported in UTC. Monthly data works the
 same way with `"MS"`.
 
-## 7. Opt-in checks: stale values and counters
+## 7. Opt-in checks: stale values, counters and jumps
 
 These need knowledge only the caller has, so they are off by default.
 
@@ -192,6 +192,19 @@ assert [ek.decode_flags(f) for f in flags] == [
     ["COUNTER_DECREASE"],  # a reset or a rollover; the caller decides which
     ["OK"],
 ]
+```
+
+The jump check flags a change from the previous valid value larger than a
+limit you choose. A single outlier flags two rows: the jump away and the jump
+back.
+
+```python
+power = pd.Series(
+    [10.0, 11.0, 95.0, 12.0, 12.5],
+    index=pd.date_range("2024-01-01", periods=5, freq="1h", tz="UTC"),
+)
+flags = ek.flag_series(power, jump_max_delta=50)[ek.FLAG_COLUMN]
+assert [ek.decode_flags(f) for f in flags] == [["OK"], ["OK"], ["JUMP"], ["JUMP"], ["OK"]]
 ```
 
 ## 8. Reproducible reports

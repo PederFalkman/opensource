@@ -119,12 +119,21 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] `hypothesis` added to the dev group and the dependency allowlist
       (MPL-2.0; test-only, never shipped or copied).
 
+### OSS-11: jump check — merged in [#16](https://github.com/PederFalkman/opensource/pull/16)
+
+- [x] `jump_mask` and opt-in flag `JUMP` (512): change from the previous
+      finite value larger than a caller-supplied limit. No built-in limits.
+- [x] Wired into `flag_series`, `assess_quality`, the CLI
+      (`--jump-max-delta`) and the Pandera checks (`jump_check`).
+- [x] Written independently; no code taken from Pecos (which has a similar
+      delta check) or any other tool.
+
 ### OSS-12: worked examples — this change
 
 - [x] `packages/energydata-kit/examples/GUIDE.md`: worked examples for
       timestamps and DST, gaps, flags, metadata and labels, local days, daily
-      local-time data, opt-in checks, reports, Table Schema, Pandera and the
-      command line. Synthetic data only.
+      local-time data, opt-in checks (incl. jumps), reports, Table Schema,
+      Pandera and the command line. Synthetic data only.
 - [x] `tests/test_guide.py` runs every code block in order (Python blocks
       in-process, `energydata-kit` commands as subprocesses), so stale docs
       fail CI. Pandera blocks are skipped where the extra is not installed.

@@ -82,7 +82,7 @@ Key decisions:
 | pandas, numpy, Pint as the only required runtime dependencies (Pandera is an optional extra) | Mature, permissively licensed (BSD), already ubiquitous in energy data work. No schema engine, unit system or I/O layer is reimplemented. |
 | Pint registry extended with `var` | Pint has no reactive-power unit; `var` is defined as dimensionally equal to `VA`. |
 | Calendar grids only with an explicit `tz` | Daily and longer steps in local time are laid out by pandas in wall-clock time (23/25-hour DST days). They are never inferred from metadata, so a fixed `"1D"` step stays 24 h in UTC unless the caller says otherwise. |
-| Opt-in checks for stale values and counters | A sensible run length depends on the signal, and whether a series is cumulative is the caller's knowledge; both stay off by default. |
+| Opt-in checks for stale values, counters and jumps | A sensible run length or jump limit depends on the signal, and whether a series is cumulative is the caller's knowledge; all three stay off by default and the package ships no limits. |
 | CLI is a thin layer | `energydata-kit report` only parses arguments and CSV, then calls `assess_quality` / `flag_series`; exit status 1 for issues (with `--fail-on-issues`), 2 for input errors. |
 
 ## Supported versions

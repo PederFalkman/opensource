@@ -8,12 +8,14 @@ from energydata_kit import (
     assess_quality,
     counter_decrease_mask,
     flag_series,
+    jump_mask,
     make_synthetic_series,
     stale_mask,
 )
 
 STALE = int(QualityFlag.STALE_VALUE)
 DECREASE = int(QualityFlag.COUNTER_DECREASE)
+JUMP = int(QualityFlag.JUMP)
 
 
 def test_stale_runs():
@@ -100,3 +102,43 @@ def test_report_defaults_leave_new_checks_off():
     data = assess_quality(make_synthetic_series(), freq="15min").to_dict()
     assert data["flag_counts"]["STALE_VALUE"] == 0 and data["flag_counts"]["COUNTER_DECREASE"] == 0
     assert data["parameters"]["stale_min_run"] is None and data["parameters"]["cumulative"] is False
+
+
+def test_jump_flags_the_row_where_the_change_lands():
+    v = [10.0, 11.0, 30.0, 31.0, 12.0, 12.5]
+    assert jump_mask(v, 5.0).tolist() == [False, False, True, False, True, False]
+    # Exactly max_delta is not a jump; the comparison is strict.
+    assert jump_mask([0.0, 5.0, 0.0], 5.0).tolist() == [False, False, False]
+
+
+def test_jump_single_outlier_flags_itself_and_the_next_row():
+    assert jump_mask([1.0, 1.0, 50.0, 1.0, 1.0], 10.0).tolist() == [False, False, True, True, False]
+
+
+def test_jump_skips_missing_and_non_finite_values():
+    v = [10.0, np.nan, 10.5, np.inf, 30.0, -np.inf, 29.0]
+    assert jump_mask(v, 5.0).tolist() == [False, False, False, False, True, False, False]
+
+
+def test_jump_invalid_limits():
+    assert jump_mask([], 1.0).size == 0
+    for bad in (0.0, -1.0, np.nan, np.inf):
+        with pytest.raises(ValueError):
+            jump_mask([1.0, 2.0], bad)
+
+
+def test_flag_series_jump_opt_in_and_report():
+    s = make_synthetic_series(periods=6)
+    s.iloc[3] = s.iloc[2] + 1000.0
+    assert not (flag_series(s)[FLAG_COLUMN] & JUMP).any()
+    flags = flag_series(s, jump_max_delta=500.0)[FLAG_COLUMN].tolist()
+    assert flags == [0, 0, 0, JUMP, JUMP, 0]
+    report = assess_quality(s, jump_max_delta=500.0)
+    assert report.flag_counts["JUMP"] == 2
+    assert report.parameters["jump_max_delta"] == 500.0
+
+
+def test_flag_series_jump_requires_sorted_index():
+    s = make_synthetic_series(periods=4).iloc[::-1]
+    with pytest.raises(ValueError, match="sorted"):
+        flag_series(s, jump_max_delta=1.0)
