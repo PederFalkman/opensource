@@ -60,6 +60,7 @@ opensource/
                            ▼
                       report.py  → QualityReport (deterministic JSON + SHA-256 fingerprint)
 
+  semantics.py → interval labels, metadata consistency, local-day completeness (feeds report.py)
   synthetic.py → seeded test series with explicitly placed defects
 ```
 
