@@ -39,6 +39,10 @@ versioning: [SemVer](https://semver.org/).
   `"Europe/Stockholm"`), DST-aware; `missing_timestamps`; calendar values
   accepted in `MeasurementMetadata.resolution`. Report `parameters` record
   `origin` and `tz` (OSS-05).
+- `energydata-kit report` command line (also `python -m energydata_kit`):
+  JSON report for one CSV column, optional flagged CSV, `--fail-on-issues`
+  exit status for pipelines. Standard-library `argparse`; no new
+  dependency (OSS-07).
 - Report fields `metadata_issues` and `local_days`, and the
   `truncated.incomplete_local_days` flag. The report schema stays at version 1
   because it has not been released yet.

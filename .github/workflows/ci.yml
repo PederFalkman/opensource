@@ -106,6 +106,7 @@ jobs:
         run: |
           python -m venv /tmp/wheel-env
           /tmp/wheel-env/bin/python -m pip install dist/*.whl pytest
+          /tmp/wheel-env/bin/energydata-kit --version
           mkdir -p /tmp/wheel-test && cp -r tests examples /tmp/wheel-test/
           cd /tmp/wheel-test
           /tmp/wheel-env/bin/python -m pytest -q -p no:cacheprovider tests

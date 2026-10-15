@@ -31,6 +31,9 @@ dependencies = [
     "pint>=0.24",
 ]
 
+[project.scripts]
+energydata-kit = "energydata_kit.cli:console_main"
+
 [project.optional-dependencies]
 # Pandera checks in energydata_kit.pandera_checks. 0.24 introduced pandera.pandas.
 pandera = ["pandera>=0.24"]

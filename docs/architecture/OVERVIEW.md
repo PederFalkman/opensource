@@ -64,6 +64,7 @@ opensource/
   table_schema.py → Frictionless Table Schema export/import of MeasurementMetadata
   pandera_checks.py → optional [pandera] extra: the same masks as Pandera checks (not imported by default)
   synthetic.py → seeded test series with explicitly placed defects
+  cli.py → `energydata-kit report` command line over assess_quality / flag_series
 ```
 
 Key decisions:

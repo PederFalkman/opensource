@@ -67,6 +67,16 @@ Agreed scope: the two grid limitations listed in the package README.
 - [x] Local-calendar steps (`tz=`) for daily, weekly and monthly data in local
       time, DST-aware. Explicit only; never inferred from metadata.
 
+## OSS-07: command-line tool (in progress)
+
+Agreed scope: a thin CLI over the existing library, no new dependencies.
+
+- [x] `energydata-kit report data.csv ...` printing the JSON quality report,
+      with timestamp, grid, check and metadata options.
+- [x] Optional flagged CSV (`--flags-csv`, `--insert-missing`).
+- [x] Exit status for pipelines: `--fail-on-issues` → 1; input errors → 2
+      without a traceback.
+
 ## Explicitly not planned
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
