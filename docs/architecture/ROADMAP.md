@@ -100,7 +100,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       attestation. No upload to any index.
 - [x] `docs/governance/RELEASE_CHECKLIST.md`: release PR template.
 
-### OSS-09: docs housekeeping — this change
+### OSS-09: docs housekeeping — merged in [#14](https://github.com/PederFalkman/opensource/pull/14)
 
 - [x] Roadmap reorganised: open decisions, deferred, proposed, done (in order,
       with the PR that merged each item).
@@ -108,6 +108,16 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] `tools/check_docs.py`: public API names and flags documented in the
       package README, `## [Unreleased]` in each changelog, no broken relative
       links. Runs in CI.
+
+### OSS-10: property-based tests — this change
+
+- [x] Hypothesis tests (dev-only, deterministic: `derandomize=True`, no example
+      database) for non-destructive flagging, flag bits vs. masks, gap
+      accounting, report determinism, fingerprint invariance, label round
+      trips, stale/counter masks vs. brute-force references, local-day bounds
+      and Table Schema round trips.
+- [x] `hypothesis` added to the dev group and the dependency allowlist
+      (MPL-2.0; test-only, never shipped or copied).
 
 ## Explicitly not planned
 
