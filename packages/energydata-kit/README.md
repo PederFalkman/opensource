@@ -16,6 +16,7 @@ cover for metered energy data:
 | Missing intervals on a fixed UTC grid | `find_missing_intervals`, `expected_grid` |
 | Duplicate and off-grid timestamps | `find_duplicate_timestamps`, `duplicate_mask`, `off_grid_mask` |
 | Missing, non-finite, non-numeric and out-of-bounds values | `missing_value_mask`, `non_finite_mask`, `non_numeric_mask`, `out_of_bounds_mask` |
+| Stale (flat-line) values and cumulative-counter decreases (opt-in) | `stale_mask`, `counter_decrease_mask` |
 | Non-destructive bitmask quality flags | `flag_series`, `QualityFlag`, `decode_flags` |
 | Unit and measurement metadata (units parsed by Pint) | `MeasurementMetadata`, `validate_unit`, `units_compatible` |
 | Explicit start/end interval relabelling | `relabel_intervals`, `interval_bounds` |
@@ -84,6 +85,8 @@ See `examples/basic_quality_report.py` for a runnable version using synthetic da
 | 16 | `OFF_GRID_TIMESTAMP` | Not aligned to the expected step |
 | 32 | `OUT_OF_BOUNDS` | Finite value outside caller-supplied bounds |
 | 64 | `MISSING_INTERVAL` | Row inserted for an absent grid timestamp (`insert_missing=True`) |
+| 128 | `STALE_VALUE` | Part of a run of at least `stale_min_run` repeated values (opt-in) |
+| 256 | `COUNTER_DECREASE` | Cumulative counter fell below its previous value (`cumulative=True`, opt-in) |
 
 Flag values are part of the public API and will not be renumbered.
 
@@ -103,5 +106,8 @@ pint-pandas directly.
 - Gap, duplicate and off-grid checks run on raw timestamps and do not depend on
   `interval_label`. Only `local_day_completeness` (and the report's
   `local_days` section) uses the label to assign intervals to days.
+- Stale and counter checks compare consecutive rows and ignore time gaps
+  between them. A register reset and a rollover both appear as
+  `COUNTER_DECREASE`; telling them apart is left to the caller.
 - Local days that are not a whole number of steps long (e.g. 30-minute DST
   shifts with a 1-hour step) report the floor of the expected count.

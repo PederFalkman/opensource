@@ -23,6 +23,9 @@ versioning: [SemVer](https://semver.org/).
   `LABEL_ON_INSTANTANEOUS` (OSS-02).
 - `local_day_completeness`: expected vs. present intervals per local calendar
   day, DST-aware (OSS-02).
+- `stale_mask` and `counter_decrease_mask`, with new flags `STALE_VALUE` (128)
+  and `COUNTER_DECREASE` (256). Both are opt-in via `stale_min_run` and
+  `cumulative` on `flag_series` and `assess_quality` (OSS-03).
 - Report fields `metadata_issues` and `local_days`, and the
   `truncated.incomplete_local_days` flag. The report schema stays at version 1
   because it has not been released yet.

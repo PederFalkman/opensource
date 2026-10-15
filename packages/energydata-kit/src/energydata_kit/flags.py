@@ -6,6 +6,7 @@ check in this module modifies, drops, fills or reorders input values.
 
 from __future__ import annotations
 
+from collections.abc import Collection
 from enum import IntFlag
 
 import numpy as np
@@ -17,12 +18,14 @@ __all__ = [
     "FLAG_COLUMN",
     "VALUE_COLUMN",
     "QualityFlag",
+    "counter_decrease_mask",
     "decode_flags",
     "flag_series",
     "missing_value_mask",
     "non_finite_mask",
     "non_numeric_mask",
     "out_of_bounds_mask",
+    "stale_mask",
 ]
 
 VALUE_COLUMN = "value"
@@ -40,6 +43,8 @@ class QualityFlag(IntFlag):
     OFF_GRID_TIMESTAMP = 16  # timestamp not aligned to the expected step
     OUT_OF_BOUNDS = 32  # finite value outside caller-supplied bounds
     MISSING_INTERVAL = 64  # row inserted for an absent grid timestamp
+    STALE_VALUE = 128  # part of a run of repeated values (opt-in)
+    COUNTER_DECREASE = 256  # cumulative counter went down (opt-in)
 
 
 def decode_flags(value: int) -> list[str]:
@@ -95,12 +100,69 @@ def out_of_bounds_mask(
     return mask
 
 
+def stale_mask(
+    values: pd.Series | np.ndarray | list[object],
+    min_run: int,
+    *,
+    atol: float = 0.0,
+    exclude: Collection[float] = (),
+) -> np.ndarray:
+    """True for every value in a run of at least ``min_run`` consecutive repeated values.
+
+    Values are compared in row order: a run continues while each finite value
+    differs from the previous one by at most ``atol``. Missing or non-finite
+    values end a run and are never flagged. Runs whose values are in
+    ``exclude`` (e.g. ``0.0`` for generation at night) are not flagged. Time
+    gaps between rows are not considered; check gaps separately.
+    """
+    if min_run < 2:
+        raise ValueError("min_run must be >= 2")
+    if atol < 0:
+        raise ValueError("atol must be >= 0")
+    v = _numeric(_as_series(values)).to_numpy()
+    if v.size == 0:
+        return np.zeros(0, dtype=bool)
+    finite = np.isfinite(v)
+    filled = np.where(finite, v, 0.0)  # avoid inf - inf; non-finite never joins a run
+    same = finite[1:] & finite[:-1] & (np.abs(np.diff(filled)) <= atol)
+    run_start = np.ones(v.size, dtype=bool)
+    run_start[1:] = ~same
+    run_id = np.cumsum(run_start) - 1
+    mask = (np.bincount(run_id)[run_id] >= min_run) & finite
+    if exclude:
+        mask &= ~np.isin(v, np.asarray(list(exclude), dtype="float64"))
+    return np.asarray(mask, dtype=bool)
+
+
+def counter_decrease_mask(
+    values: pd.Series | np.ndarray | list[object],
+    *,
+    tolerance: float = 0.0,
+) -> np.ndarray:
+    """True where a cumulative counter falls below the previous finite value.
+
+    Meant for monotonically non-decreasing registers (e.g. energy meter
+    readings). Each value is compared with the last finite value before it,
+    so only the row where the drop happens is flagged. Resets and rollovers
+    both show up as decreases; this function does not guess which one it is.
+    Drops of at most ``tolerance`` are ignored.
+    """
+    if tolerance < 0:
+        raise ValueError("tolerance must be >= 0")
+    v = _numeric(_as_series(values))
+    finite = pd.Series(np.isfinite(v.to_numpy()), index=v.index)
+    previous = v.where(finite).ffill().shift(1)
+    return np.asarray(finite & previous.notna() & (v < previous - tolerance), dtype=bool)
+
+
 def flag_series(
     series: pd.Series,
     *,
     freq: str | pd.Timedelta | None = None,
     bounds: tuple[float | None, float | None] | None = None,
     insert_missing: bool = False,
+    stale_min_run: int | None = None,
+    cumulative: bool = False,
 ) -> pd.DataFrame:
     """Return a new frame with the original values and a ``quality_flag`` bitmask.
 
@@ -117,6 +179,13 @@ def flag_series(
         If true, add one row (value ``NaN``) per absent grid timestamp,
         flagged ``MISSING_INTERVAL | MISSING_VALUE``. Original rows are kept
         unchanged and in their original relative order.
+    stale_min_run:
+        If set, flag ``STALE_VALUE`` on runs of at least this many repeated
+        values (see :func:`stale_mask`). Off by default: a sensible run length
+        depends on the signal.
+    cumulative:
+        If true, treat the series as a cumulative counter and flag
+        ``COUNTER_DECREASE`` (see :func:`counter_decrease_mask`).
     """
     index = series.index
     if not isinstance(index, pd.DatetimeIndex) or index.tz is None:
@@ -125,6 +194,8 @@ def flag_series(
         raise ValueError("insert_missing requires freq")
     if insert_missing and not index.is_monotonic_increasing:
         raise ValueError("insert_missing requires a sorted index so original row order is kept")
+    if (stale_min_run is not None or cumulative) and not index.is_monotonic_increasing:
+        raise ValueError("stale and counter checks compare consecutive rows and require a sorted index")
 
     flags = np.zeros(len(series), dtype=np.uint16)
     flags[missing_value_mask(series)] |= np.uint16(QualityFlag.MISSING_VALUE)
@@ -135,6 +206,10 @@ def flag_series(
         flags[off_grid_mask(index, freq)] |= np.uint16(QualityFlag.OFF_GRID_TIMESTAMP)
     if bounds is not None:
         flags[out_of_bounds_mask(series, *bounds)] |= np.uint16(QualityFlag.OUT_OF_BOUNDS)
+    if stale_min_run is not None:
+        flags[stale_mask(series, stale_min_run)] |= np.uint16(QualityFlag.STALE_VALUE)
+    if cumulative:
+        flags[counter_decrease_mask(series)] |= np.uint16(QualityFlag.COUNTER_DECREASE)
 
     frame = pd.DataFrame(
         {VALUE_COLUMN: series.to_numpy(copy=True), FLAG_COLUMN: flags},
