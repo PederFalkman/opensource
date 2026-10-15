@@ -61,6 +61,8 @@ opensource/
                       report.py  → QualityReport (deterministic JSON + SHA-256 fingerprint)
 
   semantics.py → interval labels, metadata consistency, local-day completeness (feeds report.py)
+  table_schema.py → Frictionless Table Schema export/import of MeasurementMetadata
+  pandera_checks.py → optional [pandera] extra: the same masks as Pandera checks (not imported by default)
   synthetic.py → seeded test series with explicitly placed defects
 ```
 
@@ -72,7 +74,7 @@ Key decisions:
 | Flags are a `uint16` bitmask in a separate column | Non-destructive, composable (one row can have several issues), compact, language-neutral. Bit values are a public contract. |
 | No silent guessing | Naive timestamps need `assume_tz`. Grid checks need a stated step (`freq` or `metadata.resolution`); the inferred step is reported but not used. |
 | Reports have no wall-clock time | Same input + parameters + version → byte-identical JSON. The fingerprint covers UTC ns timestamps, canonicalized float64 values and the series name, so it does not depend on pandas' datetime resolution or display time zone. |
-| pandas, numpy, Pint as the only runtime dependencies | Mature, permissively licensed (BSD), already ubiquitous in energy data work. No schema engine, unit system or I/O layer is reimplemented. |
+| pandas, numpy, Pint as the only required runtime dependencies (Pandera is an optional extra) | Mature, permissively licensed (BSD), already ubiquitous in energy data work. No schema engine, unit system or I/O layer is reimplemented. |
 | Pint registry extended with `var` | Pint has no reactive-power unit; `var` is defined as dimensionally equal to `VA`. |
 
 ## Supported versions

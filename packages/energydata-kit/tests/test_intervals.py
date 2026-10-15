@@ -75,6 +75,6 @@ def test_empty_index():
 def test_to_step():
     assert to_step("15min") == pd.Timedelta(minutes=15)
     assert to_step("h") == pd.Timedelta(hours=1)
-    for bad in ("MS", "0min", "-1h", "nonsense"):
+    for bad in ("MS", "0min", "-1h", "not-a-freq"):  # "nonsense" warns on pandas 2.2/2.3
         with pytest.raises(ValueError):
             to_step(bad)
