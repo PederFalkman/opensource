@@ -77,6 +77,18 @@ Agreed scope: a thin CLI over the existing library, no new dependencies.
 - [x] Exit status for pipelines: `--fail-on-issues` → 1; input errors → 2
       without a traceback.
 
+## OSS-08: release preparation (in progress)
+
+Agreed scope: everything short of publishing. License and publication stay
+blocked on gates G1–G7 in `docs/governance/RELEASE_GATES.md`.
+
+- [x] `tools/check_release_readiness.py`: mechanical release conditions,
+      report or `--strict`.
+- [x] `.github/workflows/release-build.yml`: build + `twine check` on demand;
+      on a release tag, strict readiness check and build provenance
+      attestation. No upload to any index.
+- [x] `docs/governance/RELEASE_CHECKLIST.md`: release PR template.
+
 ## Explicitly not planned
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection

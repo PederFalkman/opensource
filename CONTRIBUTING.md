@@ -31,6 +31,7 @@ Repository-level checks:
 ```bash
 python tools/check_ip_boundary.py
 python tools/check_workflow_pins.py
+python tools/check_release_readiness.py   # informational until the release gates pass
 python -m pytest tools/tests
 ```
 

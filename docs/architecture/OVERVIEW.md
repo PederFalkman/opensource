@@ -18,11 +18,14 @@ opensource/
 │       └── examples/
 ├── tools/
 │   ├── check_ip_boundary.py     # CI tripwire (stdlib only)
+│   ├── check_workflow_pins.py   # actions pinned to commit SHAs
+│   ├── check_release_readiness.py # mechanical release conditions
 │   ├── ip_boundary.toml         # import denylist + dependency allowlists
 │   └── tests/
 └── .github/
     ├── workflows/ci.yml         # IP boundary, lint, types, tests, packaging
     ├── workflows/security.yml   # gitleaks, pip-audit, dependency review
+    ├── workflows/release-build.yml # build + attest on release tags; never publishes
     ├── dependabot.yml
     └── CODEOWNERS
 ```
