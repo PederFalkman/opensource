@@ -13,7 +13,7 @@ cover for metered energy data:
 |---|---|
 | Normalize timestamps to tz-aware UTC, with explicit DST policies | `normalize_timestamps` |
 | Describe an index (monotonic, unique, inferred step) | `summarize_timestamps`, `infer_resolution` |
-| Missing intervals on a fixed UTC grid | `find_missing_intervals`, `expected_grid` |
+| Missing intervals on a fixed UTC grid or a local-calendar grid (`tz=`), with an optional `origin` | `find_missing_intervals`, `missing_timestamps`, `expected_grid` |
 | Duplicate and off-grid timestamps | `find_duplicate_timestamps`, `duplicate_mask`, `off_grid_mask` |
 | Missing, non-finite, non-numeric and out-of-bounds values | `missing_value_mask`, `non_finite_mask`, `non_numeric_mask`, `out_of_bounds_mask` |
 | Stale (flat-line) values and cumulative-counter decreases (opt-in) | `stale_mask`, `counter_decrease_mask` |
@@ -65,6 +65,21 @@ print(flagged[flagged["quality_flag"] != 0])
 
 See `examples/basic_quality_report.py` for a runnable version using synthetic data.
 
+### Daily or monthly data in local time
+
+A fixed `"1D"` step is 24 hours in UTC, so local midnights look off-grid on DST
+days. Use a local-calendar step instead:
+
+```python
+idx = ek.normalize_timestamps(daily["date"], assume_tz="Europe/Stockholm")
+series = pd.Series(daily["kwh"].to_numpy(), index=idx)
+report = ek.assess_quality(series, freq="D", tz="Europe/Stockholm")
+monthly = ek.find_missing_intervals(month_index, "MS", tz="Europe/Stockholm")
+```
+
+Pass `origin=` (timezone-aware) to fix where any grid starts, e.g. daily
+readings at 06:00 local: `origin=pd.Timestamp("2024-01-01 06:00", tz="Europe/Stockholm")`.
+
 ## Design rules
 
 - **Non-destructive.** No function modifies, fills, drops or reorders input
@@ -74,8 +89,10 @@ See `examples/basic_quality_report.py` for a runnable version using synthetic da
   guessed silently.
 - **Deterministic.** Reports contain no wall-clock time or randomness. The same
   input, parameters and package version produce byte-identical JSON.
-- **UTC grid.** Gap detection runs on a fixed UTC grid, so a 23- or 25-hour
-  local DST day is not reported as missing or duplicated data.
+- **UTC grid by default.** Sub-daily gap detection runs on a fixed UTC grid, so
+  a 23- or 25-hour local DST day is not reported as missing or duplicated
+  data. Daily and longer steps in local time use an explicit calendar grid
+  (`tz=`).
 
 ## Quality flags
 
@@ -104,10 +121,14 @@ use Pint or pint-pandas directly, e.g. `series.astype(f"pint[{meta.unit}]")`.
 
 ## Known limitations
 
-- Only fixed-length steps (`"15min"`, `"1h"`, …). Monthly or local-calendar-day
-  grids are not supported yet.
-- The grid is anchored at the first timestamp. A leading off-grid timestamp
-  shifts the grid.
+- Grids are anchored at the first timestamp unless you pass `origin`, so
+  without it a leading off-grid timestamp shifts the grid.
+- Calendar steps (`"D"`, `"W-MON"`, `"MS"`, …) need an explicit `tz=`; they are
+  never inferred from `MeasurementMetadata.timezone`. With `tz`, the report's
+  per-local-day section is skipped.
+- A calendar grid whose wall-clock time falls in a skipped or repeated DST hour
+  (e.g. daily at 02:30 in Europe/Stockholm) raises, because pandas cannot place
+  it.
 - Gap, duplicate and off-grid checks run on raw timestamps and do not depend on
   `interval_label`. Only `local_day_completeness` (and the report's
   `local_days` section) uses the label to assign intervals to days.

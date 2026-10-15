@@ -79,6 +79,20 @@ def units_compatible(unit_a: str, unit_b: str) -> bool:
     return bool(a.dimensionality == b.dimensionality)
 
 
+def _validate_resolution(resolution: str) -> None:
+    """Accept a positive fixed step (``"15min"``) or calendar step (``"D"``, ``"MS"``)."""
+    try:
+        to_step(resolution)
+        return
+    except ValueError as fixed_error:
+        try:
+            offset = pd.tseries.frequencies.to_offset(resolution)
+        except (ValueError, TypeError):
+            raise fixed_error from None
+        if isinstance(offset, pd.offsets.Tick) or offset.n <= 0:
+            raise fixed_error from None
+
+
 @dataclass(frozen=True)
 class MeasurementMetadata:
     """Descriptive metadata for one measured time series.
@@ -90,7 +104,7 @@ class MeasurementMetadata:
     name: str
     unit: str
     quantity: str | None = None
-    resolution: str | None = None
+    resolution: str | None = None  # fixed ("15min") or calendar ("D", "MS", used with tz)
     aggregation: Aggregation = Aggregation.INSTANTANEOUS
     interval_label: IntervalLabel = IntervalLabel.START
     timezone: str = "UTC"
@@ -103,7 +117,7 @@ class MeasurementMetadata:
         object.__setattr__(self, "aggregation", Aggregation(self.aggregation))
         object.__setattr__(self, "interval_label", IntervalLabel(self.interval_label))
         if self.resolution is not None:
-            to_step(self.resolution)
+            _validate_resolution(self.resolution)
         try:
             zoneinfo.ZoneInfo(self.timezone)
         except (zoneinfo.ZoneInfoNotFoundError, ValueError) as exc:
@@ -111,6 +125,7 @@ class MeasurementMetadata:
 
     @property
     def resolution_timedelta(self) -> pd.Timedelta | None:
+        """The resolution as a fixed ``Timedelta``; raises ``ValueError`` for calendar steps."""
         return None if self.resolution is None else to_step(self.resolution)
 
     def to_dict(self) -> dict[str, Any]:

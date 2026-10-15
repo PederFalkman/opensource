@@ -41,6 +41,11 @@ def _iso_duration(td: pd.Timedelta | None) -> str | None:
     return None if td is None else td.isoformat()
 
 
+def _freq_label(freq: str | pd.Timedelta | None) -> str | None:
+    # Calendar steps have no ISO 8601 duration; report the pandas frequency.
+    return None if freq is None else str(freq)
+
+
 def fingerprint_series(series: pd.Series) -> str:
     """SHA-256 over UTC timestamps (ns), numeric values and the series name.
 
@@ -135,6 +140,8 @@ def assess_quality(
     bounds: tuple[float | None, float | None] | None = None,
     stale_min_run: int | None = None,
     cumulative: bool = False,
+    origin: pd.Timestamp | None = None,
+    tz: str | None = None,
     max_listed: int = 100,
 ) -> QualityReport:
     """Run all checks on ``series`` and return a :class:`QualityReport`.
@@ -143,6 +150,10 @@ def assess_quality(
     If neither is given, grid-based checks (gaps, off-grid, completeness) are
     skipped and only the inferred resolution is reported; the step is never
     guessed silently.
+
+    ``origin`` anchors the grid and ``tz`` makes ``freq`` a local-calendar
+    step (see :func:`energydata_kit.expected_grid`); the per-local-day
+    section is only produced for fixed steps.
 
     ``stale_min_run`` and ``cumulative`` enable the opt-in stale-value and
     counter-decrease checks (see :func:`energydata_kit.flag_series`).
@@ -153,10 +164,19 @@ def assess_quality(
         raise ValueError("max_listed must be >= 0")
     if freq is None and metadata is not None:
         freq = metadata.resolution
-    step = None if freq is None else to_step(freq)
+    # Fixed steps are validated up front; calendar steps (tz given) stay as
+    # pandas frequency strings.
+    step = None if freq is None or tz is not None else to_step(freq)
+    grid_freq = step if step is not None else freq
 
     flagged = flag_series(
-        series, freq=step, bounds=bounds, stale_min_run=stale_min_run, cumulative=cumulative
+        series,
+        freq=grid_freq,
+        bounds=bounds,
+        stale_min_run=stale_min_run,
+        cumulative=cumulative,
+        origin=origin,
+        tz=tz,
     )
     index = flagged.index
     assert isinstance(index, pd.DatetimeIndex)
@@ -172,18 +192,19 @@ def assess_quality(
     gaps: list[Gap] = []
     n_expected = None
     completeness = None
-    if step is not None and len(index):
-        gaps = find_missing_intervals(index, step)
-        grid = expected_grid(index, step)
+    if grid_freq is not None and len(index):
+        gaps = find_missing_intervals(index, grid_freq, origin=origin, tz=tz)
+        grid = expected_grid(index, grid_freq, origin=origin, tz=tz)
         n_expected = len(grid)
         present = int(grid.isin(index.as_unit("ns")).sum())
         completeness = round(present / n_expected, 6)
 
     local_days = None
     if step is not None and len(index):
-        tz = "UTC" if metadata is None else metadata.timezone
+        day_tz = "UTC" if metadata is None else metadata.timezone
         label = IntervalLabel.START if metadata is None else metadata.interval_label
-        local_days = _summarize_local_days(local_day_completeness(index, step, tz, label), tz, max_listed)
+        days = local_day_completeness(index, step, day_tz, label)
+        local_days = _summarize_local_days(days, day_tz, max_listed)
 
     dups = find_duplicate_timestamps(index)
     truncated = {
@@ -198,7 +219,7 @@ def assess_quality(
         n_rows=len(series),
         first_timestamp=_iso(index.min()) if len(index) else None,
         last_timestamp=_iso(index.max()) if len(index) else None,
-        expected_resolution=_iso_duration(step),
+        expected_resolution=_iso_duration(step) if tz is None else _freq_label(freq),
         inferred_resolution=_iso_duration(infer_resolution(index)),
         n_expected_intervals=n_expected,
         completeness=completeness,
@@ -209,7 +230,9 @@ def assess_quality(
         duplicate_timestamps=[ts.isoformat() for ts in dups[:max_listed]],
         n_duplicate_timestamps=len(dups),
         parameters={
-            "freq": _iso_duration(step),
+            "freq": _iso_duration(step) if tz is None else _freq_label(freq),
+            "origin": None if origin is None else pd.Timestamp(origin).isoformat(),
+            "tz": tz,
             "bounds": None if bounds is None else list(bounds),
             "max_listed": max_listed,
             "stale_min_run": stale_min_run,
