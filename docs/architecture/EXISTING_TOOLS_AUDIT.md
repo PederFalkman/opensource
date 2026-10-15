@@ -10,7 +10,7 @@ only. Licenses must be re-verified before any code reuse.
 
 ## 1. This repository
 
-Before this change, the repository held only a one-line `README.md` and a
+Before OSS-01 (2026-10-15), the repository held only a one-line `README.md` and a
 standard Python `.gitignore`. There were no workflows, packages or license file.
 The GitHub repository is **public**.
 
@@ -61,10 +61,14 @@ targets, which none of the reviewed permissive tools address directly:
 1. **Interval semantics.** None of the reviewed tools records whether a
    timestamp labels the start or the end of an interval, or whether a value is
    instantaneous, a mean or a sum. energydata-kit records these in
-   `MeasurementMetadata`. Interpreting them in checks is roadmap work.
+   `MeasurementMetadata` and, since OSS-02, uses them: explicit start/end
+   relabelling, unit-vs-aggregation consistency advice and per-local-day
+   completeness.
 2. **DST-safe gap and duplicate detection.** Gap detection on a UTC grid, with
    explicit policies for ambiguous and nonexistent local times, so the 92/100
-   interval days at 15-minute resolution are not misreported.
+   interval days at 15-minute resolution are not misreported. Since OSS-05,
+   daily/weekly/monthly data in local time can use an explicit local-calendar
+   grid (`tz=`) as well.
 3. **Stable bitmask quality flags.** A documented, composable integer flag set
    under a permissive license (SaQC has a richer model but is GPL).
 4. **Byte-reproducible reports.** Deterministic JSON plus a data fingerprint,

@@ -8,7 +8,7 @@ opensource/
 ├── ruff.toml                    # lint config for tools/ only
 ├── docs/
 │   ├── architecture/            # this file, audit, duplication register, roadmap
-│   └── governance/              # IP boundary, release gates
+│   └── governance/              # IP boundary, release gates, release checklist
 ├── packages/
 │   └── energydata-kit/          # the only package authorized so far
 │       ├── pyproject.toml       # own metadata, deps, lint/type/test config
@@ -20,6 +20,7 @@ opensource/
 │   ├── check_ip_boundary.py     # CI tripwire (stdlib only)
 │   ├── check_workflow_pins.py   # actions pinned to commit SHAs
 │   ├── check_release_readiness.py # mechanical release conditions
+│   ├── check_docs.py            # docs match the code (public API, flags, links)
 │   ├── ip_boundary.toml         # import denylist + dependency allowlists
 │   └── tests/
 └── .github/
@@ -80,6 +81,9 @@ Key decisions:
 | Reports have no wall-clock time | Same input + parameters + version → byte-identical JSON. The fingerprint covers UTC ns timestamps, canonicalized float64 values and the series name, so it does not depend on pandas' datetime resolution or display time zone. |
 | pandas, numpy, Pint as the only required runtime dependencies (Pandera is an optional extra) | Mature, permissively licensed (BSD), already ubiquitous in energy data work. No schema engine, unit system or I/O layer is reimplemented. |
 | Pint registry extended with `var` | Pint has no reactive-power unit; `var` is defined as dimensionally equal to `VA`. |
+| Calendar grids only with an explicit `tz` | Daily and longer steps in local time are laid out by pandas in wall-clock time (23/25-hour DST days). They are never inferred from metadata, so a fixed `"1D"` step stays 24 h in UTC unless the caller says otherwise. |
+| Opt-in checks for stale values and counters | A sensible run length depends on the signal, and whether a series is cumulative is the caller's knowledge; both stay off by default. |
+| CLI is a thin layer | `energydata-kit report` only parses arguments and CSV, then calls `assess_quality` / `flag_series`; exit status 1 for issues (with `--fail-on-issues`), 2 for input errors. |
 
 ## Supported versions
 
