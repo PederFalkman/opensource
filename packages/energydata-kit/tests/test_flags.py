@@ -106,4 +106,6 @@ def test_flag_values_are_stable():
         "OFF_GRID_TIMESTAMP": 16,
         "OUT_OF_BOUNDS": 32,
         "MISSING_INTERVAL": 64,
+        "STALE_VALUE": 128,
+        "COUNTER_DECREASE": 256,
     }

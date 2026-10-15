@@ -133,6 +133,8 @@ def assess_quality(
     metadata: MeasurementMetadata | None = None,
     freq: str | pd.Timedelta | None = None,
     bounds: tuple[float | None, float | None] | None = None,
+    stale_min_run: int | None = None,
+    cumulative: bool = False,
     max_listed: int = 100,
 ) -> QualityReport:
     """Run all checks on ``series`` and return a :class:`QualityReport`.
@@ -142,6 +144,9 @@ def assess_quality(
     skipped and only the inferred resolution is reported; the step is never
     guessed silently.
 
+    ``stale_min_run`` and ``cumulative`` enable the opt-in stale-value and
+    counter-decrease checks (see :func:`energydata_kit.flag_series`).
+
     ``series`` must have a timezone-aware ``DatetimeIndex`` and is not modified.
     """
     if max_listed < 0:
@@ -150,7 +155,9 @@ def assess_quality(
         freq = metadata.resolution
     step = None if freq is None else to_step(freq)
 
-    flagged = flag_series(series, freq=step, bounds=bounds)
+    flagged = flag_series(
+        series, freq=step, bounds=bounds, stale_min_run=stale_min_run, cumulative=cumulative
+    )
     index = flagged.index
     assert isinstance(index, pd.DatetimeIndex)
     flags = flagged[FLAG_COLUMN].to_numpy()
@@ -205,6 +212,8 @@ def assess_quality(
             "freq": _iso_duration(step),
             "bounds": None if bounds is None else list(bounds),
             "max_listed": max_listed,
+            "stale_min_run": stale_min_run,
+            "cumulative": cumulative,
         },
         metadata=None if metadata is None else metadata.to_dict(),
         truncated=truncated,

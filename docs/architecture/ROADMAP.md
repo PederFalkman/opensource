@@ -31,11 +31,11 @@ needs agreement before work starts, and each must pass the scope test in
 - [x] Local-calendar-day completeness (expected 92/96/100 intervals per local
       day at 15 min) as a report section.
 
-## OSS-03: additional generic checks (proposed)
+## OSS-03: additional generic checks (in progress)
 
-- Stale / flat-line detection (constant values over N intervals).
-- Monotonic cumulative-counter checks (meter register resets/rollovers).
-- Reference Pecos/pvanalytics for behavior; implement independently.
+- [x] Stale / flat-line detection (constant values over N intervals).
+- [x] Monotonic cumulative-counter checks (meter register resets/rollovers).
+- [x] Reference Pecos/pvanalytics for behavior; implement independently.
 
 ## OSS-04: interoperability (proposed)
 
