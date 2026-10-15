@@ -18,6 +18,9 @@ cover for metered energy data:
 | Missing, non-finite, non-numeric and out-of-bounds values | `missing_value_mask`, `non_finite_mask`, `non_numeric_mask`, `out_of_bounds_mask` |
 | Non-destructive bitmask quality flags | `flag_series`, `QualityFlag`, `decode_flags` |
 | Unit and measurement metadata (units parsed by Pint) | `MeasurementMetadata`, `validate_unit`, `units_compatible` |
+| Explicit start/end interval relabelling | `relabel_intervals`, `interval_bounds` |
+| Unit / aggregation consistency advice | `check_metadata_consistency`, `MetadataIssue` |
+| Completeness per local calendar day (DST-aware: 92/96/100 at 15 min) | `local_day_completeness` |
 | Reproducible JSON quality reports | `assess_quality`, `QualityReport`, `fingerprint_series` |
 | Deterministic synthetic test series | `make_synthetic_series` |
 
@@ -97,5 +100,8 @@ pint-pandas directly.
   grids are not supported yet.
 - The grid is anchored at the first timestamp. A leading off-grid timestamp
   shifts the grid.
-- `interval_label` and `aggregation` are recorded as metadata. The checks do not
-  interpret them yet.
+- Gap, duplicate and off-grid checks run on raw timestamps and do not depend on
+  `interval_label`. Only `local_day_completeness` (and the report's
+  `local_days` section) uses the label to assign intervals to days.
+- Local days that are not a whole number of steps long (e.g. 30-minute DST
+  shifts with a 1-hour step) report the floor of the expected count.

@@ -16,3 +16,13 @@ versioning: [SemVer](https://semver.org/).
 - `assess_quality` → `QualityReport` with deterministic JSON (schema 1) and
   SHA-256 data fingerprint.
 - `make_synthetic_series` for deterministic test data.
+- `relabel_intervals` and `interval_bounds` for explicit start/end label
+  conversion (OSS-02).
+- `check_metadata_consistency` returning `MetadataIssue`s with stable codes
+  `SUM_OF_POWER`, `AVERAGED_ENERGY`, `MISSING_RESOLUTION`,
+  `LABEL_ON_INSTANTANEOUS` (OSS-02).
+- `local_day_completeness`: expected vs. present intervals per local calendar
+  day, DST-aware (OSS-02).
+- Report fields `metadata_issues` and `local_days`, and the
+  `truncated.incomplete_local_days` flag. The report schema stays at version 1
+  because it has not been released yet.

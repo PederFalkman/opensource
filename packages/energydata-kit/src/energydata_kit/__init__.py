@@ -32,6 +32,13 @@ from energydata_kit.metadata import (
     validate_unit,
 )
 from energydata_kit.report import QualityReport, assess_quality, fingerprint_series
+from energydata_kit.semantics import (
+    MetadataIssue,
+    check_metadata_consistency,
+    interval_bounds,
+    local_day_completeness,
+    relabel_intervals,
+)
 from energydata_kit.synthetic import make_synthetic_series
 from energydata_kit.timestamps import (
     TimestampError,
@@ -48,6 +55,7 @@ __all__ = [
     "Gap",
     "IntervalLabel",
     "MeasurementMetadata",
+    "MetadataIssue",
     "QualityFlag",
     "QualityReport",
     "TimestampError",
@@ -55,6 +63,7 @@ __all__ = [
     "UnitError",
     "__version__",
     "assess_quality",
+    "check_metadata_consistency",
     "decode_flags",
     "duplicate_mask",
     "expected_grid",
@@ -63,6 +72,8 @@ __all__ = [
     "fingerprint_series",
     "flag_series",
     "infer_resolution",
+    "interval_bounds",
+    "local_day_completeness",
     "make_synthetic_series",
     "missing_value_mask",
     "non_finite_mask",
@@ -70,6 +81,7 @@ __all__ = [
     "normalize_timestamps",
     "off_grid_mask",
     "out_of_bounds_mask",
+    "relabel_intervals",
     "summarize_timestamps",
     "units_compatible",
     "validate_unit",
