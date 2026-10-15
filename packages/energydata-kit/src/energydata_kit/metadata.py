@@ -51,9 +51,9 @@ class IntervalLabel(StrEnum):
 
 
 @lru_cache(maxsize=1)
-def get_unit_registry() -> pint.UnitRegistry:
+def get_unit_registry() -> pint.UnitRegistry[Any]:
     """Shared Pint registry, extended with reactive power (``var``)."""
-    ureg = pint.UnitRegistry()
+    ureg: pint.UnitRegistry[Any] = pint.UnitRegistry()
     # Pint's default registry has no unit for reactive power. var is
     # dimensionally identical to VA; the distinction is semantic.
     ureg.define("volt_ampere_reactive = volt * ampere = var")
