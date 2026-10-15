@@ -29,6 +29,8 @@ energydata-kit = [
     "pandera",
     # dev group
     "build",
+    # property-based tests only (MPL-2.0; dev dependency, never shipped or copied)
+    "hypothesis",
     "mypy",
     "pandas-stubs",
     "pytest",
