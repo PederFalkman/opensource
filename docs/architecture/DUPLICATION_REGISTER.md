@@ -21,6 +21,7 @@ any new capability or copied code.
 | Per-local-day completeness | none found (Pecos/pvanalytics count spacing, not local days) | **Implemented** | `semantics.local_day_completeness` | Audit gap 2 (DST-aware expected counts). Independently written. |
 | Stale / flat-line detection | Pecos `check_delta`, pvanalytics `quality.gaps` stale checks, OpenSTEF flatliner | **Implemented** (run-length on numpy) | `flags.stale_mask` | Needed as a non-destructive flag; reference tools are data-modifying, PV-specific or forecasting-centred (MPL). Behavior compared at the documentation level only; no code read or copied. |
 | Cumulative-counter decrease | Pecos `check_increment` (similar) | **Implemented** (forward-fill comparison) | `flags.counter_decrease_mask` | A few lines on pandas; flags only the drop row. Independently written. |
+| Local-calendar grids (daily/weekly/monthly in a time zone) | pandas `date_range` with a tz-aware start | **Reused** | `intervals.expected_grid(tz=...)` | pandas already lays out calendar offsets in wall-clock time across DST; we only add origin and window handling. |
 | Table Schema metadata export | frictionless-py | **Spec implemented directly** (~40 lines, no dependency) | `table_schema` | Producing the JSON needs no library; frictionless-py would add a large dependency for a dict. |
 
 ## Copied third-party code

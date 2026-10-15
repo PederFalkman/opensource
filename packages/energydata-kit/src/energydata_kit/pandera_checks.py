@@ -33,7 +33,7 @@ from energydata_kit.flags import (
     out_of_bounds_mask,
     stale_mask,
 )
-from energydata_kit.intervals import duplicate_mask, find_missing_intervals, off_grid_mask, to_step
+from energydata_kit.intervals import duplicate_mask, expected_grid, off_grid_mask
 from energydata_kit.metadata import MeasurementMetadata
 
 __all__ = [
@@ -73,11 +73,15 @@ def _is_aware(obj: Any) -> pd.Series:
     return _rows(obj, isinstance(index, pd.DatetimeIndex) and index.tz is not None)
 
 
-def _no_gap_after(obj: Any, freq: str | pd.Timedelta) -> pd.Series:
+def _no_gap_after(
+    obj: Any, freq: str | pd.Timedelta, origin: pd.Timestamp | None, tz: str | None
+) -> pd.Series:
     index = _index(obj)
-    step = to_step(freq)
-    before_gap = pd.DatetimeIndex([gap.start - step for gap in find_missing_intervals(index, freq)])
-    return _rows(obj, ~index.isin(before_gap))
+    grid = expected_grid(index, freq, origin=origin, tz=tz)
+    present = grid.isin(index.as_unit("ns"))
+    # A gap starts where a present grid point is followed by an absent one.
+    before_gap = grid[:-1][present[:-1] & ~present[1:]]
+    return _rows(obj, ~index.as_unit("ns").isin(before_gap))
 
 
 def timezone_aware_check() -> pa.Check:
@@ -100,23 +104,27 @@ def no_duplicate_timestamps_check() -> pa.Check:
     )
 
 
-def on_grid_check(freq: str | pd.Timedelta) -> pa.Check:
-    """Every timestamp lies on the ``freq`` grid anchored at the first timestamp."""
+def on_grid_check(
+    freq: str | pd.Timedelta, origin: pd.Timestamp | None = None, *, tz: str | None = None
+) -> pa.Check:
+    """Every timestamp lies on the grid (see :func:`energydata_kit.off_grid_mask`)."""
     return pa.Check(
-        lambda idx: _rows(idx, ~off_grid_mask(_index(idx), freq)),
+        lambda idx: _rows(idx, ~off_grid_mask(_index(idx), freq, origin, tz=tz)),
         name=_PREFIX + "on_grid",
         error=f"timestamps not aligned to {freq}",
         ignore_na=False,
     )
 
 
-def no_missing_intervals_check(freq: str | pd.Timedelta) -> pa.Check:
+def no_missing_intervals_check(
+    freq: str | pd.Timedelta, origin: pd.Timestamp | None = None, *, tz: str | None = None
+) -> pa.Check:
     """No grid timestamp between the first and last is absent.
 
     Each gap is reported on the last present row before it.
     """
     return pa.Check(
-        lambda idx: _no_gap_after(idx, freq),
+        lambda idx: _no_gap_after(idx, freq, origin, tz),
         name=_PREFIX + "no_missing_intervals",
         error=f"missing intervals after these timestamps at {freq} resolution",
         ignore_na=False,
@@ -173,6 +181,8 @@ def series_schema(
     bounds: tuple[float | None, float | None] | None = None,
     stale_min_run: int | None = None,
     cumulative: bool = False,
+    origin: pd.Timestamp | None = None,
+    tz: str | None = None,
     nullable: bool = True,
 ) -> pa.SeriesSchema:
     """A ``SeriesSchema`` running the same checks as :func:`energydata_kit.assess_quality`.
@@ -184,7 +194,7 @@ def series_schema(
         freq = metadata.resolution
     index_checks = [timezone_aware_check(), no_duplicate_timestamps_check()]
     if freq is not None:
-        index_checks += [on_grid_check(freq), no_missing_intervals_check(freq)]
+        index_checks += [on_grid_check(freq, origin, tz=tz), no_missing_intervals_check(freq, origin, tz=tz)]
     value_checks = [finite_check()]
     if bounds is not None:
         value_checks.append(within_bounds_check(*bounds))

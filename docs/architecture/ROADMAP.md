@@ -47,6 +47,15 @@ needs agreement before work starts, and each must pass the scope test in
       `series.astype(f"pint[{meta.unit}]")` already works for Pint's built-in
       units. Revisit if users need it.
 
+## OSS-05: grid limitations (in progress)
+
+Agreed scope: the two grid limitations listed in the package README.
+
+- [x] Explicit grid `origin`, so a leading off-grid timestamp no longer shifts
+      the grid.
+- [x] Local-calendar steps (`tz=`) for daily, weekly and monthly data in local
+      time, DST-aware. Explicit only; never inferred from metadata.
+
 ## Explicitly not planned
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection

@@ -12,7 +12,7 @@ from enum import IntFlag
 import numpy as np
 import pandas as pd
 
-from energydata_kit.intervals import duplicate_mask, find_missing_intervals, off_grid_mask
+from energydata_kit.intervals import duplicate_mask, missing_timestamps, off_grid_mask
 
 __all__ = [
     "FLAG_COLUMN",
@@ -163,6 +163,8 @@ def flag_series(
     insert_missing: bool = False,
     stale_min_run: int | None = None,
     cumulative: bool = False,
+    origin: pd.Timestamp | None = None,
+    tz: str | None = None,
 ) -> pd.DataFrame:
     """Return a new frame with the original values and a ``quality_flag`` bitmask.
 
@@ -171,8 +173,9 @@ def flag_series(
     series:
         Values indexed by a timezone-aware ``DatetimeIndex``. Not modified.
     freq:
-        Expected fixed step. Enables ``OFF_GRID_TIMESTAMP`` and, with
-        ``insert_missing``, ``MISSING_INTERVAL``.
+        Expected step. Enables ``OFF_GRID_TIMESTAMP`` and, with
+        ``insert_missing``, ``MISSING_INTERVAL``. A fixed step unless ``tz``
+        is given.
     bounds:
         Optional ``(lower, upper)`` plausibility range; either may be ``None``.
     insert_missing:
@@ -186,6 +189,12 @@ def flag_series(
     cumulative:
         If true, treat the series as a cumulative counter and flag
         ``COUNTER_DECREASE`` (see :func:`counter_decrease_mask`).
+    origin:
+        Timezone-aware timestamp the grid runs through (default: the first
+        timestamp). See :func:`energydata_kit.expected_grid`.
+    tz:
+        Treat ``freq`` as a local-calendar step in this zone, e.g. ``"D"`` in
+        ``"Europe/Stockholm"`` (23/25-hour DST days) or ``"MS"``.
     """
     index = series.index
     if not isinstance(index, pd.DatetimeIndex) or index.tz is None:
@@ -203,7 +212,7 @@ def flag_series(
     flags[non_numeric_mask(series)] |= np.uint16(QualityFlag.NON_NUMERIC)
     flags[duplicate_mask(index)] |= np.uint16(QualityFlag.DUPLICATE_TIMESTAMP)
     if freq is not None:
-        flags[off_grid_mask(index, freq)] |= np.uint16(QualityFlag.OFF_GRID_TIMESTAMP)
+        flags[off_grid_mask(index, freq, origin, tz=tz)] |= np.uint16(QualityFlag.OFF_GRID_TIMESTAMP)
     if bounds is not None:
         flags[out_of_bounds_mask(series, *bounds)] |= np.uint16(QualityFlag.OUT_OF_BOUNDS)
     if stale_min_run is not None:
@@ -217,12 +226,8 @@ def flag_series(
     )
 
     if insert_missing and freq is not None:
-        missing = [
-            ts
-            for gap in find_missing_intervals(index, freq)
-            for ts in pd.date_range(gap.start, gap.end, freq=freq)
-        ]
-        if missing:
+        missing = missing_timestamps(index, freq, origin=origin, tz=tz)
+        if len(missing):
             filler = pd.DataFrame(
                 {
                     VALUE_COLUMN: np.full(len(missing), np.nan),
@@ -232,7 +237,7 @@ def flag_series(
                         dtype=np.uint16,
                     ),
                 },
-                index=pd.DatetimeIndex(missing).as_unit(index.unit),
+                index=missing.tz_convert(index.tz).as_unit(index.unit),
             )
             frame = pd.concat([frame, filler]).sort_index(kind="stable")
             frame[FLAG_COLUMN] = frame[FLAG_COLUMN].astype(np.uint16)
