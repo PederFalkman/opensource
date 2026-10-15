@@ -48,6 +48,11 @@ versioning: [SemVer](https://semver.org/).
   accounting, deterministic reports, fingerprint invariance, label round
   trips, stale/counter masks against brute-force references, local-day
   bounds and Table Schema round trips (OSS-10).
+- `jump_mask` and the opt-in flag `JUMP` (512): a value that differs from the
+  previous finite value by more than a caller-supplied `jump_max_delta`.
+  Available on `flag_series`, `assess_quality` (recorded in report
+  `parameters`), the CLI (`--jump-max-delta`) and Pandera (`jump_check`,
+  `series_schema(jump_max_delta=...)`) (OSS-11).
 - Report fields `metadata_issues` and `local_days`, and the
   `truncated.incomplete_local_days` flag. The report schema stays at version 1
   because it has not been released yet.

@@ -109,7 +109,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       package README, `## [Unreleased]` in each changelog, no broken relative
       links. Runs in CI.
 
-### OSS-10: property-based tests — this change
+### OSS-10: property-based tests — merged in [#15](https://github.com/PederFalkman/opensource/pull/15)
 
 - [x] Hypothesis tests (dev-only, deterministic: `derandomize=True`, no example
       database) for non-destructive flagging, flag bits vs. masks, gap
@@ -118,6 +118,15 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       and Table Schema round trips.
 - [x] `hypothesis` added to the dev group and the dependency allowlist
       (MPL-2.0; test-only, never shipped or copied).
+
+### OSS-11: jump check — this change
+
+- [x] `jump_mask` and opt-in flag `JUMP` (512): change from the previous
+      finite value larger than a caller-supplied limit. No built-in limits.
+- [x] Wired into `flag_series`, `assess_quality`, the CLI
+      (`--jump-max-delta`) and the Pandera checks (`jump_check`).
+- [x] Written independently; no code taken from Pecos (which has a similar
+      delta check) or any other tool.
 
 ## Explicitly not planned
 

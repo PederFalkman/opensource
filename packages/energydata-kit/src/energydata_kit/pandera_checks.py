@@ -28,6 +28,7 @@ except ImportError as exc:  # pragma: no cover - exercised only without the extr
 
 from energydata_kit.flags import (
     counter_decrease_mask,
+    jump_mask,
     non_finite_mask,
     non_numeric_mask,
     out_of_bounds_mask,
@@ -39,6 +40,7 @@ from energydata_kit.metadata import MeasurementMetadata
 __all__ = [
     "counter_check",
     "finite_check",
+    "jump_check",
     "no_duplicate_timestamps_check",
     "no_missing_intervals_check",
     "on_grid_check",
@@ -174,6 +176,21 @@ def counter_check(*, tolerance: float = 0.0) -> pa.Check:
     )
 
 
+def jump_check(max_delta: float) -> pa.Check:
+    """No change larger than ``max_delta`` from the previous finite value.
+
+    See :func:`energydata_kit.jump_mask`: missing and non-finite values pass and are
+    skipped, so each value is compared with the last finite value before it.
+    """
+    jump_mask([], max_delta)
+    return pa.Check(
+        lambda s: pd.Series(~jump_mask(s, max_delta), index=s.index),
+        name=_PREFIX + "no_jumps",
+        error=f"changes larger than {max_delta} between consecutive values",
+        ignore_na=False,
+    )
+
+
 def series_schema(
     metadata: MeasurementMetadata | None = None,
     *,
@@ -181,6 +198,7 @@ def series_schema(
     bounds: tuple[float | None, float | None] | None = None,
     stale_min_run: int | None = None,
     cumulative: bool = False,
+    jump_max_delta: float | None = None,
     origin: pd.Timestamp | None = None,
     tz: str | None = None,
     nullable: bool = True,
@@ -202,6 +220,8 @@ def series_schema(
         value_checks.append(stale_check(stale_min_run))
     if cumulative:
         value_checks.append(counter_check())
+    if jump_max_delta is not None:
+        value_checks.append(jump_check(jump_max_delta))
     return pa.SeriesSchema(
         checks=index_checks + value_checks,
         nullable=nullable,

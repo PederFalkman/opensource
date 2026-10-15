@@ -34,6 +34,7 @@ from energydata_kit import (  # noqa: E402
     fingerprint_series,
     flag_series,
     from_table_schema,
+    jump_mask,
     local_day_completeness,
     missing_timestamps,
     missing_value_mask,
@@ -87,9 +88,21 @@ def test_flag_series_never_changes_values_or_rows(series, insert_missing):
 
 
 @DETERMINISTIC
-@given(grid_series(off_grid=True), st.one_of(st.none(), st.floats(-1e3, 1e3)), st.integers(2, 4))
-def test_flag_bits_equal_the_individual_masks(series, upper, min_run):
-    flags = flag_series(series, freq=STEP, bounds=(None, upper), stale_min_run=min_run, cumulative=True)
+@given(
+    grid_series(off_grid=True),
+    st.one_of(st.none(), st.floats(-1e3, 1e3)),
+    st.integers(2, 4),
+    st.floats(1e-3, 1e6),
+)
+def test_flag_bits_equal_the_individual_masks(series, upper, min_run, max_delta):
+    flags = flag_series(
+        series,
+        freq=STEP,
+        bounds=(None, upper),
+        stale_min_run=min_run,
+        cumulative=True,
+        jump_max_delta=max_delta,
+    )
     flags = flags[FLAG_COLUMN].to_numpy()
     expected = (
         missing_value_mask(series) * int(QualityFlag.MISSING_VALUE)
@@ -99,6 +112,7 @@ def test_flag_bits_equal_the_individual_masks(series, upper, min_run):
         | out_of_bounds_mask(series, None, upper) * int(QualityFlag.OUT_OF_BOUNDS)
         | stale_mask(series, min_run) * int(QualityFlag.STALE_VALUE)
         | counter_decrease_mask(series) * int(QualityFlag.COUNTER_DECREASE)
+        | jump_mask(series, max_delta) * int(QualityFlag.JUMP)
     )
     np.testing.assert_array_equal(flags, expected)
 
@@ -226,3 +240,18 @@ def test_table_schema_round_trip(unit, resolution, aggregation, label, zone, des
     )
     schema = json.loads(json.dumps(to_table_schema(meta, include_flag=True)))
     assert from_table_schema(schema) == meta
+
+
+@DETERMINISTIC
+@given(
+    st.lists(st.one_of(st.floats(-100, 100), st.just(np.nan), st.just(np.inf)), max_size=40),
+    st.floats(0.5, 50),
+)
+def test_jump_matches_brute_force(data, max_delta):
+    expected, last = [], None
+    for v in data:
+        finite = np.isfinite(v)
+        expected.append(bool(finite and last is not None and abs(v - last) > max_delta))
+        if finite:
+            last = v
+    assert jump_mask(data, max_delta).tolist() == expected

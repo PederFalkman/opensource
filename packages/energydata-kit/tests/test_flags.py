@@ -108,4 +108,5 @@ def test_flag_values_are_stable():
         "MISSING_INTERVAL": 64,
         "STALE_VALUE": 128,
         "COUNTER_DECREASE": 256,
+        "JUMP": 512,
     }
