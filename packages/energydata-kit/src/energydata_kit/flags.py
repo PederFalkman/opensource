@@ -21,6 +21,7 @@ __all__ = [
     "counter_decrease_mask",
     "decode_flags",
     "flag_series",
+    "jump_mask",
     "missing_value_mask",
     "non_finite_mask",
     "non_numeric_mask",
@@ -45,6 +46,7 @@ class QualityFlag(IntFlag):
     MISSING_INTERVAL = 64  # row inserted for an absent grid timestamp
     STALE_VALUE = 128  # part of a run of repeated values (opt-in)
     COUNTER_DECREASE = 256  # cumulative counter went down (opt-in)
+    JUMP = 512  # change from the previous finite value exceeds a limit (opt-in)
 
 
 def decode_flags(value: int) -> list[str]:
@@ -155,6 +157,27 @@ def counter_decrease_mask(
     return np.asarray(finite & previous.notna() & (v < previous - tolerance), dtype=bool)
 
 
+def jump_mask(
+    values: pd.Series | np.ndarray | list[object],
+    max_delta: float,
+) -> np.ndarray:
+    """True where a value differs from the previous finite value by more than ``max_delta``.
+
+    Each finite value is compared with the last finite value before it, so
+    missing and non-finite values are skipped, never flagged. Only the row
+    where the change lands is flagged: a single outlier therefore flags
+    itself and the row after it (the jump away and the jump back). The limit
+    is supplied by the caller; the package ships no domain limits. Time gaps
+    between rows are not considered; check gaps separately.
+    """
+    if not np.isfinite(max_delta) or max_delta <= 0:
+        raise ValueError("max_delta must be a finite number > 0")
+    v = _numeric(_as_series(values))
+    finite = pd.Series(np.isfinite(v.to_numpy()), index=v.index)
+    previous = v.where(finite).ffill().shift(1)
+    return np.asarray(finite & previous.notna() & ((v - previous).abs() > max_delta), dtype=bool)
+
+
 def flag_series(
     series: pd.Series,
     *,
@@ -163,6 +186,7 @@ def flag_series(
     insert_missing: bool = False,
     stale_min_run: int | None = None,
     cumulative: bool = False,
+    jump_max_delta: float | None = None,
     origin: pd.Timestamp | None = None,
     tz: str | None = None,
 ) -> pd.DataFrame:
@@ -189,6 +213,9 @@ def flag_series(
     cumulative:
         If true, treat the series as a cumulative counter and flag
         ``COUNTER_DECREASE`` (see :func:`counter_decrease_mask`).
+    jump_max_delta:
+        If set, flag ``JUMP`` where a value differs from the previous finite
+        value by more than this (see :func:`jump_mask`). Off by default.
     origin:
         Timezone-aware timestamp the grid runs through (default: the first
         timestamp). See :func:`energydata_kit.expected_grid`.
@@ -203,8 +230,9 @@ def flag_series(
         raise ValueError("insert_missing requires freq")
     if insert_missing and not index.is_monotonic_increasing:
         raise ValueError("insert_missing requires a sorted index so original row order is kept")
-    if (stale_min_run is not None or cumulative) and not index.is_monotonic_increasing:
-        raise ValueError("stale and counter checks compare consecutive rows and require a sorted index")
+    consecutive = stale_min_run is not None or cumulative or jump_max_delta is not None
+    if consecutive and not index.is_monotonic_increasing:
+        raise ValueError("stale, counter and jump checks compare consecutive rows and require a sorted index")
 
     flags = np.zeros(len(series), dtype=np.uint16)
     flags[missing_value_mask(series)] |= np.uint16(QualityFlag.MISSING_VALUE)
@@ -219,6 +247,8 @@ def flag_series(
         flags[stale_mask(series, stale_min_run)] |= np.uint16(QualityFlag.STALE_VALUE)
     if cumulative:
         flags[counter_decrease_mask(series)] |= np.uint16(QualityFlag.COUNTER_DECREASE)
+    if jump_max_delta is not None:
+        flags[jump_mask(series, jump_max_delta)] |= np.uint16(QualityFlag.JUMP)
 
     frame = pd.DataFrame(
         {VALUE_COLUMN: series.to_numpy(copy=True), FLAG_COLUMN: flags},

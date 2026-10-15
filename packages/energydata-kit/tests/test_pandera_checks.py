@@ -103,6 +103,17 @@ def test_invalid_arguments_fail_early():
         pc.stale_check(1)
     with pytest.raises(ValueError):
         pc.counter_check(tolerance=-1)
+    with pytest.raises(ValueError):
+        pc.jump_check(0)
+
+
+def test_jump_check():
+    idx = pd.date_range("2024-01-01", periods=5, freq="1h", tz="UTC")
+    s = pd.Series([1.0, np.nan, 1.5, 40.0, 41.0], index=idx)
+    assert failed_checks(pc.series_schema(freq="1h", jump_max_delta=10.0), s) == [
+        "changes larger than 10.0 between consecutive values"
+    ]
+    assert failed_checks(pc.series_schema(freq="1h", jump_max_delta=50.0), s) == []
 
 
 def test_origin_and_calendar_steps():

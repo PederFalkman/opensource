@@ -16,7 +16,7 @@ cover for metered energy data:
 | Missing intervals on a fixed UTC grid or a local-calendar grid (`tz=`), with an optional `origin` | `find_missing_intervals`, `missing_timestamps`, `expected_grid` |
 | Duplicate and off-grid timestamps | `find_duplicate_timestamps`, `duplicate_mask`, `off_grid_mask` |
 | Missing, non-finite, non-numeric and out-of-bounds values | `missing_value_mask`, `non_finite_mask`, `non_numeric_mask`, `out_of_bounds_mask` |
-| Stale (flat-line) values and cumulative-counter decreases (opt-in) | `stale_mask`, `counter_decrease_mask` |
+| Stale (flat-line) values, cumulative-counter decreases and jumps between consecutive values (opt-in) | `stale_mask`, `counter_decrease_mask`, `jump_mask` |
 | Non-destructive bitmask quality flags | `flag_series`, `QualityFlag`, `decode_flags` |
 | Unit and measurement metadata (units parsed by Pint) | `MeasurementMetadata`, `validate_unit`, `units_compatible` |
 | Explicit start/end interval relabelling | `relabel_intervals`, `interval_bounds` |
@@ -128,6 +128,7 @@ input error. `python -m energydata_kit` is equivalent. See
 | 64 | `MISSING_INTERVAL` | Row inserted for an absent grid timestamp (`insert_missing=True`) |
 | 128 | `STALE_VALUE` | Part of a run of at least `stale_min_run` repeated values (opt-in) |
 | 256 | `COUNTER_DECREASE` | Cumulative counter fell below its previous value (`cumulative=True`, opt-in) |
+| 512 | `JUMP` | Changed by more than `jump_max_delta` from the previous finite value (opt-in) |
 
 Flag values are part of the public API and will not be renumbered.
 
@@ -156,8 +157,11 @@ use Pint or pint-pandas directly, e.g. `series.astype(f"pint[{meta.unit}]")`.
   is attached to the series (not the index) so that lazy validation reports
   index and value failures together, and each gap is reported on the last row
   before it.
-- Stale and counter checks compare consecutive rows and ignore time gaps
+- Stale, counter and jump checks compare consecutive rows and ignore time gaps
   between them. A register reset and a rollover both appear as
   `COUNTER_DECREASE`; telling them apart is left to the caller.
+- The jump check uses an absolute limit per row, not a rate per unit of time,
+  and flags the row where the change lands: a single outlier flags itself and
+  the row after it. Choosing the limit is left to the caller.
 - Local days that are not a whole number of steps long (e.g. 30-minute DST
   shifts with a 1-hour step) report the floor of the expected count.

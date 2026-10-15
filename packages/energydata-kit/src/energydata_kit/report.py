@@ -140,6 +140,7 @@ def assess_quality(
     bounds: tuple[float | None, float | None] | None = None,
     stale_min_run: int | None = None,
     cumulative: bool = False,
+    jump_max_delta: float | None = None,
     origin: pd.Timestamp | None = None,
     tz: str | None = None,
     max_listed: int = 100,
@@ -155,8 +156,9 @@ def assess_quality(
     step (see :func:`energydata_kit.expected_grid`); the per-local-day
     section is only produced for fixed steps.
 
-    ``stale_min_run`` and ``cumulative`` enable the opt-in stale-value and
-    counter-decrease checks (see :func:`energydata_kit.flag_series`).
+    ``stale_min_run``, ``cumulative`` and ``jump_max_delta`` enable the opt-in
+    stale-value, counter-decrease and jump checks (see
+    :func:`energydata_kit.flag_series`).
 
     ``series`` must have a timezone-aware ``DatetimeIndex`` and is not modified.
     """
@@ -175,6 +177,7 @@ def assess_quality(
         bounds=bounds,
         stale_min_run=stale_min_run,
         cumulative=cumulative,
+        jump_max_delta=jump_max_delta,
         origin=origin,
         tz=tz,
     )
@@ -237,6 +240,7 @@ def assess_quality(
             "max_listed": max_listed,
             "stale_min_run": stale_min_run,
             "cumulative": cumulative,
+            "jump_max_delta": jump_max_delta,
         },
         metadata=None if metadata is None else metadata.to_dict(),
         truncated=truncated,

@@ -77,6 +77,17 @@ def test_metadata_bounds_and_report_file(tmp_path):
     assert data["metadata_issues"] == []
 
 
+def test_jump_max_delta(tmp_path):
+    path = write(tmp_path, CLEAN)  # steps of 0.25 kWh
+    code, out, _ = run("report", str(path), "--jump-max-delta", "0.2")
+    data = json.loads(out)
+    assert code == 0 and data["flag_counts"]["JUMP"] == 7
+    assert data["parameters"]["jump_max_delta"] == 0.2
+    assert json.loads(run("report", str(path), "--jump-max-delta", "1")[1])["flag_counts"]["JUMP"] == 0
+    code, out, err = run("report", str(path), "--jump-max-delta", "0")
+    assert code == 2 and out == "" and "max_delta must be" in err
+
+
 def test_flags_csv_keeps_rows_and_inserts_missing(tmp_path):
     path = write(tmp_path, DEFECTIVE)
     flags = tmp_path / "flags.csv"
