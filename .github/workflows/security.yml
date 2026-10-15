@@ -34,11 +34,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Audit resolved runtime dependencies
+      - name: Audit resolved runtime dependencies (including optional extras)
         run: |
           python -m venv /tmp/audit-env
           /tmp/audit-env/bin/python -m pip install --upgrade pip pip-audit
-          /tmp/audit-env/bin/python -m pip install .
+          /tmp/audit-env/bin/python -m pip install ".[pandera]"
           /tmp/audit-env/bin/pip-audit --skip-editable
 
   dependency-review:

@@ -31,11 +31,16 @@ dependencies = [
     "pint>=0.24",
 ]
 
+[project.optional-dependencies]
+# Pandera checks in energydata_kit.pandera_checks. 0.24 introduced pandera.pandas.
+pandera = ["pandera>=0.24"]
+
 [dependency-groups]
 dev = [
     "build>=1.2",
     "mypy>=1.10",
     "pandas-stubs>=2.1",
+    "pandera>=0.24",
     "pytest>=8",
     "ruff>=0.6",
 ]

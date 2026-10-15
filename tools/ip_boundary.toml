@@ -25,6 +25,8 @@ energydata-kit = [
     "numpy",
     "pandas",
     "pint",
+    # optional extra [pandera]: Pandera checks (MIT, pydantic-based)
+    "pandera",
     # dev group
     "build",
     "mypy",

@@ -37,11 +37,15 @@ needs agreement before work starts, and each must pass the scope test in
 - [x] Monotonic cumulative-counter checks (meter register resets/rollovers).
 - [x] Reference Pecos/pvanalytics for behavior; implement independently.
 
-## OSS-04: interoperability (proposed)
+## OSS-04: interoperability (in progress)
 
-- Optional Pandera integration (expose checks as Pandera checks).
-- Export metadata as frictionless Table Schema.
-- Optional pint-pandas support.
+- [x] Optional Pandera integration (expose checks as Pandera checks).
+- [x] Export metadata as frictionless Table Schema.
+- [ ] Optional pint-pandas support. **Deferred:** supporting `var` would mean
+      changing pint-pandas' process-wide unit registry, which silently affects
+      any other pint-pandas user in the same process. Plain
+      `series.astype(f"pint[{meta.unit}]")` already works for Pint's built-in
+      units. Revisit if users need it.
 
 ## Explicitly not planned
 

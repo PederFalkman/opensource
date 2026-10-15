@@ -42,6 +42,7 @@ from energydata_kit.semantics import (
     relabel_intervals,
 )
 from energydata_kit.synthetic import make_synthetic_series
+from energydata_kit.table_schema import from_table_schema, to_table_schema
 from energydata_kit.timestamps import (
     TimestampError,
     TimestampSummary,
@@ -74,6 +75,7 @@ __all__ = [
     "find_missing_intervals",
     "fingerprint_series",
     "flag_series",
+    "from_table_schema",
     "infer_resolution",
     "interval_bounds",
     "local_day_completeness",
@@ -87,6 +89,7 @@ __all__ = [
     "relabel_intervals",
     "stale_mask",
     "summarize_timestamps",
+    "to_table_schema",
     "units_compatible",
     "validate_unit",
 ]
