@@ -24,6 +24,7 @@ cover for metered energy data:
 | Completeness per local calendar day (DST-aware: 92/96/100 at 15 min) | `local_day_completeness` |
 | Reproducible JSON quality reports | `assess_quality`, `QualityReport`, `fingerprint_series` |
 | Deterministic synthetic test series | `make_synthetic_series` |
+| Command line: JSON report (and flagged CSV) for a CSV file | `energydata-kit report` |
 | Export/import metadata as a Frictionless Table Schema (no extra dependency) | `to_table_schema`, `from_table_schema` |
 | The same checks as Pandera checks and a ready `SeriesSchema` (optional extra) | `energydata_kit.pandera_checks.series_schema` and check factories |
 
@@ -79,6 +80,24 @@ monthly = ek.find_missing_intervals(month_index, "MS", tz="Europe/Stockholm")
 
 Pass `origin=` (timezone-aware) to fix where any grid starts, e.g. daily
 readings at 06:00 local: `origin=pd.Timestamp("2024-01-01 06:00", tz="Europe/Stockholm")`.
+
+## Command line
+
+```bash
+energydata-kit report meter.csv \
+    --timestamp-col time --value-col kwh \
+    --assume-tz Europe/Stockholm --ambiguous infer \
+    --freq 15min --unit kWh --aggregation sum --interval-label end \
+    --bounds 0 none --flags-csv flagged.csv --fail-on-issues
+```
+
+Prints the deterministic JSON report to standard output (`-o` writes a file;
+`-` reads the CSV from standard input). `--flags-csv` writes the original rows
+with a `quality_flag` column, plus inserted rows with `--insert-missing`.
+Calendar steps work as in the library: `--freq D --tz Europe/Stockholm`.
+Exit status: `0` OK, `1` issues found with `--fail-on-issues`, `2` usage or
+input error. `python -m energydata_kit` is equivalent. See
+`energydata-kit report --help` for every option.
 
 ## Design rules
 
