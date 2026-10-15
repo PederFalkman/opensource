@@ -8,7 +8,7 @@ use Pint or pint-pandas directly.
 from __future__ import annotations
 
 import zoneinfo
-from dataclasses import asdict, dataclass
+from dataclasses import KW_ONLY, asdict, dataclass
 from enum import StrEnum
 from functools import lru_cache
 from typing import Any
@@ -103,6 +103,7 @@ class MeasurementMetadata:
 
     name: str
     unit: str
+    _: KW_ONLY  # every field after name and unit is keyword-only
     quantity: str | None = None
     resolution: str | None = None  # fixed ("15min") or calendar ("D", "MS", used with tz)
     aggregation: Aggregation = Aggregation.INSTANTANEOUS

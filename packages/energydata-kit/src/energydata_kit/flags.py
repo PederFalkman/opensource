@@ -83,6 +83,7 @@ def non_finite_mask(values: pd.Series | np.ndarray | list[object]) -> np.ndarray
 
 def out_of_bounds_mask(
     values: pd.Series | np.ndarray | list[object],
+    *,
     lower: float | None = None,
     upper: float | None = None,
 ) -> np.ndarray:
@@ -240,9 +241,10 @@ def flag_series(
     flags[non_numeric_mask(series)] |= np.uint16(QualityFlag.NON_NUMERIC)
     flags[duplicate_mask(index)] |= np.uint16(QualityFlag.DUPLICATE_TIMESTAMP)
     if freq is not None:
-        flags[off_grid_mask(index, freq, origin, tz=tz)] |= np.uint16(QualityFlag.OFF_GRID_TIMESTAMP)
+        flags[off_grid_mask(index, freq, origin=origin, tz=tz)] |= np.uint16(QualityFlag.OFF_GRID_TIMESTAMP)
     if bounds is not None:
-        flags[out_of_bounds_mask(series, *bounds)] |= np.uint16(QualityFlag.OUT_OF_BOUNDS)
+        lower, upper = bounds
+        flags[out_of_bounds_mask(series, lower=lower, upper=upper)] |= np.uint16(QualityFlag.OUT_OF_BOUNDS)
     if stale_min_run is not None:
         flags[stale_mask(series, stale_min_run)] |= np.uint16(QualityFlag.STALE_VALUE)
     if cumulative:

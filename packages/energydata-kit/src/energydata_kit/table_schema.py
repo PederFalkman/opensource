@@ -62,7 +62,7 @@ def to_table_schema(
     return {"fields": fields, "primaryKey": [timestamp_field]}
 
 
-def from_table_schema(schema: dict[str, Any], field: str | None = None) -> MeasurementMetadata:
+def from_table_schema(schema: dict[str, Any], *, field: str | None = None) -> MeasurementMetadata:
     """Rebuild :class:`MeasurementMetadata` from a schema made by :func:`to_table_schema`.
 
     ``field`` picks the measurement column by name; by default the single

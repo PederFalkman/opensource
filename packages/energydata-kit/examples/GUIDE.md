@@ -258,7 +258,7 @@ import pandera.pandas as pa
 
 from energydata_kit import pandera_checks
 
-schema = pandera_checks.series_schema(meta, bounds=(0, None))
+schema = pandera_checks.series_schema(metadata=meta, bounds=(0, None))
 try:
     schema.validate(series, lazy=True)
 except pa.errors.SchemaErrors as exc:

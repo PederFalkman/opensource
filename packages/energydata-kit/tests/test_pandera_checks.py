@@ -20,13 +20,13 @@ def failed_checks(schema, series):
 
 def test_clean_series_passes():
     s = make_synthetic_series()
-    out = pc.series_schema(META).validate(s)
+    out = pc.series_schema(metadata=META).validate(s)
     pd.testing.assert_series_equal(out, s)
 
 
 def test_all_failures_are_reported_together():
     s = make_synthetic_series(drop=[5], duplicate=[10], inf_at=[20])
-    assert failed_checks(pc.series_schema(META), s) == [
+    assert failed_checks(pc.series_schema(metadata=META), s) == [
         "duplicate timestamps",
         "missing intervals after these timestamps at 15min resolution",
         "non-finite or non-numeric values",
@@ -35,8 +35,8 @@ def test_all_failures_are_reported_together():
 
 def test_missing_values_follow_nullable():
     s = make_synthetic_series(nan_at=[3])
-    assert failed_checks(pc.series_schema(META), s) == []
-    assert failed_checks(pc.series_schema(META, nullable=False), s) != []
+    assert failed_checks(pc.series_schema(metadata=META), s) == []
+    assert failed_checks(pc.series_schema(metadata=META, nullable=False), s) != []
 
 
 def test_grid_checks_need_a_step():
@@ -92,7 +92,7 @@ def test_agrees_with_flag_series():
     s = make_synthetic_series(duplicate=[4], inf_at=[7])
     flagged = flag_series(s, freq="15min")
     try:
-        pc.series_schema(META).validate(s, lazy=True)
+        pc.series_schema(metadata=META).validate(s, lazy=True)
     except pa.errors.SchemaErrors as exc:
         failing_rows = set(exc.failure_cases["index"].dropna())
     assert failing_rows == set(flagged.index[flagged["quality_flag"] != 0])
@@ -129,6 +129,6 @@ def test_origin_and_calendar_steps():
         index=pd.DatetimeIndex(["2024-01-01T00:07Z", "2024-01-01T00:15Z", "2024-01-01T00:30Z"]),
     )
     origin = pd.Timestamp("2024-01-01T00:00Z")
-    assert failed_checks(pa.SeriesSchema(checks=[pc.on_grid_check("15min", origin)]), shifted) == [
+    assert failed_checks(pa.SeriesSchema(checks=[pc.on_grid_check("15min", origin=origin)]), shifted) == [
         "timestamps not aligned to 15min"
     ]

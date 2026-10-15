@@ -85,7 +85,7 @@ def test_local_day_expected_counts_follow_dst(day, expected):
 def test_local_day_end_labels_assign_midnight_to_previous_day():
     # End-labelled: 00:15..24:00 local covers exactly one day.
     ends = pd.date_range("2024-06-01 00:15", periods=96, freq="15min", tz="Europe/Stockholm")
-    out = local_day_completeness(ends, "15min", "Europe/Stockholm", "end")
+    out = local_day_completeness(ends, "15min", "Europe/Stockholm", interval_label="end")
     assert out.index.tolist() == [dt.date(2024, 6, 1)]
     assert out["present"].tolist() == [96]
     # The same timestamps read as start labels spill into the next day.

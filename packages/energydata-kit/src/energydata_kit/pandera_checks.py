@@ -107,11 +107,11 @@ def no_duplicate_timestamps_check() -> pa.Check:
 
 
 def on_grid_check(
-    freq: str | pd.Timedelta, origin: pd.Timestamp | None = None, *, tz: str | None = None
+    freq: str | pd.Timedelta, *, origin: pd.Timestamp | None = None, tz: str | None = None
 ) -> pa.Check:
     """Every timestamp lies on the grid (see :func:`energydata_kit.off_grid_mask`)."""
     return pa.Check(
-        lambda idx: _rows(idx, ~off_grid_mask(_index(idx), freq, origin, tz=tz)),
+        lambda idx: _rows(idx, ~off_grid_mask(_index(idx), freq, origin=origin, tz=tz)),
         name=_PREFIX + "on_grid",
         error=f"timestamps not aligned to {freq}",
         ignore_na=False,
@@ -119,7 +119,7 @@ def on_grid_check(
 
 
 def no_missing_intervals_check(
-    freq: str | pd.Timedelta, origin: pd.Timestamp | None = None, *, tz: str | None = None
+    freq: str | pd.Timedelta, *, origin: pd.Timestamp | None = None, tz: str | None = None
 ) -> pa.Check:
     """No grid timestamp between the first and last is absent.
 
@@ -142,10 +142,10 @@ def finite_check() -> pa.Check:
     )
 
 
-def within_bounds_check(lower: float | None = None, upper: float | None = None) -> pa.Check:
+def within_bounds_check(*, lower: float | None = None, upper: float | None = None) -> pa.Check:
     """Finite values lie within the inclusive ``[lower, upper]`` range."""
     return pa.Check(
-        lambda s: pd.Series(~out_of_bounds_mask(s, lower, upper), index=s.index),
+        lambda s: pd.Series(~out_of_bounds_mask(s, lower=lower, upper=upper), index=s.index),
         name=_PREFIX + "within_bounds",
         error=f"values outside [{lower}, {upper}]",
     )
@@ -192,8 +192,8 @@ def jump_check(max_delta: float) -> pa.Check:
 
 
 def series_schema(
-    metadata: MeasurementMetadata | None = None,
     *,
+    metadata: MeasurementMetadata | None = None,
     freq: str | pd.Timedelta | None = None,
     bounds: tuple[float | None, float | None] | None = None,
     stale_min_run: int | None = None,
@@ -212,10 +212,13 @@ def series_schema(
         freq = metadata.resolution
     index_checks = [timezone_aware_check(), no_duplicate_timestamps_check()]
     if freq is not None:
-        index_checks += [on_grid_check(freq, origin, tz=tz), no_missing_intervals_check(freq, origin, tz=tz)]
+        index_checks += [
+            on_grid_check(freq, origin=origin, tz=tz),
+            no_missing_intervals_check(freq, origin=origin, tz=tz),
+        ]
     value_checks = [finite_check()]
     if bounds is not None:
-        value_checks.append(within_bounds_check(*bounds))
+        value_checks.append(within_bounds_check(lower=bounds[0], upper=bounds[1]))
     if stale_min_run is not None:
         value_checks.append(stale_check(stale_min_run))
     if cumulative:
