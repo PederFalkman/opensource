@@ -70,6 +70,11 @@ Also in place:
   weekly (`.github/workflows/security.yml`).
 - **Dependency review and audit:** GitHub dependency review on pull requests;
   `pip-audit` of resolved runtime dependencies; Dependabot.
+- **Pinned actions:** every third-party GitHub Action is pinned to a full
+  commit SHA with a version comment; `tools/check_workflow_pins.py` fails CI
+  on a tag, branch or short SHA, and Dependabot proposes SHA updates. Checkout
+  steps use `persist-credentials: false`, so the job token is not left in the
+  git config for later steps.
 - **Code owners:** `.github/CODEOWNERS` requires maintainer review for
   governance docs, `tools/` (including the allowlist), workflows and package
   manifests.
