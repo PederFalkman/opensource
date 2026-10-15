@@ -24,7 +24,8 @@ from energydata_kit.intervals import (
     find_missing_intervals,
     to_step,
 )
-from energydata_kit.metadata import MeasurementMetadata
+from energydata_kit.metadata import IntervalLabel, MeasurementMetadata
+from energydata_kit.semantics import MetadataIssue, check_metadata_consistency, local_day_completeness
 from energydata_kit.timestamps import infer_resolution, utc_ns
 
 __all__ = ["REPORT_SCHEMA_VERSION", "QualityReport", "assess_quality", "fingerprint_series"]
@@ -85,6 +86,8 @@ class QualityReport:
     package_version: str = __version__
     schema_version: str = REPORT_SCHEMA_VERSION
     truncated: dict[str, bool] = field(default_factory=dict)
+    metadata_issues: list[MetadataIssue] = field(default_factory=list)
+    local_days: dict[str, Any] | None = None
 
     @property
     def n_flagged_rows(self) -> int:
@@ -115,6 +118,8 @@ class QualityReport:
             "duplicate_timestamps": self.duplicate_timestamps,
             "n_duplicate_timestamps": self.n_duplicate_timestamps,
             "truncated": self.truncated,
+            "metadata_issues": [{"code": i.code, "message": i.message} for i in self.metadata_issues],
+            "local_days": self.local_days,
         }
 
     def to_json(self, indent: int | None = 2) -> str:
@@ -167,8 +172,18 @@ def assess_quality(
         present = int(grid.isin(index.as_unit("ns")).sum())
         completeness = round(present / n_expected, 6)
 
+    local_days = None
+    if step is not None and len(index):
+        tz = "UTC" if metadata is None else metadata.timezone
+        label = IntervalLabel.START if metadata is None else metadata.interval_label
+        local_days = _summarize_local_days(local_day_completeness(index, step, tz, label), tz, max_listed)
+
     dups = find_duplicate_timestamps(index)
-    truncated = {"gaps": len(gaps) > max_listed, "duplicate_timestamps": len(dups) > max_listed}
+    truncated = {
+        "gaps": len(gaps) > max_listed,
+        "duplicate_timestamps": len(dups) > max_listed,
+        "incomplete_local_days": bool(local_days and local_days["n_incomplete_days"] > max_listed),
+    }
 
     return QualityReport(
         series_name=None if series.name is None else str(series.name),
@@ -193,4 +208,26 @@ def assess_quality(
         },
         metadata=None if metadata is None else metadata.to_dict(),
         truncated=truncated,
+        metadata_issues=[] if metadata is None else check_metadata_consistency(metadata),
+        local_days=local_days,
     )
+
+
+def _summarize_local_days(days: pd.DataFrame, tz: str, max_listed: int) -> dict[str, Any]:
+    incomplete = days[days["missing"] > 0]
+    return {
+        "timezone": tz,
+        "n_days": len(days),
+        "n_complete_days": len(days) - len(incomplete),
+        "n_incomplete_days": len(incomplete),
+        "min_completeness": float(days["completeness"].min()),
+        "incomplete_days": [
+            {"date": str(d), "expected": int(e), "present": int(p)}
+            for d, e, p in zip(
+                incomplete.index[:max_listed],
+                incomplete["expected"].iloc[:max_listed],
+                incomplete["present"].iloc[:max_listed],
+                strict=True,
+            )
+        ],
+    }

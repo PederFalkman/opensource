@@ -55,7 +55,7 @@ def test_resolution_from_metadata_and_no_silent_guess():
 def test_truncation():
     r = assess_quality(defective(), freq="15min", max_listed=1)
     assert len(r.gaps) == 1 and r.n_gaps == 2
-    assert r.truncated == {"gaps": True, "duplicate_timestamps": False}
+    assert r.truncated == {"gaps": True, "duplicate_timestamps": False, "incomplete_local_days": False}
     with pytest.raises(ValueError):
         assess_quality(defective(), max_listed=-1)
 

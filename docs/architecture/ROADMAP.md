@@ -22,14 +22,14 @@ needs agreement before work starts, and each must pass the scope test in
 - [ ] **Branch protection on `main`:** require CI + code-owner review.
 - [ ] **Pin GitHub Actions to commit SHAs** (currently major-version tags).
 
-## OSS-02: interval semantics (proposed)
+## OSS-02: interval semantics (in progress)
 
-- Use `MeasurementMetadata.interval_label` to convert between start- and
-  end-labelled timestamps explicitly (no silent shifts).
-- Consistency checks between `aggregation` and unit dimensionality (e.g. a
-  `sum` of power, or a `mean` of energy, is suspicious → warning).
-- Local-calendar-day completeness (expected 92/96/100 intervals per local day
-  at 15 min) as a report section.
+- [x] Use `MeasurementMetadata.interval_label` to convert between start- and
+      end-labelled timestamps explicitly (no silent shifts).
+- [x] Consistency checks between `aggregation` and unit dimensionality (e.g. a
+      `sum` of power, or a `mean` of energy, is suspicious → advisory issue).
+- [x] Local-calendar-day completeness (expected 92/96/100 intervals per local
+      day at 15 min) as a report section.
 
 ## OSS-03: additional generic checks (proposed)
 

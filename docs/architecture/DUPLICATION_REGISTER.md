@@ -16,6 +16,9 @@ any new capability or copied code.
 | Reproducible report + fingerprint | none found | **Implemented** | `report` | Gap identified in audit. |
 | Synthetic test series | numpy RNG | **Implemented** (generic sinusoid + noise) | `synthetic` | Must be generated here to keep test data free of real/customer data. |
 | Range (bounds) check | Pecos, pvanalytics, Pandera checks | **Implemented** (5 lines) | `flags.out_of_bounds_mask` | Trivial; needed to emit our flag. Bounds are caller-supplied; no domain limits shipped. |
+| Start/end interval relabelling | pandas offset arithmetic | **Reused** (one-line shift, wrapped for explicitness) | `semantics.relabel_intervals` | No reviewed tool models interval labels (audit gap 1). |
+| Unit vs. aggregation consistency | Pint dimensionality | **Reused** for dimensions; rules **implemented** | `semantics.check_metadata_consistency` | Four generic physics rules; no domain thresholds. |
+| Per-local-day completeness | none found (Pecos/pvanalytics count spacing, not local days) | **Implemented** | `semantics.local_day_completeness` | Audit gap 2 (DST-aware expected counts). Independently written. |
 
 ## Copied third-party code
 
