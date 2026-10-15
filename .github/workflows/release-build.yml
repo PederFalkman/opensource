@@ -1,0 +1,80 @@
+name: Release build
+
+# Builds and verifies energydata-kit release files. It never publishes:
+# there is no upload to PyPI or any other index (see
+# docs/governance/RELEASE_GATES.md, gate G7).
+#
+# - Manual run (workflow_dispatch): build, `twine check`, readiness report,
+#   files kept as a short-lived CI artifact.
+# - Tag `energydata-kit-v*`: additionally requires the strict readiness check
+#   to pass and records a build provenance attestation. For a public
+#   repository the attestation is written to a public transparency log, so it
+#   only happens for a deliberate release tag.
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["energydata-kit-v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and verify
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/energydata-kit
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Release readiness (report)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        run: python ../../tools/check_release_readiness.py energydata-kit
+      - name: Release readiness (strict, tag must match version)
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        env:
+          TAG: ${{ github.ref_name }}
+        run: python ../../tools/check_release_readiness.py energydata-kit --strict --tag "$TAG"
+      - name: Build sdist and wheel
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+          python -m twine check --strict dist/*
+      - name: Record digests
+        run: |
+          {
+            echo '### energydata-kit release files'
+            echo '```'
+            sha256sum dist/*
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: energydata-kit-dist
+          path: packages/energydata-kit/dist/
+          retention-days: 14
+          if-no-files-found: error
+
+  attest:
+    name: Build provenance attestation
+    needs: build
+    if: ${{ startsWith(github.ref, 'refs/tags/energydata-kit-v') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: energydata-kit-dist
+          path: dist
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/*

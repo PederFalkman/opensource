@@ -11,6 +11,16 @@ As a technical guard, `energydata-kit` carries the PyPI classifier
 `Private :: Do Not Upload`, which PyPI rejects on upload. Removing it is part of
 gate G7.
 
+Supporting tooling (none of it publishes anything):
+
+- `RELEASE_CHECKLIST.md`: template for the release pull request.
+- `tools/check_release_readiness.py`: reports the mechanical conditions (final
+  version, dated changelog section, LICENSE, declared license, guard removed,
+  tag matching version); `--strict` fails if any is unmet.
+- `.github/workflows/release-build.yml`: builds and `twine check`s the release
+  files on demand; for an `energydata-kit-v*` tag it first requires the strict
+  readiness check and then records a build provenance attestation.
+
 ## Gates
 
 | # | Gate | Evidence required | Owner |
