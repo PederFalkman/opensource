@@ -1,0 +1,72 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "energydata-kit"
+dynamic = ["version"]
+description = "Framework-independent quality checks for energy time-series data."
+readme = "README.md"
+requires-python = ">=3.11"
+# No license is declared yet: licensing is pending ownership and legal review
+# (see docs/governance/RELEASE_GATES.md in the repository root).
+authors = [{ name = "Solid Soup Open Engineering" }]
+keywords = ["energy", "time series", "data quality", "validation"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
+    # PyPI rejects uploads carrying this classifier. Remove only when the
+    # release gates are passed.
+    "Private :: Do Not Upload",
+]
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "pint>=0.24",
+]
+
+[dependency-groups]
+dev = [
+    "build>=1.2",
+    "mypy>=1.10",
+    "pandas-stubs>=2.1",
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+[tool.hatch.version]
+path = "src/energydata_kit/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/energydata_kit"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/", "tests/", "examples/", "README.md", "pyproject.toml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers", "--import-mode=importlib"]
+filterwarnings = ["error"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "NPY", "PD"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+files = ["src"]
+
+[[tool.mypy.overrides]]
+module = ["pint", "pint.*"]
+ignore_missing_imports = true

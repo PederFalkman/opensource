@@ -1,0 +1,34 @@
+# IP-boundary configuration, enforced by tools/check_ip_boundary.py in CI.
+# See docs/governance/IP_BOUNDARY.md. Changes to this file need review by a
+# repository maintainer (see .github/CODEOWNERS).
+
+# Top-level Python module names that must never be imported from public
+# packages. Matching is on the first dotted component, case-insensitive, and
+# also catches names starting with "<entry>_".
+forbidden_imports = [
+    "mica",
+    "rodot",
+    "solidsoup",
+    "solid_soup",
+]
+# Keep this list generic: the repository is public, so do not add names of
+# private repositories or internal modules beyond what is already public.
+
+# Every runtime and development dependency of every package must be listed
+# here. Adding a dependency means adding it here, which makes the change
+# visible in review. Names are compared after PEP 503 normalization.
+[allowed_dependencies]
+energydata-kit = [
+    # build backend
+    "hatchling",
+    # runtime
+    "numpy",
+    "pandas",
+    "pint",
+    # dev group
+    "build",
+    "mypy",
+    "pandas-stubs",
+    "pytest",
+    "ruff",
+]
