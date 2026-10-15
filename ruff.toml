@@ -1,0 +1,7 @@
+# Root config for repository tooling (tools/). Each package under packages/
+# carries its own Ruff configuration in its pyproject.toml.
+line-length = 110
+target-version = "py311"
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]

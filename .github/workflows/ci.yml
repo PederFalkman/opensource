@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ip-boundary:
+    name: IP boundary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check imports and dependency allowlist
+        run: python tools/check_ip_boundary.py
+      - name: Test the checker
+        run: |
+          python -m pip install pytest ruff
+          python -m ruff check tools
+          python -m ruff format --check tools
+          python -m pytest -q -p no:cacheprovider tools/tests
+
+  energydata-kit:
+    name: energydata-kit (py${{ matrix.python }}${{ matrix.lowest && ', lowest deps' || '' }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
+        lowest: [false]
+        include:
+          - python: "3.11"
+            lowest: true
+    defaults:
+      run:
+        working-directory: packages/energydata-kit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install
+        run: |
+          python -m pip install --upgrade "pip>=25.1"
+          python -m pip install -e . --group dev
+      - name: Pin lowest supported runtime dependencies
+        if: matrix.lowest
+        run: python -m pip install "numpy==1.26.*" "pandas==2.1.*" "pint==0.24.*"
+      - name: Ruff
+        if: ${{ !matrix.lowest }}
+        run: |
+          python -m ruff check .
+          python -m ruff format --check .
+      - name: Mypy
+        if: ${{ !matrix.lowest }}
+        run: python -m mypy
+      - name: Pytest
+        run: python -m pytest
+
+  energydata-kit-package:
+    name: energydata-kit packaging
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/energydata-kit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build sdist and wheel
+        run: |
+          python -m pip install --upgrade build
+          python -m build
+      - name: Inspect wheel contents
+        run: |
+          python - <<'PY'
+          import glob, zipfile
+          names = zipfile.ZipFile(glob.glob("dist/*.whl")[0]).namelist()
+          assert "energydata_kit/py.typed" in names, names
+          assert not any(n.startswith("tests/") for n in names), names
+          print("\n".join(sorted(names)))
+          PY
+      - name: Test the installed wheel in a clean environment
+        run: |
+          python -m venv /tmp/wheel-env
+          /tmp/wheel-env/bin/python -m pip install dist/*.whl pytest
+          mkdir -p /tmp/wheel-test && cp -r tests examples /tmp/wheel-test/
+          cd /tmp/wheel-test
+          /tmp/wheel-env/bin/python -m pytest -q -p no:cacheprovider tests

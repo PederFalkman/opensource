@@ -1,0 +1,5 @@
+# Governance, CI and IP-boundary configuration require maintainer review.
+/docs/governance/        @PederFalkman
+/tools/                  @PederFalkman
+/.github/                @PederFalkman
+/packages/*/pyproject.toml @PederFalkman
