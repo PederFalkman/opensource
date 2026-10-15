@@ -47,7 +47,9 @@ def test_metadata_roundtrip():
     [
         {"name": "", "unit": "kW"},
         {"name": "p", "unit": "nope"},
-        {"name": "p", "unit": "kW", "resolution": "MS"},
+        {"name": "p", "unit": "kW", "resolution": "0min"},
+        {"name": "p", "unit": "kW", "resolution": "-1MS"},
+        {"name": "p", "unit": "kW", "resolution": "not-a-freq"},
         {"name": "p", "unit": "kW", "aggregation": "median"},
         {"name": "p", "unit": "kW", "interval_label": "middle"},
         {"name": "p", "unit": "kW", "timezone": "Mars/Olympus"},
@@ -56,3 +58,13 @@ def test_metadata_roundtrip():
 def test_metadata_validation(kwargs):
     with pytest.raises(ValueError):
         MeasurementMetadata(**kwargs)
+
+
+@pytest.mark.parametrize("resolution", ["15min", "1h", "D", "W-MON", "MS"])
+def test_fixed_and_calendar_resolutions_accepted(resolution):
+    assert MeasurementMetadata(name="p", unit="kW", resolution=resolution).resolution == resolution
+
+
+def test_resolution_timedelta_rejects_calendar_steps():
+    with pytest.raises(ValueError, match="tz="):
+        _ = MeasurementMetadata(name="p", unit="kWh", resolution="MS").resolution_timedelta

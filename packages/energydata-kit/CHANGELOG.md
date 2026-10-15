@@ -32,6 +32,13 @@ versioning: [SemVer](https://semver.org/).
 - Optional extra `[pandera]` with `energydata_kit.pandera_checks`: Pandera
   check factories and `series_schema(...)` built on the same masks as
   `flag_series` (OSS-04).
+- Grid `origin=` on `expected_grid`, `off_grid_mask`, `find_missing_intervals`,
+  `flag_series`, `assess_quality` and the Pandera grid checks, so a leading
+  off-grid timestamp no longer shifts the grid (OSS-05).
+- Local-calendar steps via `tz=` (e.g. `"D"`, `"W-MON"`, `"MS"` in
+  `"Europe/Stockholm"`), DST-aware; `missing_timestamps`; calendar values
+  accepted in `MeasurementMetadata.resolution`. Report `parameters` record
+  `origin` and `tz` (OSS-05).
 - Report fields `metadata_issues` and `local_days`, and the
   `truncated.incomplete_local_days` flag. The report schema stays at version 1
   because it has not been released yet.

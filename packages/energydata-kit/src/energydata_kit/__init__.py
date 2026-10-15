@@ -23,6 +23,7 @@ from energydata_kit.intervals import (
     expected_grid,
     find_duplicate_timestamps,
     find_missing_intervals,
+    missing_timestamps,
     off_grid_mask,
 )
 from energydata_kit.metadata import (
@@ -80,6 +81,7 @@ __all__ = [
     "interval_bounds",
     "local_day_completeness",
     "make_synthetic_series",
+    "missing_timestamps",
     "missing_value_mask",
     "non_finite_mask",
     "non_numeric_mask",

@@ -103,3 +103,21 @@ def test_invalid_arguments_fail_early():
         pc.stale_check(1)
     with pytest.raises(ValueError):
         pc.counter_check(tolerance=-1)
+
+
+def test_origin_and_calendar_steps():
+    idx = pd.date_range("2024-03-29", periods=5, freq="D", tz="Europe/Stockholm").tz_convert("UTC")
+    s = pd.Series([1.0, 2.0, 3.0, 4.0, 5.0], index=idx)
+    assert failed_checks(pc.series_schema(freq="D", tz="Europe/Stockholm"), s) == []
+    gap = s.drop(idx[2])
+    with pytest.raises(pa.errors.SchemaErrors) as exc:
+        pc.series_schema(freq="D", tz="Europe/Stockholm").validate(gap, lazy=True)
+    assert list(exc.value.failure_cases["index"]) == [idx[1]]
+    shifted = pd.Series(
+        [1.0, 2.0, 3.0],
+        index=pd.DatetimeIndex(["2024-01-01T00:07Z", "2024-01-01T00:15Z", "2024-01-01T00:30Z"]),
+    )
+    origin = pd.Timestamp("2024-01-01T00:00Z")
+    assert failed_checks(pa.SeriesSchema(checks=[pc.on_grid_check("15min", origin)]), shifted) == [
+        "timestamps not aligned to 15min"
+    ]
