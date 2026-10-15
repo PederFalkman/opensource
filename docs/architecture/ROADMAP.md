@@ -109,7 +109,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       package README, `## [Unreleased]` in each changelog, no broken relative
       links. Runs in CI.
 
-### OSS-10: property-based tests — this change
+### OSS-10: property-based tests — merged in [#15](https://github.com/PederFalkman/opensource/pull/15)
 
 - [x] Hypothesis tests (dev-only, deterministic: `derandomize=True`, no example
       database) for non-destructive flagging, flag bits vs. masks, gap
@@ -118,6 +118,16 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       and Table Schema round trips.
 - [x] `hypothesis` added to the dev group and the dependency allowlist
       (MPL-2.0; test-only, never shipped or copied).
+
+### OSS-12: worked examples — this change
+
+- [x] `packages/energydata-kit/examples/GUIDE.md`: worked examples for
+      timestamps and DST, gaps, flags, metadata and labels, local days, daily
+      local-time data, opt-in checks, reports, Table Schema, Pandera and the
+      command line. Synthetic data only.
+- [x] `tests/test_guide.py` runs every code block in order (Python blocks
+      in-process, `energydata-kit` commands as subprocesses), so stale docs
+      fail CI. Pandera blocks are skipped where the extra is not installed.
 
 ## Explicitly not planned
 
