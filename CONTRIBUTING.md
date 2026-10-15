@@ -30,11 +30,14 @@ Repository-level checks:
 
 ```bash
 python tools/check_ip_boundary.py
+python tools/check_workflow_pins.py
 python -m pytest tools/tests
 ```
 
 ## Rules
 
+- GitHub Actions are referenced by full commit SHA plus a version comment,
+  e.g. `actions/checkout@<40-hex sha> # v7.0.1`. Never use a tag or branch.
 - Python 3.11+, typed (`mypy --strict` on `src/`), formatted with Ruff.
 - Tests must be deterministic: no network, no wall-clock dependence, seeded
   randomness only. Use `energydata_kit.make_synthetic_series` for data.

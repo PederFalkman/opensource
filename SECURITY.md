@@ -25,4 +25,6 @@ No version has been released. Security fixes apply to `main`.
 ## Automated controls
 
 Secret scanning (gitleaks), dependency audit (pip-audit), GitHub dependency
-review and Dependabot run in CI; see `.github/workflows/security.yml`.
+review and Dependabot run in CI; see `.github/workflows/security.yml`. All
+GitHub Actions are pinned to commit SHAs and checked by
+`tools/check_workflow_pins.py`.

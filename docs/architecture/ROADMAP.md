@@ -20,7 +20,18 @@ needs agreement before work starts, and each must pass the scope test in
       make it private until release gates G1–G3 pass (see `RELEASE_GATES.md`).
 - [ ] **Ownership and license (G1/G2).** Apache-2.0 is the preferred candidate.
 - [ ] **Branch protection on `main`:** require CI + code-owner review.
-- [ ] **Pin GitHub Actions to commit SHAs** (currently major-version tags).
+- [x] **Pin GitHub Actions to commit SHAs.** Done in OSS-06.
+
+## OSS-06: supply-chain hardening (in progress)
+
+- [x] Pin every GitHub Action to a full commit SHA with a version comment;
+      Dependabot (`github-actions`) keeps pins and comments current.
+- [x] `tools/check_workflow_pins.py` fails CI on tags, branches, short SHAs or
+      undigested Docker images.
+- [x] `persist-credentials: false` on every checkout; job permissions stay
+      read-only except dependency review (PR comments).
+- [x] Remove the duplicated checkout / setup-python / dependency-review steps
+      left by an earlier merge.
 
 ## OSS-02: interval semantics (in progress)
 
