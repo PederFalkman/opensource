@@ -105,6 +105,8 @@ input error. `python -m energydata_kit` is equivalent. See
 
 ## Design rules
 
+- **Keyword options.** Required inputs are positional; every optional
+  argument is keyword-only, e.g. `off_grid_mask(index, "15min", origin=...)`.
 - **Non-destructive.** No function modifies, fills, drops or reorders input
   values. Flags sit next to the data in a `quality_flag` column.
 - **Explicit.** Naive timestamps need a stated time zone. DST ambiguity raises

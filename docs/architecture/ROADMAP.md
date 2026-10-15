@@ -128,7 +128,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Written independently; no code taken from Pecos (which has a similar
       delta check) or any other tool.
 
-### OSS-12: worked examples — this change
+### OSS-12: worked examples — merged in [#17](https://github.com/PederFalkman/opensource/pull/17)
 
 - [x] `packages/energydata-kit/examples/GUIDE.md`: worked examples for
       timestamps and DST, gaps, flags, metadata and labels, local days, daily
@@ -137,6 +137,15 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] `tests/test_guide.py` runs every code block in order (Python blocks
       in-process, `energydata-kit` commands as subprocesses), so stale docs
       fail CI. Pandera blocks are skipped where the extra is not installed.
+
+### OSS-13: pre-release API review — this change
+
+- [x] Rule: required inputs positional, optional arguments keyword-only;
+      applied across the core API and the Pandera factories
+      (`docs/architecture/API_REVIEW.md`).
+- [x] `tests/test_public_api.py` pins every public signature and the rule.
+- [x] Known gaps recorded (stale/counter fine-tuning options only on the
+      mask functions), not changed.
 
 ## Explicitly not planned
 

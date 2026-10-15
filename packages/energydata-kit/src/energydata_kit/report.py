@@ -206,7 +206,7 @@ def assess_quality(
     if step is not None and len(index):
         day_tz = "UTC" if metadata is None else metadata.timezone
         label = IntervalLabel.START if metadata is None else metadata.interval_label
-        days = local_day_completeness(index, step, day_tz, label)
+        days = local_day_completeness(index, step, day_tz, interval_label=label)
         local_days = _summarize_local_days(days, day_tz, max_listed)
 
     dups = find_duplicate_timestamps(index)

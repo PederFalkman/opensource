@@ -129,6 +129,7 @@ def local_day_completeness(
     index: pd.DatetimeIndex,
     freq: str | pd.Timedelta,
     tz: str,
+    *,
     interval_label: IntervalLabel | str = IntervalLabel.START,
 ) -> pd.DataFrame:
     """Expected vs. present intervals for each local calendar day.

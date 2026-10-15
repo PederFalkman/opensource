@@ -97,8 +97,8 @@ def find_duplicate_timestamps(index: pd.DatetimeIndex) -> pd.DatetimeIndex:
 def off_grid_mask(
     index: pd.DatetimeIndex,
     freq: str | pd.Timedelta,
-    origin: pd.Timestamp | None = None,
     *,
+    origin: pd.Timestamp | None = None,
     tz: str | None = None,
 ) -> np.ndarray:
     """Mask of timestamps that do not lie on the grid.
@@ -122,9 +122,9 @@ def off_grid_mask(
 def expected_grid(
     index: pd.DatetimeIndex,
     freq: str | pd.Timedelta,
+    *,
     start: pd.Timestamp | None = None,
     end: pd.Timestamp | None = None,
-    *,
     origin: pd.Timestamp | None = None,
     tz: str | None = None,
 ) -> pd.DatetimeIndex:
@@ -164,9 +164,9 @@ def expected_grid(
 def find_missing_intervals(
     index: pd.DatetimeIndex,
     freq: str | pd.Timedelta,
+    *,
     start: pd.Timestamp | None = None,
     end: pd.Timestamp | None = None,
-    *,
     origin: pd.Timestamp | None = None,
     tz: str | None = None,
 ) -> list[Gap]:
@@ -175,7 +175,7 @@ def find_missing_intervals(
     Duplicates and off-grid timestamps neither fill nor create gaps; detect
     them separately with :func:`duplicate_mask` and :func:`off_grid_mask`.
     """
-    grid = expected_grid(index, freq, start, end, origin=origin, tz=tz)
+    grid = expected_grid(index, freq, start=start, end=end, origin=origin, tz=tz)
     if len(grid) == 0:
         return []
     missing_pos = np.flatnonzero(~grid.isin(index.as_unit("ns")))
@@ -191,12 +191,12 @@ def find_missing_intervals(
 def missing_timestamps(
     index: pd.DatetimeIndex,
     freq: str | pd.Timedelta,
+    *,
     start: pd.Timestamp | None = None,
     end: pd.Timestamp | None = None,
-    *,
     origin: pd.Timestamp | None = None,
     tz: str | None = None,
 ) -> pd.DatetimeIndex:
     """Every absent grid timestamp (UTC), in order."""
-    grid = expected_grid(index, freq, start, end, origin=origin, tz=tz)
+    grid = expected_grid(index, freq, start=start, end=end, origin=origin, tz=tz)
     return grid[~grid.isin(index.as_unit("ns"))]

@@ -30,7 +30,7 @@ def test_origin_stops_a_leading_off_grid_timestamp_shifting_the_grid():
     idx = ts("2024-01-01T00:07Z", "2024-01-01T00:15Z", "2024-01-01T00:30Z", "2024-01-01T00:45Z")
     # Default anchor is the first timestamp, so every later row looks off-grid.
     assert off_grid_mask(idx, "15min").tolist() == [False, True, True, True]
-    assert off_grid_mask(idx, "15min", UTC_MIDNIGHT).tolist() == [True, False, False, False]
+    assert off_grid_mask(idx, "15min", origin=UTC_MIDNIGHT).tolist() == [True, False, False, False]
     assert list(expected_grid(idx, "15min", origin=UTC_MIDNIGHT)) == list(idx[1:])
     assert find_missing_intervals(idx, "15min", origin=UTC_MIDNIGHT) == []
 
@@ -49,7 +49,7 @@ def test_origin_snaps_window_to_grid():
 def test_origin_must_be_timezone_aware():
     idx = ts("2024-01-01T00:00Z")
     with pytest.raises(ValueError, match="origin must be timezone-aware"):
-        off_grid_mask(idx, "15min", pd.Timestamp("2024-01-01"))
+        off_grid_mask(idx, "15min", origin=pd.Timestamp("2024-01-01"))
 
 
 # --- local-calendar steps -----------------------------------------------------
@@ -84,7 +84,7 @@ def test_calendar_origin_sets_wall_clock_time():
     # Daily readings at 06:00 local, one taken at 07:00 by mistake.
     idx = normalize_timestamps(["2024-03-30 06:00", "2024-03-31 07:00", "2024-04-01 06:00"], assume_tz=TZ)
     origin = pd.Timestamp("2024-01-01 06:00", tz=TZ)
-    assert off_grid_mask(idx, "D", origin, tz=TZ).tolist() == [False, True, False]
+    assert off_grid_mask(idx, "D", origin=origin, tz=TZ).tolist() == [False, True, False]
     assert [g.start for g in find_missing_intervals(idx, "D", origin=origin, tz=TZ)] == [
         pd.Timestamp("2024-03-31T04:00Z")
     ]

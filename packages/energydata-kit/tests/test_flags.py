@@ -31,11 +31,11 @@ def test_nullable_dtype():
 
 def test_out_of_bounds():
     values = [-1.0, 0.0, 5.0, 11.0, np.nan, np.inf]
-    assert out_of_bounds_mask(values, 0, 10).tolist() == [True, False, False, True, False, False]
+    assert out_of_bounds_mask(values, lower=0, upper=10).tolist() == [True, False, False, True, False, False]
     assert out_of_bounds_mask(values, lower=0).tolist() == [True, False, False, False, False, False]
     assert not out_of_bounds_mask(values).any()
     with pytest.raises(ValueError):
-        out_of_bounds_mask(values, 10, 0)
+        out_of_bounds_mask(values, lower=10, upper=0)
 
 
 def test_flag_series_is_non_destructive():

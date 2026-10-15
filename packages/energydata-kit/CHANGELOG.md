@@ -5,6 +5,18 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Pre-release API review (OSS-13): required inputs are positional and every
+  optional argument is keyword-only. Affects `off_grid_mask(origin=)`,
+  `expected_grid` / `find_missing_intervals` / `missing_timestamps`
+  (`start=`, `end=`), `out_of_bounds_mask(lower=, upper=)`,
+  `local_day_completeness(interval_label=)`, `from_table_schema(field=)`,
+  `MeasurementMetadata` (fields after `name` and `unit`) and the Pandera
+  factories `on_grid_check`, `no_missing_intervals_check`,
+  `within_bounds_check` and `series_schema(metadata=)`. The public signatures
+  are pinned by `tests/test_public_api.py`. See
+  `docs/architecture/API_REVIEW.md`.
+
 ### Added
 - `normalize_timestamps`: tz-aware UTC normalization with explicit DST policies.
 - `summarize_timestamps`, `infer_resolution`.
