@@ -269,6 +269,11 @@ frame_report = ek.assess_frame(
 assert list(frame_report.columns) == ["power_kw", "energy_kwh"]
 assert frame_report.summary["energy_kwh"]["n_flagged_rows"] == 1
 assert frame_report.columns["energy_kwh"].flag_counts["COUNTER_DECREASE"] == 1
+
+# Flags for every column side by side, one quality_flag_<column> each:
+flags = ek.flag_frame(channels, freq="15min", per_column={"energy_kwh": {"cumulative": True}})
+assert list(flags.columns) == ["power_kw", "quality_flag_power_kw", "energy_kwh", "quality_flag_energy_kwh"]
+assert ek.decode_flags(flags[ek.flag_column("energy_kwh")].iloc[3]) == ["COUNTER_DECREASE"]
 ```
 
 ## 9. Exchanging metadata as a Table Schema

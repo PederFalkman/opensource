@@ -24,6 +24,7 @@ cover for metered energy data:
 | Completeness per local calendar day (DST-aware: 92/96/100 at 15 min) | `local_day_completeness` |
 | Reproducible JSON quality reports | `assess_quality`, `QualityReport`, `fingerprint_series` |
 | One report for several columns sharing a timestamp index, with per-column options | `assess_frame`, `FrameQualityReport` |
+| Flags for several columns at once (`quality_flag_<column>` each) | `flag_frame`, `flag_column` |
 | What changed between two reports (e.g. before and after a fix, or two deliveries) | `compare_reports`, `ReportComparison` |
 | Deterministic synthetic test series | `make_synthetic_series` |
 | Command line: JSON report for one or more CSV columns, flagged CSV, report comparison | `energydata-kit report`, `energydata-kit compare` |
@@ -102,7 +103,9 @@ Prints the deterministic JSON report to standard output (`-o` writes a file;
 with a `quality_flag` column, plus inserted rows with `--insert-missing`.
 Calendar steps work as in the library: `--freq D --tz Europe/Stockholm`.
 Repeat `--value-col` for one report covering several columns (check options
-then apply to every column; `--unit` and `--flags-csv` need a single column).
+then apply to every column; `--unit` needs a single column). With several
+columns, `--flags-csv` writes each value column followed by its
+`quality_flag_<column>`.
 `energydata-kit compare before.json after.json` prints what changed between
 two saved reports; with `--fail-if-worse` it exits `1` if more rows are
 flagged, more intervals are missing or completeness fell.
@@ -180,8 +183,8 @@ use Pint or pint-pandas directly, e.g. `series.astype(f"pint[{meta.unit}]")`.
   shifts with a 1-hour step) report the floor of the expected count.
 - `assess_frame` repeats the timestamp sections (gaps, duplicates, off-grid)
   in every column's report, because each column's report is exactly what
-  `assess_quality` gives for it. On the command line, `--unit` and
-  `--flags-csv` work with a single `--value-col` only.
+  `assess_quality` gives for it. On the command line, `--unit` works with a
+  single `--value-col` only.
 - `compare_reports` matches gaps exactly (a gap that shrank appears as one
   resolved and one new gap) and only compares listed gaps; check
   `lists_truncated` when reports capped their lists with `max_listed`.

@@ -221,13 +221,21 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       column, with deltas; plus a narrowly defined `worse` flag.
 - [x] CLI `energydata-kit compare BEFORE AFTER [--fail-if-worse]`.
 
-### OSS-20: pre-release polish — this change
+### OSS-20: pre-release polish — merged in [#26](https://github.com/PederFalkman/opensource/pull/26)
 
 - [x] `tools/check_docs.py` also requires docstrings on every package module
       and public function, class, method and property; missing ones added.
 - [x] README and architecture overview checked against the code: CLI
       `compare`, multi-column reports, new tools and docs, limitations.
 - [x] Error messages: one consistent hint for timezone-naive input.
+
+### OSS-21: multi-column flags — this change
+
+- [x] `flag_frame` / `flag_column`: one `quality_flag_<column>` per value
+      column, each equal to `flag_series` on that column; shared options and
+      `per_column` overrides as in `assess_frame`.
+- [x] CLI `--flags-csv` with several `--value-col`, closing the limitation
+      recorded in OSS-17 and OSS-20.
 
 ## Explicitly not planned
 

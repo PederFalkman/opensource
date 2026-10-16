@@ -111,11 +111,23 @@ def test_multiple_value_columns(tmp_path):
     assert run(*args, "--fail-on-issues", "--jump-max-delta", "0.5")[0] == 1
     for extra, message in [
         (["--unit", "kW"], "--unit describes one column"),
-        (["--flags-csv", str(tmp_path / "f.csv")], "--flags-csv needs a single --value-col"),
         (["--value-col", "a"], "only once"),
     ]:
         code, out, err = run(*args, *extra)
         assert code == 2 and out == "" and message in err
+
+
+def test_multiple_value_columns_flags_csv(tmp_path):
+    rows = ["2024-01-01T00:00Z,1,9", "2024-01-01T01:00Z,inf,8", "2024-01-01T03:00Z,3,7"]
+    path = write(tmp_path, "timestamp,a,b\n" + "\n".join(rows) + "\n")
+    flags = tmp_path / "flags.csv"
+    args = ["report", str(path), "--value-col", "a", "--value-col", "b", "--freq", "1h"]
+    assert run(*args, "--flags-csv", str(flags), "--insert-missing")[0] == 0
+    out = pd.read_csv(flags)
+    assert list(out.columns) == ["timestamp", "a", "quality_flag_a", "b", "quality_flag_b"]
+    assert len(out) == 4  # the absent 02:00 row is inserted once
+    assert out["quality_flag_a"].tolist() == [0, 2, 65, 0]
+    assert out["quality_flag_b"].tolist() == [0, 0, 65, 0]
 
 
 def test_compare(tmp_path):

@@ -5,13 +5,17 @@ import pandas as pd
 import pytest
 
 from energydata_kit import (
+    FLAG_COLUMN,
     FrameQualityReport,
     MeasurementMetadata,
     assess_frame,
     assess_quality,
+    flag_column,
+    flag_frame,
+    flag_series,
     make_synthetic_series,
 )
-from energydata_kit.frame_report import COLUMN_OPTIONS
+from energydata_kit.frame_report import COLUMN_OPTIONS, FLAG_OPTIONS
 
 
 def meter_frame() -> pd.DataFrame:
@@ -96,3 +100,37 @@ def test_column_options_match_assess_quality_parameters():
 
     params = set(inspect.signature(assess_quality).parameters)
     assert params - {"series", "freq", "origin", "tz", "max_listed"} == COLUMN_OPTIONS
+
+
+def test_flag_frame_columns_equal_flag_series():
+    frame = meter_frame()
+    out = flag_frame(
+        frame, freq="15min", insert_missing=True, per_column={"energy_kwh": {"cumulative": True}}
+    )
+    assert list(out.columns) == ["power_kw", "quality_flag_power_kw", "energy_kwh", "quality_flag_energy_kwh"]
+    for name, options in (("power_kw", {}), ("energy_kwh", {"cumulative": True})):
+        alone = flag_series(frame[name], freq="15min", insert_missing=True, **options)
+        assert out.index.equals(alone.index)
+        assert out[flag_column(name)].tolist() == alone[FLAG_COLUMN].tolist()
+        np.testing.assert_array_equal(out[name].to_numpy(dtype=float), alone["value"].to_numpy(dtype=float))
+    assert len(out) == len(frame) + 1  # one inserted row shared by both columns
+
+
+def test_flag_frame_leaves_input_alone_and_validates():
+    frame = meter_frame()
+    before = frame.copy(deep=True)
+    flag_frame(frame, freq="15min", stale_min_run=2)
+    pd.testing.assert_frame_equal(frame, before)
+    with pytest.raises(ValueError, match="unsupported options"):
+        flag_frame(frame, per_column={"power_kw": {"metadata": None}})
+    clash = pd.DataFrame({"x": [1.0], "quality_flag_x": [0]}, index=frame.index[:1])
+    with pytest.raises(ValueError, match="already used"):
+        flag_frame(clash)
+    assert flag_frame(frame, columns=["energy_kwh"]).columns.tolist() == [
+        "energy_kwh",
+        "quality_flag_energy_kwh",
+    ]
+
+
+def test_flag_options_are_the_column_options_without_metadata():
+    assert COLUMN_OPTIONS - {"metadata"} == FLAG_OPTIONS

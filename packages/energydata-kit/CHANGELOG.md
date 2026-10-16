@@ -91,6 +91,10 @@ versioning: [SemVer](https://semver.org/).
   reports per column. `worse` is true if more rows are flagged, more intervals
   are missing or completeness fell. CLI: `energydata-kit compare BEFORE AFTER`
   with `--fail-if-worse` (OSS-19).
+- `flag_frame` and `flag_column`: flags for several columns at once, each
+  column's `quality_flag_<column>` exactly what `flag_series` gives for it;
+  `insert_missing` adds absent rows once. The CLI's `--flags-csv` now works
+  with several `--value-col` (OSS-21).
 - `examples/GUIDE.md`: worked examples from raw local meter timestamps to a
   reproducible report, the command line and Pandera. `tests/test_guide.py`
   runs every code block, so the guide fails CI when it goes stale (OSS-12).
