@@ -353,11 +353,19 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       resolution the step without `--freq`. Lifts the one-column limit of
       `--unit`. Conflicting options and unusable schemas exit 2.
 
-### OSS-36: release decision facts refreshed — this change
+### OSS-36: release decision facts refreshed — merged in [#42](https://github.com/PederFalkman/opensource/pull/42)
 
 - [x] `RELEASE_DECISIONS.md` D2: commit and authorship counts as of `eafdb8c`
       (90 commits; same categories as in OSS-22) with the command to recount.
       D6: PyPI and TestPyPI names re-checked, still free.
+
+### OSS-37: 0.1.0 release notes — this change
+
+- [x] `CHANGELOG.md` 0.1.0 rewritten as first-release notes, grouped by area
+      (timestamps, flags, metadata, reports, command line, integrations,
+      conventions) instead of development history; the `[Unreleased]`
+      entries (OSS-27 to OSS-35) folded in, as the release PR would have.
+      Later changes still go under `[Unreleased]`.
 
 ## Explicitly not planned
 
