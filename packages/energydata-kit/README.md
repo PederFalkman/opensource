@@ -24,6 +24,7 @@ cover for metered energy data:
 | Completeness per local calendar day (DST-aware: 92/96/100 at 15 min) | `local_day_completeness` |
 | Reproducible JSON quality reports | `assess_quality`, `QualityReport`, `fingerprint_series` |
 | One report for several columns sharing a timestamp index, with per-column options | `assess_frame`, `FrameQualityReport` |
+| What changed between two reports (e.g. before and after a fix, or two deliveries) | `compare_reports`, `ReportComparison` |
 | Deterministic synthetic test series | `make_synthetic_series` |
 | Command line: JSON report (and flagged CSV) for a CSV file | `energydata-kit report` |
 | Supporting types and constants | `Aggregation`, `IntervalLabel`, `TimestampSummary`, `FLAG_COLUMN` / `VALUE_COLUMN` (column names in `flag_series` output); errors `TimestampError`, `UnitError` (both `ValueError`s) |
@@ -102,6 +103,9 @@ with a `quality_flag` column, plus inserted rows with `--insert-missing`.
 Calendar steps work as in the library: `--freq D --tz Europe/Stockholm`.
 Repeat `--value-col` for one report covering several columns (check options
 then apply to every column; `--unit` and `--flags-csv` need a single column).
+`energydata-kit compare before.json after.json` prints what changed between
+two saved reports; with `--fail-if-worse` it exits `1` if more rows are
+flagged, more intervals are missing or completeness fell.
 Exit status: `0` OK, `1` issues found with `--fail-on-issues`, `2` usage or
 input error. `python -m energydata_kit` is equivalent. See
 `energydata-kit report --help` for every option.

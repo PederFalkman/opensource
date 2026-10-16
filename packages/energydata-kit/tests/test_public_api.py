@@ -61,6 +61,7 @@ CORE = {
         "max_listed=",
     ),
     "check_metadata_consistency": ("metadata",),
+    "compare_reports": ("before", "after"),
     "counter_decrease_mask": ("values", "*", "tolerance="),
     "decode_flags": ("value",),
     "duplicate_mask": ("index",),
