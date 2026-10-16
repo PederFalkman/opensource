@@ -32,6 +32,7 @@ from energydata_kit.flags import VALUE_COLUMN, flag_series
 from energydata_kit.frame_report import FrameQualityReport, assess_frame, flag_frame
 from energydata_kit.metadata import Aggregation, IntervalLabel, MeasurementMetadata
 from energydata_kit.report import QualityReport, assess_quality
+from energydata_kit.table_schema import NAMESPACE, from_table_schema
 from energydata_kit.timestamps import TimestampError, normalize_timestamps
 
 __all__ = ["build_parser", "main"]
@@ -131,7 +132,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--jump-max-delta", type=float, help="flag changes larger than this from the previous value"
     )
 
-    meta = rep.add_argument_group("measurement metadata (enabled by --unit)")
+    meta = rep.add_argument_group("measurement metadata (--unit for one column, or --schema)")
+    meta.add_argument(
+        "--schema",
+        help="Table Schema JSON with energydata_kit metadata per column (see to_table_schema); "
+        "its columns are the default --value-col",
+    )
     meta.add_argument("--unit", help="unit, e.g. kW or kWh; adds metadata to the report")
     meta.add_argument("--resolution", help="metadata resolution (default: --freq)")
     meta.add_argument("--aggregation", choices=[a.value for a in Aggregation], default="instantaneous")
@@ -213,6 +219,13 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
             f"timestamp column {args.timestamp_col!r} not found; columns: {list(frame.columns)}{hint}"
         )
     value_cols = args.value_col
+    if value_cols is None and args.schema_metadata:
+        value_cols = [c for c in args.schema_metadata if c in frame.columns]
+        if not value_cols:
+            raise CliError(
+                f"none of the --schema columns {list(args.schema_metadata)} are in the file; "
+                f"columns: {list(frame.columns)}"
+            )
     if value_cols is None:
         others = [c for c in frame.columns if c != args.timestamp_col]
         if len(others) != 1:
@@ -241,7 +254,29 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
     return pd.DataFrame({str(c): frame[c].to_numpy() for c in value_cols}, index=index)
 
 
+def _load_schema(path: str) -> dict[str, MeasurementMetadata]:
+    """Metadata per column from a Table Schema file, in field order."""
+    try:
+        schema = json.loads(Path(path).read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise CliError(f"file not found: {path}") from exc
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise CliError(f"not a JSON Table Schema: {path}: {exc}") from exc
+    if not isinstance(schema, dict) or not isinstance(schema.get("fields"), list):
+        raise CliError(f"not a JSON Table Schema (no 'fields' list): {path}")
+    names = [f["name"] for f in schema["fields"] if isinstance(f, dict) and NAMESPACE in f and "name" in f]
+    if not names:
+        raise CliError(f"no fields with {NAMESPACE!r} metadata in {path}")
+    try:
+        return {name: from_table_schema(schema, field=name) for name in names}
+    except (ValueError, KeyError, TypeError) as exc:
+        raise CliError(f"invalid metadata in {path}: {exc}") from exc
+
+
 def _metadata(args: argparse.Namespace, name: str) -> MeasurementMetadata | None:
+    schema_metadata: dict[str, MeasurementMetadata] = args.schema_metadata
+    if name in schema_metadata:
+        return schema_metadata[name]
     if args.unit is None:
         return None
     return MeasurementMetadata(
@@ -270,6 +305,9 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
         raise CliError("--tz needs --freq")
     if args.insert_missing and not args.flags_csv:
         raise CliError("--insert-missing only affects --flags-csv")
+    if args.schema and args.unit is not None:
+        raise CliError("--schema and --unit both set metadata; use one")
+    args.schema_metadata = _load_schema(args.schema) if args.schema else {}
 
     frame = _read_frame(args, stdin)
     origin = None if args.origin is None else pd.Timestamp(args.origin)
@@ -378,9 +416,10 @@ def _run_frame_report(
     bounds: tuple[float | None, float | None] | None,
     stdout: TextIO,
 ) -> int:
-    # Metadata describes one column; refuse rather than guess.
+    # --unit describes one column; refuse rather than guess. --schema names its columns.
     if args.unit is not None:
-        raise CliError("--unit describes one column; use a single --value-col (or assess_frame in Python)")
+        raise CliError("--unit describes one column; use a single --value-col, or --schema")
+    metadata = {c: m for c, m in args.schema_metadata.items() if c in frame.columns}
     checks: dict[str, Any] = {
         "bounds": bounds,
         "stale_min_run": args.stale_min_run,
@@ -391,12 +430,25 @@ def _run_frame_report(
         "jump_max_delta": args.jump_max_delta,
     }
     report = assess_frame(
-        frame, freq=args.freq, origin=origin, tz=args.tz, max_listed=args.max_listed, **checks
+        frame,
+        metadata=metadata,
+        freq=args.freq,
+        origin=origin,
+        tz=args.tz,
+        max_listed=args.max_listed,
+        **checks,
     )
     _write_report(args, report, stdout)
     if args.flags_csv:
+        freq = args.freq
+        if freq is None:
+            # As in the report, the metadata resolution is the step; one table needs one step.
+            steps = {str(m.resolution) for m in metadata.values() if m.resolution is not None}
+            if len(steps) > 1:
+                raise CliError(f"--schema columns have different resolutions {sorted(steps)}; pass --freq")
+            freq = next((m.resolution for m in metadata.values() if m.resolution is not None), None)
         flagged = flag_frame(
-            frame, freq=args.freq, insert_missing=args.insert_missing, origin=origin, tz=args.tz, **checks
+            frame, freq=freq, insert_missing=args.insert_missing, origin=origin, tz=args.tz, **checks
         )
         flagged.index.name = args.timestamp_col
         _write_flags(args, flagged)

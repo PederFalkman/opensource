@@ -17,6 +17,11 @@ versioning: [SemVer](https://semver.org/).
   column) instead of the JSON report. JSON stays the default and unchanged.
   `compare --format text` does the same for comparisons: the verdict, then
   count, flag, gap and metadata changes per column (OSS-33).
+- Command line (OSS-35): `report --schema data.schema.json` reads metadata
+  per column from a Table Schema written by `to_table_schema`, so several
+  columns can carry units and resolutions (`--unit` covers one column). The
+  schema's columns are the default `--value-col`, and their resolution is the
+  step when `--freq` is not given.
 
 ### Changed
 - Clearer errors for awkward input (OSS-27): timestamps that are not ISO 8601
