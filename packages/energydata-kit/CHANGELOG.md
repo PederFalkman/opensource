@@ -65,6 +65,11 @@ versioning: [SemVer](https://semver.org/).
   Available on `flag_series`, `assess_quality` (recorded in report
   `parameters`), the CLI (`--jump-max-delta`) and Pandera (`jump_check`,
   `series_schema(jump_max_delta=...)`) (OSS-11).
+- Tuning options for the opt-in checks on `flag_series`, `assess_quality`
+  and `pandera_checks.series_schema`: `stale_atol`, `stale_exclude` and
+  `counter_tolerance`, also as CLI `--stale-atol`, `--stale-exclude` and
+  `--counter-tolerance`. Recorded in report `parameters`; giving one without
+  its check raises `ValueError` (OSS-15).
 - `examples/GUIDE.md`: worked examples from raw local meter timestamps to a
   reproducible report, the command line and Pandera. `tests/test_guide.py`
   runs every code block, so the guide fails CI when it goes stale (OSS-12).

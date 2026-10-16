@@ -88,6 +88,18 @@ def test_jump_max_delta(tmp_path):
     assert code == 2 and out == "" and "max_delta must be" in err
 
 
+def test_stale_and_counter_tuning(tmp_path):
+    rows = ["2024-01-01T00:00Z,0", "2024-01-01T01:00Z,0", "2024-01-01T02:00Z,0", "2024-01-01T03:00Z,5"]
+    path = write(tmp_path, "timestamp,kwh\n" + "\n".join(rows) + "\n")
+    base = ["report", str(path), "--freq", "1h", "--stale-min-run", "3"]
+    assert json.loads(run(*base)[1])["flag_counts"]["STALE_VALUE"] == 3
+    data = json.loads(run(*base, "--stale-exclude", "0", "--stale-atol", "0.1")[1])
+    assert data["flag_counts"]["STALE_VALUE"] == 0
+    assert data["parameters"]["stale_exclude"] == [0.0] and data["parameters"]["stale_atol"] == 0.1
+    code, out, err = run("report", str(path), "--counter-tolerance", "0.1")
+    assert code == 2 and out == "" and "counter_tolerance requires cumulative" in err
+
+
 def test_flags_csv_keeps_rows_and_inserts_missing(tmp_path):
     path = write(tmp_path, DEFECTIVE)
     flags = tmp_path / "flags.csv"

@@ -132,3 +132,19 @@ def test_origin_and_calendar_steps():
     assert failed_checks(pa.SeriesSchema(checks=[pc.on_grid_check("15min", origin=origin)]), shifted) == [
         "timestamps not aligned to 15min"
     ]
+
+
+def test_series_schema_tuning_options():
+    idx = pd.date_range("2024-01-01", periods=5, freq="1h", tz="UTC")
+    night = pd.Series([0.0, 0.0, 0.0, 4.0, 5.0], index=idx)
+    assert failed_checks(pc.series_schema(freq="1h", stale_min_run=3), night) == [
+        "runs of 3 or more repeated values"
+    ]
+    assert failed_checks(pc.series_schema(freq="1h", stale_min_run=3, stale_exclude=[0.0]), night) == []
+    register = pd.Series([10.0, 9.99, 12.0, 13.0, 14.0], index=idx)
+    assert failed_checks(pc.series_schema(freq="1h", cumulative=True), register) == [
+        "cumulative counter decreased"
+    ]
+    assert failed_checks(pc.series_schema(freq="1h", cumulative=True, counter_tolerance=0.05), register) == []
+    with pytest.raises(ValueError, match="require"):
+        pc.series_schema(counter_tolerance=0.1)

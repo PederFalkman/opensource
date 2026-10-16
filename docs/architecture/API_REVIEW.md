@@ -57,10 +57,11 @@ first release.
 
 Recorded so that adding them later is a deliberate, additive change:
 
-- `flag_series`, `assess_quality`, `series_schema` and the CLI expose only
-  the main option of each opt-in check. `stale_mask(atol=, exclude=)` and
-  `counter_decrease_mask(tolerance=)` are available on the mask functions
-  only.
+- ~~`flag_series`, `assess_quality`, `series_schema` and the CLI expose only
+  the main option of each opt-in check.~~ Closed in OSS-15: `stale_atol`,
+  `stale_exclude` and `counter_tolerance` (CLI `--stale-atol`,
+  `--stale-exclude`, `--counter-tolerance`), keyword-only and recorded in
+  the report `parameters`.
 - `QualityReport` can be constructed directly, but only `assess_quality` is
   meant to build it; its fields follow report schema 1, which freezes at the
   first release.

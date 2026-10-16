@@ -92,7 +92,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="plausibility range; use 'none' for an open side",
     )
     checks.add_argument("--stale-min-run", type=int, help="flag runs of at least N repeated values")
+    checks.add_argument(
+        "--stale-atol", type=float, default=0.0, help="values within this of each other count as repeated"
+    )
+    checks.add_argument(
+        "--stale-exclude", type=float, nargs="+", default=[], metavar="VALUE", help="never flag runs of these"
+    )
     checks.add_argument("--cumulative", action="store_true", help="treat values as a cumulative counter")
+    checks.add_argument(
+        "--counter-tolerance", type=float, default=0.0, help="ignore counter decreases up to this size"
+    )
     checks.add_argument(
         "--jump-max-delta", type=float, help="flag changes larger than this from the previous value"
     )
@@ -188,7 +197,10 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
         freq=args.freq,
         bounds=bounds,
         stale_min_run=args.stale_min_run,
+        stale_atol=args.stale_atol,
+        stale_exclude=args.stale_exclude,
         cumulative=args.cumulative,
+        counter_tolerance=args.counter_tolerance,
         jump_max_delta=args.jump_max_delta,
         origin=origin,
         tz=args.tz,
@@ -208,7 +220,10 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
             bounds=bounds,
             insert_missing=args.insert_missing,
             stale_min_run=args.stale_min_run,
+            stale_atol=args.stale_atol,
+            stale_exclude=args.stale_exclude,
             cumulative=args.cumulative,
+            counter_tolerance=args.counter_tolerance,
             jump_max_delta=args.jump_max_delta,
             origin=origin,
             tz=args.tz,

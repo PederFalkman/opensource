@@ -179,6 +179,20 @@ def jump_mask(
     return np.asarray(finite & previous.notna() & ((v - previous).abs() > max_delta), dtype=bool)
 
 
+def _check_options(
+    stale_min_run: int | None,
+    stale_atol: float,
+    stale_exclude: Collection[float],
+    cumulative: bool,
+    counter_tolerance: float,
+) -> None:
+    """Reject fine-tuning options given without the check they tune."""
+    if stale_min_run is None and (stale_atol or len(stale_exclude)):
+        raise ValueError("stale_atol and stale_exclude require stale_min_run")
+    if not cumulative and counter_tolerance:
+        raise ValueError("counter_tolerance requires cumulative=True")
+
+
 def flag_series(
     series: pd.Series,
     *,
@@ -186,7 +200,10 @@ def flag_series(
     bounds: tuple[float | None, float | None] | None = None,
     insert_missing: bool = False,
     stale_min_run: int | None = None,
+    stale_atol: float = 0.0,
+    stale_exclude: Collection[float] = (),
     cumulative: bool = False,
+    counter_tolerance: float = 0.0,
     jump_max_delta: float | None = None,
     origin: pd.Timestamp | None = None,
     tz: str | None = None,
@@ -211,9 +228,15 @@ def flag_series(
         If set, flag ``STALE_VALUE`` on runs of at least this many repeated
         values (see :func:`stale_mask`). Off by default: a sensible run length
         depends on the signal.
+    stale_atol, stale_exclude:
+        Passed to :func:`stale_mask` as ``atol`` and ``exclude``. Require
+        ``stale_min_run``.
     cumulative:
         If true, treat the series as a cumulative counter and flag
         ``COUNTER_DECREASE`` (see :func:`counter_decrease_mask`).
+    counter_tolerance:
+        Passed to :func:`counter_decrease_mask` as ``tolerance``. Requires
+        ``cumulative``.
     jump_max_delta:
         If set, flag ``JUMP`` where a value differs from the previous finite
         value by more than this (see :func:`jump_mask`). Off by default.
@@ -231,6 +254,7 @@ def flag_series(
         raise ValueError("insert_missing requires freq")
     if insert_missing and not index.is_monotonic_increasing:
         raise ValueError("insert_missing requires a sorted index so original row order is kept")
+    _check_options(stale_min_run, stale_atol, stale_exclude, cumulative, counter_tolerance)
     consecutive = stale_min_run is not None or cumulative or jump_max_delta is not None
     if consecutive and not index.is_monotonic_increasing:
         raise ValueError("stale, counter and jump checks compare consecutive rows and require a sorted index")
@@ -246,9 +270,11 @@ def flag_series(
         lower, upper = bounds
         flags[out_of_bounds_mask(series, lower=lower, upper=upper)] |= np.uint16(QualityFlag.OUT_OF_BOUNDS)
     if stale_min_run is not None:
-        flags[stale_mask(series, stale_min_run)] |= np.uint16(QualityFlag.STALE_VALUE)
+        stale = stale_mask(series, stale_min_run, atol=stale_atol, exclude=stale_exclude)
+        flags[stale] |= np.uint16(QualityFlag.STALE_VALUE)
     if cumulative:
-        flags[counter_decrease_mask(series)] |= np.uint16(QualityFlag.COUNTER_DECREASE)
+        decrease = counter_decrease_mask(series, tolerance=counter_tolerance)
+        flags[decrease] |= np.uint16(QualityFlag.COUNTER_DECREASE)
     if jump_max_delta is not None:
         flags[jump_mask(series, jump_max_delta)] |= np.uint16(QualityFlag.JUMP)
 

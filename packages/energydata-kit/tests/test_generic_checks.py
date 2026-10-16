@@ -142,3 +142,37 @@ def test_flag_series_jump_requires_sorted_index():
     s = make_synthetic_series(periods=4).iloc[::-1]
     with pytest.raises(ValueError, match="sorted"):
         flag_series(s, jump_max_delta=1.0)
+
+
+def test_flag_series_stale_and_counter_tuning():
+    idx = pd.date_range("2024-01-01", periods=6, freq="1h", tz="UTC")
+    s = pd.Series([0.0, 0.0, 0.0, 5.0, 5.001, 4.9995], index=idx)
+    plain = flag_series(s, stale_min_run=3)[FLAG_COLUMN].tolist()
+    assert plain == [STALE, STALE, STALE, 0, 0, 0]
+    tuned = flag_series(s, stale_min_run=3, stale_atol=0.01, stale_exclude=[0.0])[FLAG_COLUMN].tolist()
+    assert tuned == [0, 0, 0, STALE, STALE, STALE]
+
+    register = pd.Series([10.0, 9.99, 12.0, 3.0], index=idx[:4])
+    assert flag_series(register, cumulative=True)[FLAG_COLUMN].tolist() == [0, DECREASE, 0, DECREASE]
+    tolerant = flag_series(register, cumulative=True, counter_tolerance=0.05)[FLAG_COLUMN].tolist()
+    assert tolerant == [0, 0, 0, DECREASE]
+
+
+def test_tuning_options_recorded_in_report():
+    s = make_synthetic_series(periods=8)
+    report = assess_quality(s, stale_min_run=3, stale_atol=0.5, stale_exclude=[0], cumulative=True)
+    assert report.parameters["stale_atol"] == 0.5
+    assert report.parameters["stale_exclude"] == [0.0]
+    assert report.parameters["counter_tolerance"] == 0.0
+
+
+@pytest.mark.parametrize(
+    "options",
+    [{"stale_atol": 0.1}, {"stale_exclude": [0.0]}, {"counter_tolerance": 0.1}],
+)
+def test_tuning_options_require_their_check(options):
+    s = make_synthetic_series(periods=4)
+    with pytest.raises(ValueError, match="require"):
+        flag_series(s, **options)
+    with pytest.raises(ValueError, match="require"):
+        assess_quality(s, **options)

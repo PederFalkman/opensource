@@ -131,8 +131,8 @@ input error. `python -m energydata_kit` is equivalent. See
 | 16 | `OFF_GRID_TIMESTAMP` | Not aligned to the expected step |
 | 32 | `OUT_OF_BOUNDS` | Finite value outside caller-supplied bounds |
 | 64 | `MISSING_INTERVAL` | Row inserted for an absent grid timestamp (`insert_missing=True`) |
-| 128 | `STALE_VALUE` | Part of a run of at least `stale_min_run` repeated values (opt-in) |
-| 256 | `COUNTER_DECREASE` | Cumulative counter fell below its previous value (`cumulative=True`, opt-in) |
+| 128 | `STALE_VALUE` | Part of a run of at least `stale_min_run` repeated values (opt-in; tune with `stale_atol`, `stale_exclude`) |
+| 256 | `COUNTER_DECREASE` | Cumulative counter fell below its previous value (`cumulative=True`, opt-in; tune with `counter_tolerance`) |
 | 512 | `JUMP` | Changed by more than `jump_max_delta` from the previous finite value (opt-in) |
 
 Flag values are part of the public API and will not be renumbered.
