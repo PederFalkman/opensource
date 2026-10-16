@@ -9,8 +9,9 @@ versioning: [SemVer](https://semver.org/).
 - Command line (OSS-28): `--delimiter` reads files separated by `;`, tab
   (`--delimiter tab`) or `|`, and `--decimal ,` reads decimal commas, common
   in European meter exports. The report is identical to that of the same data
-  as a comma-separated file. `--flags-csv` still writes commas and decimal
-  points. The single-column hint now suggests the matching `--delimiter`.
+  as a comma-separated file, and `--flags-csv` is written in the same format
+  as the input (OSS-30). The single-column hint now suggests the matching
+  `--delimiter`.
 
 ### Changed
 - Clearer errors for awkward input (OSS-27): timestamps that are not ISO 8601
