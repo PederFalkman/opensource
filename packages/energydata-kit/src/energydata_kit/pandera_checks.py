@@ -37,6 +37,7 @@ from energydata_kit.flags import (
 )
 from energydata_kit.intervals import duplicate_mask, expected_grid, off_grid_mask
 from energydata_kit.metadata import MeasurementMetadata
+from energydata_kit.timestamps import on_index
 
 __all__ = [
     "counter_check",
@@ -81,10 +82,10 @@ def _no_gap_after(
 ) -> pd.Series:
     index = _index(obj)
     grid = expected_grid(index, freq, origin=origin, tz=tz)
-    present = grid.isin(index.as_unit("ns"))
+    present = on_index(grid, index)
     # A gap starts where a present grid point is followed by an absent one.
     before_gap = grid[:-1][present[:-1] & ~present[1:]]
-    return _rows(obj, ~index.as_unit("ns").isin(before_gap))
+    return _rows(obj, ~on_index(index, before_gap))
 
 
 def timezone_aware_check() -> pa.Check:

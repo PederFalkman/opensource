@@ -30,7 +30,8 @@ pytest && ruff check . && mypy
 - [Architecture overview](docs/architecture/OVERVIEW.md)
 - [Existing tools audit](docs/architecture/EXISTING_TOOLS_AUDIT.md) and
   [duplication register](docs/architecture/DUPLICATION_REGISTER.md)
-- [Roadmap](docs/architecture/ROADMAP.md) and [public API review](docs/architecture/API_REVIEW.md)
+- [Roadmap](docs/architecture/ROADMAP.md), [public API review](docs/architecture/API_REVIEW.md)
+  and [performance](docs/architecture/PERFORMANCE.md)
 - [IP boundary](docs/governance/IP_BOUNDARY.md): read this before contributing
 - [Release gates](docs/governance/RELEASE_GATES.md),
   [release checklist](docs/governance/RELEASE_CHECKLIST.md) and

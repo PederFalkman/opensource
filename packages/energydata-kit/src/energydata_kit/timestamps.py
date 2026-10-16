@@ -26,7 +26,7 @@ __all__ = [
     "utc_ns",
 ]
 
-_OFFSET_SUFFIX = re.compile(r"(Z|[+-]\d{2}(:?\d{2})?)$", re.IGNORECASE)
+_OFFSET_SUFFIX = re.compile(r"(?:Z|[+-]\d{2}(?::?\d{2})?)$", re.IGNORECASE)
 
 AmbiguousPolicy = Literal["raise", "infer"]
 NonexistentPolicy = Literal["raise", "shift_forward", "shift_backward"]
@@ -52,10 +52,17 @@ def _to_datetime_index(values: Iterable[object] | pd.Index | pd.Series) -> pd.Da
     if isinstance(values, pd.Series) and pd.api.types.is_datetime64_any_dtype(values.dtype):
         return pd.DatetimeIndex(values)
 
-    items = pd.Series(list(values), dtype=object)
+    items = pd.Series(
+        np.asarray(values, dtype=object) if isinstance(values, pd.Series | pd.Index) else list(values),
+        dtype=object,
+    )
     if items.isna().any():
         raise TimestampError(f"{int(items.isna().sum())} missing timestamp value(s)")
-    aware = items.map(_is_aware)
+    if pd.api.types.infer_dtype(items, skipna=False) == "string":
+        # Vectorised form of _is_aware for the common all-strings case.
+        aware = items.str.strip().str.contains(_OFFSET_SUFFIX)
+    else:
+        aware = items.map(_is_aware)
     try:
         if bool(aware.all()):
             # Mixed UTC offsets (e.g. across a DST change) are only
@@ -116,9 +123,41 @@ def normalize_timestamps(
     return idx.tz_convert("UTC").as_unit("ns")
 
 
+_NS_PER_UNIT = {"s": 1_000_000_000, "ms": 1_000_000, "us": 1_000, "ns": 1}
+_I8_MAX = np.iinfo(np.int64).max
+
+
 def utc_ns(index: pd.DatetimeIndex) -> np.ndarray:
-    """Timestamps as int64 nanoseconds since the Unix epoch (UTC)."""
-    return np.asarray(index.as_unit("ns").to_numpy(dtype="datetime64[ns]")).view("i8")
+    """Timestamps as int64 nanoseconds since the Unix epoch (UTC).
+
+    Avoids converting the index itself to nanoseconds (a full copy; pandas 3
+    creates microsecond indexes by default). Out-of-range values raise, as
+    ``as_unit("ns")`` would.
+    """
+    # .values is a datetime64 view (UTC for timezone-aware indexes) in the
+    # index's own unit; no copy.
+    values: np.ndarray = np.asarray(index.values).view("i8")
+    scale = _NS_PER_UNIT[index.unit]
+    if scale == 1:
+        return values
+    if values.size and int(np.abs(values).max()) > _I8_MAX // scale:
+        index.as_unit("ns")  # raises OutOfBoundsDatetime
+    return values * scale
+
+
+def on_index(timestamps: pd.DatetimeIndex, index: pd.DatetimeIndex) -> np.ndarray:
+    """Boolean mask: which of ``timestamps`` occur in ``index`` (compared in UTC ns).
+
+    A sorted search instead of hashing; faster on long series and
+    independent of either index's unit.
+    """
+    haystack = np.sort(utc_ns(index))
+    needles = utc_ns(timestamps)
+    if haystack.size == 0:
+        return np.zeros(needles.shape, dtype=bool)
+    pos = np.searchsorted(haystack, needles)
+    pos[pos == haystack.size] = 0
+    return np.asarray(haystack[pos] == needles, dtype=bool)
 
 
 def infer_resolution(index: pd.DatetimeIndex) -> pd.Timedelta | None:

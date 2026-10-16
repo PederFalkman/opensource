@@ -27,7 +27,7 @@ from energydata_kit.intervals import (
 )
 from energydata_kit.metadata import IntervalLabel, MeasurementMetadata
 from energydata_kit.semantics import MetadataIssue, check_metadata_consistency, local_day_completeness
-from energydata_kit.timestamps import infer_resolution, utc_ns
+from energydata_kit.timestamps import infer_resolution, on_index, utc_ns
 
 __all__ = ["REPORT_SCHEMA_VERSION", "QualityReport", "assess_quality", "fingerprint_series"]
 
@@ -207,7 +207,7 @@ def assess_quality(
         gaps = find_missing_intervals(index, grid_freq, origin=origin, tz=tz)
         grid = expected_grid(index, grid_freq, origin=origin, tz=tz)
         n_expected = len(grid)
-        present = int(grid.isin(index.as_unit("ns")).sum())
+        present = int(on_index(grid, index).sum())
         completeness = round(present / n_expected, 6)
 
     local_days = None
