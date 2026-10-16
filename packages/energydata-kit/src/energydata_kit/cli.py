@@ -1,6 +1,7 @@
 """Command-line interface: ``energydata-kit report data.csv ...``.
 
-Reads one timestamp column and one value column from a CSV file, runs
+Reads one timestamp column and one value column from a CSV file (comma-separated
+by default; see ``--delimiter`` and ``--decimal``), runs
 :func:`energydata_kit.assess_quality` and prints the deterministic JSON report.
 Optionally writes the non-destructive flagged table from
 :func:`energydata_kit.flag_series`. With several ``--value-col`` options it
@@ -69,6 +70,19 @@ def build_parser() -> argparse.ArgumentParser:
         description="Print a deterministic JSON quality report for value columns of a CSV file.",
     )
     rep.add_argument("csv", help="input CSV file, or '-' for standard input")
+
+    csv_fmt = rep.add_argument_group("CSV format")
+    csv_fmt.add_argument(
+        "--delimiter",
+        default=",",
+        help="field separator: one character, or 'tab' (default: ,)",
+    )
+    csv_fmt.add_argument(
+        "--decimal",
+        choices=[".", ","],
+        default=".",
+        help="decimal mark in values, e.g. ',' with --delimiter ';' (default: .)",
+    )
 
     cols = rep.add_argument_group("columns")
     cols.add_argument("--timestamp-col", default="timestamp", help="timestamp column (default: timestamp)")
@@ -153,10 +167,24 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _delimiter(args: argparse.Namespace) -> str:
+    sep = "\t" if args.delimiter.lower() in {"tab", "\\t"} else args.delimiter
+    if len(sep) != 1 or sep in '"\r\n' or sep.isalnum():
+        raise CliError(
+            f"--delimiter must be one character other than a letter, digit or quote, got {args.delimiter!r}"
+        )
+    if sep == args.decimal:
+        raise CliError(f"--delimiter and --decimal are both {sep!r}")
+    return sep
+
+
 def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
     source = stdin if args.csv == "-" else args.csv
+    sep = _delimiter(args)
     try:
-        frame = pd.read_csv(source, dtype={args.timestamp_col: str}, keep_default_na=True)
+        frame = pd.read_csv(
+            source, sep=sep, decimal=args.decimal, dtype={args.timestamp_col: str}, keep_default_na=True
+        )
     except FileNotFoundError as exc:
         raise CliError(f"file not found: {args.csv}") from exc
     except (pd.errors.ParserError, pd.errors.EmptyDataError, UnicodeDecodeError) as exc:
@@ -164,8 +192,10 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
 
     if args.timestamp_col not in frame.columns:
         hint = ""
-        if len(frame.columns) == 1 and any(sep in str(frame.columns[0]) for sep in ";\t|"):
-            hint = " (only comma-separated files are read; is this file separated by ';', tab or '|'?)"
+        found = [s for s in ";\t|," if s != sep and s in str(frame.columns[0])]
+        if len(frame.columns) == 1 and found:
+            name = "tab" if found[0] == "\t" else found[0]
+            hint = f" (the file may be separated by {name!r}; try --delimiter {name!r})"
         raise CliError(
             f"timestamp column {args.timestamp_col!r} not found; columns: {list(frame.columns)}{hint}"
         )
