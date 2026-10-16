@@ -23,7 +23,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from energydata_kit.timestamps import utc_ns
+from energydata_kit.timestamps import on_index, utc_ns
 
 __all__ = [
     "Gap",
@@ -112,7 +112,7 @@ def off_grid_mask(
         return np.zeros(0, dtype=bool)
     if tz is not None:
         grid = expected_grid(index, freq, origin=origin, tz=tz)
-        return np.asarray(~index.as_unit("ns").isin(grid), dtype=bool)
+        return ~on_index(index, grid)
     step = to_step(freq).value
     anchor = index.min() if origin is None else _aware(origin, "origin")
     offsets = utc_ns(index) - anchor.as_unit("ns").value
@@ -178,7 +178,7 @@ def find_missing_intervals(
     grid = expected_grid(index, freq, start=start, end=end, origin=origin, tz=tz)
     if len(grid) == 0:
         return []
-    missing_pos = np.flatnonzero(~grid.isin(index.as_unit("ns")))
+    missing_pos = np.flatnonzero(~on_index(grid, index))
     if missing_pos.size == 0:
         return []
     breaks = np.flatnonzero(np.diff(missing_pos) > 1) + 1
@@ -199,4 +199,4 @@ def missing_timestamps(
 ) -> pd.DatetimeIndex:
     """Every absent grid timestamp (UTC), in order."""
     grid = expected_grid(index, freq, start=start, end=end, origin=origin, tz=tz)
-    return grid[~grid.isin(index.as_unit("ns"))]
+    return grid[~on_index(grid, index)]

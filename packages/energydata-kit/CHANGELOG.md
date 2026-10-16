@@ -6,6 +6,11 @@ versioning: [SemVer](https://semver.org/).
 ## [Unreleased]
 
 ### Changed
+- Faster on long series, same results (OSS-18): nanosecond timestamps are read
+  without copying the index, grid membership uses a sorted search, and string
+  timestamps are checked for UTC offsets vectorised. With pandas 3,
+  `assess_quality` on a year of minute data went from 0.64 s to 0.27 s. See
+  `docs/architecture/PERFORMANCE.md`.
 - Pre-release API review (OSS-13): required inputs are positional and every
   optional argument is keyword-only. Affects `off_grid_mask(origin=)`,
   `expected_grid` / `find_missing_intervals` / `missing_timestamps`

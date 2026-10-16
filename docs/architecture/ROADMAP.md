@@ -194,7 +194,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       The readiness check now also requires an identical copy in the package
       directory, and the release checklist says so.
 
-### OSS-17: multi-column reports — this change
+### OSS-17: multi-column reports — merged in [#23](https://github.com/PederFalkman/opensource/pull/23)
 
 - [x] `assess_frame` → `FrameQualityReport`: each column gets exactly the
       `assess_quality` report, plus a combined fingerprint and a per-column
@@ -202,6 +202,17 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       check options and metadata.
 - [x] CLI: repeat `--value-col`; `--unit` and `--flags-csv` stay
       single-column and are rejected with several columns.
+
+### OSS-18: performance check — this change
+
+- [x] `benchmarks/run.py` and `docs/architecture/PERFORMANCE.md`: measured
+      times and memory on 350k–525k-row series, on the newest and the lowest
+      supported dependencies.
+- [x] Hot spots fixed with identical results: no full-index nanosecond copy
+      (pandas 3 defaults to microseconds), sorted search instead of hashing
+      for grid membership, vectorised offset detection for string timestamps.
+- [x] `tests/test_performance.py`: coarse 10-second budget for a year of
+      minute data (about 0.3 s today), catching accidental quadratic steps.
 
 ## Explicitly not planned
 
