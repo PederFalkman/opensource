@@ -6,6 +6,8 @@ Merged items stay listed here as a record of what was agreed.
 
 ## Open decisions (owners required)
 
+Questions and evidence for each: `docs/governance/RELEASE_DECISIONS.md`.
+
 - [ ] **Repository visibility.** The repo is already public; decide whether to
       make it private until release gates G1–G3 pass (see `RELEASE_GATES.md`).
 - [ ] **Ownership and license (G1/G2).** Apache-2.0 is the preferred candidate.
@@ -229,13 +231,21 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `compare`, multi-column reports, new tools and docs, limitations.
 - [x] Error messages: one consistent hint for timezone-naive input.
 
-### OSS-21: multi-column flags — this change
+### OSS-21: multi-column flags — merged in [#27](https://github.com/PederFalkman/opensource/pull/27)
 
 - [x] `flag_frame` / `flag_column`: one `quality_flag_<column>` per value
       column, each equal to `flag_series` on that column; shared options and
       `per_column` overrides as in `assess_frame`.
 - [x] CLI `--flags-csv` with several `--value-col`, closing the limitation
       recorded in OSS-17 and OSS-20.
+
+### OSS-22: release decision pack — this change
+
+- [x] `docs/governance/RELEASE_DECISIONS.md`: each open decision (visibility,
+      G1 ownership, G2 licence, G3 IP review, branch protection, G7
+      publication) with its owner, the evidence already in the repository,
+      the questions to answer and the next step after each answer. Linked
+      from the release gates, the checklist and the README. No code changes.
 
 ## Explicitly not planned
 

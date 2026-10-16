@@ -13,6 +13,8 @@ gate G7.
 
 Supporting tooling (none of it publishes anything):
 
+- `RELEASE_DECISIONS.md`: the open decisions for G1–G3 and G7, the
+  evidence already in the repository and the questions to answer.
 - `RELEASE_CHECKLIST.md`: template for the release pull request.
 - `tools/check_release_readiness.py`: reports the mechanical conditions (final
   version, dated changelog section, LICENSE at the root and shipped with the
