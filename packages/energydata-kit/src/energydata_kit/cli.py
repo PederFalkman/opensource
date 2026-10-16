@@ -5,15 +5,18 @@ Reads one timestamp column and one value column from a CSV file, runs
 Optionally writes the non-destructive flagged table from
 :func:`energydata_kit.flag_series`. With several ``--value-col`` options it
 runs :func:`energydata_kit.assess_frame` and prints one report with a section
-per column.
+per column. ``energydata-kit compare before.json after.json`` prints what
+changed between two saved reports (:func:`energydata_kit.compare_reports`).
 
-Exit codes: 0 success; 1 ``--fail-on-issues`` and issues were found;
-2 usage, input or data error.
+Exit codes: 0 success; 1 ``--fail-on-issues`` and issues were found (or, for
+``compare``, ``--fail-if-worse`` and the second report is worse); 2 usage,
+input or data error.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -22,6 +25,7 @@ from typing import TextIO
 import pandas as pd
 
 from energydata_kit import __version__
+from energydata_kit.compare import compare_reports
 from energydata_kit.flags import VALUE_COLUMN, flag_series
 from energydata_kit.frame_report import FrameQualityReport, assess_frame
 from energydata_kit.metadata import Aggregation, IntervalLabel, MeasurementMetadata
@@ -127,6 +131,20 @@ def build_parser() -> argparse.ArgumentParser:
         "--fail-on-issues",
         action="store_true",
         help="exit with status 1 if any row is flagged or any interval is missing",
+    )
+
+    cmp = sub.add_parser(
+        "compare",
+        help="print what changed between two saved JSON reports",
+        description="Print a deterministic JSON comparison of two reports written by 'report'.",
+    )
+    cmp.add_argument("before", help="earlier report (JSON)")
+    cmp.add_argument("after", help="later report (JSON)")
+    cmp.add_argument("-o", "--output", help="write the comparison here instead of standard output")
+    cmp.add_argument(
+        "--fail-if-worse",
+        action="store_true",
+        help="exit with status 1 if more rows are flagged, more intervals are missing or completeness fell",
     )
     return parser
 
@@ -282,6 +300,28 @@ def _run_frame_report(
     return 1 if args.fail_on_issues and _has_issues(report) else 0
 
 
+def _load_report(path: str) -> dict[str, object]:
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise CliError(f"file not found: {path}") from exc
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise CliError(f"not a JSON report: {path}: {exc}") from exc
+    if not isinstance(data, dict):
+        raise CliError(f"not a JSON report: {path}")
+    return data
+
+
+def _run_compare(args: argparse.Namespace, stdout: TextIO) -> int:
+    comparison = compare_reports(_load_report(args.before), _load_report(args.after))
+    text = comparison.to_json() + "\n"
+    if args.output:
+        Path(args.output).write_text(text, encoding="utf-8")
+    else:
+        stdout.write(text)
+    return 1 if args.fail_if_worse and comparison.worse else 0
+
+
 def main(
     argv: Sequence[str] | None = None,
     *,
@@ -295,6 +335,8 @@ def main(
     stderr = sys.stderr if stderr is None else stderr
     args = build_parser().parse_args(argv)
     try:
+        if args.command == "compare":
+            return _run_compare(args, stdout)
         return _run_report(args, stdin, stdout)
     except (CliError, ValueError, TypeError) as exc:
         # Library input errors (TimestampError, UnitError, bad freq, ...) are

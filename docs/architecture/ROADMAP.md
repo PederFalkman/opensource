@@ -203,7 +203,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] CLI: repeat `--value-col`; `--unit` and `--flags-csv` stay
       single-column and are rejected with several columns.
 
-### OSS-18: performance check — this change
+### OSS-18: performance check — merged in [#24](https://github.com/PederFalkman/opensource/pull/24)
 
 - [x] `benchmarks/run.py` and `docs/architecture/PERFORMANCE.md`: measured
       times and memory on 350k–525k-row series, on the newest and the lowest
@@ -213,6 +213,13 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       for grid membership, vectorised offset detection for string timestamps.
 - [x] `tests/test_performance.py`: coarse 10-second budget for a year of
       minute data (about 0.3 s today), catching accidental quadratic steps.
+
+### OSS-19: report comparison — this change
+
+- [x] `compare_reports` → `ReportComparison`: only what differs between two
+      reports (objects or saved JSON, same report schema), per series or per
+      column, with deltas; plus a narrowly defined `worse` flag.
+- [x] CLI `energydata-kit compare BEFORE AFTER [--fail-if-worse]`.
 
 ## Explicitly not planned
 

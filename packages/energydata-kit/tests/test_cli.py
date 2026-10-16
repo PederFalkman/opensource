@@ -118,6 +118,22 @@ def test_multiple_value_columns(tmp_path):
         assert code == 2 and out == "" and message in err
 
 
+def test_compare(tmp_path):
+    good = write(tmp_path, CLEAN, "good.csv")
+    bad = write(tmp_path, CLEAN.replace("0.25", "inf"), "bad.csv")
+    for name, path in (("a.json", good), ("b.json", bad)):
+        assert run("report", str(path), "--freq", "15min", "-o", str(tmp_path / name))[0] == 0
+    code, out, _ = run("compare", str(tmp_path / "a.json"), str(tmp_path / "b.json"))
+    data = json.loads(out)
+    assert code == 0 and data["worse"] and data["changes"][""]["flag_counts"]["NON_FINITE"]["delta"] == 1
+    assert run("compare", str(tmp_path / "a.json"), str(tmp_path / "b.json"), "--fail-if-worse")[0] == 1
+    assert run("compare", str(tmp_path / "b.json"), str(tmp_path / "a.json"), "--fail-if-worse")[0] == 0
+    code, out, err = run("compare", str(tmp_path / "a.json"), str(tmp_path / "missing.json"))
+    assert code == 2 and "file not found" in err
+    code, out, err = run("compare", str(good), str(tmp_path / "a.json"))
+    assert code == 2 and "not a JSON report" in err
+
+
 def test_flags_csv_keeps_rows_and_inserts_missing(tmp_path):
     path = write(tmp_path, DEFECTIVE)
     flags = tmp_path / "flags.csv"

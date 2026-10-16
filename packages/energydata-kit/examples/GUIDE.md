@@ -336,5 +336,31 @@ flagged = pd.read_csv("flagged.csv")
 assert len(flagged) == 96 - 2 + 2  # original rows plus the two inserted ones
 ```
 
+After a fix, or when the next delivery of the same feed arrives, compare the
+saved reports. Here the gap was filled but the infinite value is still there:
+
+```python
+ek.make_synthetic_series(periods=96, inf_at=[70]).rename("kw").to_frame().to_csv(
+    "meter_fixed.csv", index_label="timestamp"
+)
+```
+
+```bash
+energydata-kit report meter_fixed.csv --freq 15min --unit kW --aggregation mean -o fixed.json
+energydata-kit compare report.json fixed.json -o changes.json --fail-if-worse
+```
+
+```python
+changes = json.loads(Path("changes.json").read_text())
+assert not changes["worse"] and not changes["same_data"]
+counts = changes["changes"][""]["counts"]
+assert counts["n_missing_intervals"] == {"before": 2, "after": 0, "delta": -2}
+assert "NON_FINITE" not in changes["changes"][""].get("flag_counts", {})  # unchanged
+
+# The same comparison in Python, from saved files or report objects:
+again = ek.compare_reports(report, json.loads(Path("fixed.json").read_text()))
+assert again.to_dict() == changes
+```
+
 Exit status: `0` OK, `1` issues found with `--fail-on-issues`, `2` usage or
 input error. See `energydata-kit report --help` for every option.

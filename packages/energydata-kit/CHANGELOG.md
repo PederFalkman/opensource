@@ -80,6 +80,12 @@ versioning: [SemVer](https://semver.org/).
   `assess_quality` on that column; shared options apply to all columns and
   `per_column` overrides check options and metadata per column. Combined
   fingerprint and a per-column summary. CLI: repeat `--value-col` (OSS-17).
+- `compare_reports` → `ReportComparison`: what changed between two reports
+  (objects or saved JSON), with deltas for counts and flag counts, resolved and
+  new listed gaps, metadata issues and changed parameters or metadata; frame
+  reports per column. `worse` is true if more rows are flagged, more intervals
+  are missing or completeness fell. CLI: `energydata-kit compare BEFORE AFTER`
+  with `--fail-if-worse` (OSS-19).
 - `examples/GUIDE.md`: worked examples from raw local meter timestamps to a
   reproducible report, the command line and Pandera. `tests/test_guide.py`
   runs every code block, so the guide fails CI when it goes stale (OSS-12).
