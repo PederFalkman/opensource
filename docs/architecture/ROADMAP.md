@@ -333,11 +333,18 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       three gaps and metadata issues per column. JSON stays the default and
       the format for automation; `-o` and `--fail-on-issues` behave the same.
 
-### OSS-33: readable comparison summary — this change
+### OSS-33: readable comparison summary — merged in [#39](https://github.com/PederFalkman/opensource/pull/39)
 
 - [x] `compare --format text`: the verdict (same data or changed; worse or
       not), then count, flag, gap, metadata-issue and parameter changes per
       column. JSON stays the default; `--fail-if-worse` behaves the same.
+
+### OSS-34: guide covers the newer CLI options — this change
+
+- [x] `examples/GUIDE.md` section 11 shows `--format text` for reports and
+      comparisons and reading a `;`/decimal-comma export with `--delimiter`
+      and `--decimal`; the test suite runs these blocks and checks their
+      output, so the guide cannot drift from the CLI.
 
 ## Explicitly not planned
 
