@@ -257,12 +257,12 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       reused OSS-16, which is the release dry run); its text is unchanged
       apart from that label.
 
-### OSS-24: draft release PR for 0.1.0 — this change
+### OSS-24: release edits for 0.1.0 — merged in [#30](https://github.com/PederFalkman/opensource/pull/30)
 
-- [x] Release branch with the edits that need no decision: version `0.1.0`,
-      a dated `## [0.1.0]` changelog section (date reset on the merge day),
-      README status. Stays unmerged until the decisions in
-      `RELEASE_DECISIONS.md` are made.
+- [x] The release edits that need no decision: version `0.1.0`, a dated
+      `## [0.1.0]` changelog section (date reset on release day), README
+      status. Opened as a draft to wait for the decisions; the owner merged
+      it early, so `main` reads `0.1.0` although nothing is released.
 - [x] Left out on purpose: the LICENSE files and `license` declaration
       (G2) and removing the upload guard (G7).
 - [x] `tools/release_dry_run.py` keeps an existing dated changelog section,
@@ -277,6 +277,17 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Issue templates: bug report (synthetic data only), scope proposal
       (with the out-of-scope list); blank issues off and security reports
       routed to private vulnerability reporting.
+### OSS-25: keep 0.1.0 on `main` until release — this change
+
+- [x] Decision: `main` stays at `0.1.0` until the gates pass (no return to
+      `.dev0`). Anything added under `[Unreleased]` meanwhile is folded into
+      the 0.1.0 section by the release PR.
+- [x] `check_release_readiness.py`: new check *nothing left unreleased*
+      (with a final version, `[Unreleased]` must be empty), so the strict
+      check on the tag catches entries that were not folded in.
+- [x] `release_dry_run.py` folds `[Unreleased]` into an existing dated
+      section, as the release PR will.
+- [x] Release decisions, checklist and roadmap updated for the merge of #30.
 
 ## Explicitly not planned
 

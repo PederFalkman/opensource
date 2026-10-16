@@ -126,10 +126,11 @@ Not a release gate, but it protects the release commit.
 3. D4 IP review, on the commit intended for release.
 4. D5 branch protection, any time before the release PR.
 5. D6 publication approval.
-6. Release PR from `RELEASE_CHECKLIST.md`. A draft (OSS-24) already sets
-   version `0.1.0` and the dated changelog section; after the decisions it
-   still needs the changelog date, LICENSE (root and package), the licence
-   declaration and the guard removed;
+6. Release PR from `RELEASE_CHECKLIST.md`. `main` already has version
+   `0.1.0` and a dated `## [0.1.0]` changelog section (OSS-24, #30; nothing
+   is released). The release PR folds any `[Unreleased]` entries into that
+   section, sets its date to the release day, adds LICENSE (root and
+   package) and the licence declaration, and removes the guard;
    then tag `energydata-kit-v0.1.0`. The *Release build* workflow re-runs the
    strict readiness check on the tag and records build provenance.
 

@@ -88,6 +88,13 @@ def test_strict_and_report_modes(tmp_path, capsys):
     assert "[FAIL] upload guard removed" in capsys.readouterr().out
 
 
+def test_unreleased_entries_block_a_final_version(tmp_path):
+    root = make_repo(tmp_path, changelog="### Fixed\n- Late fix.\n\n## [0.1.0] - 2026-11-01\n")
+    assert failing(root) == ["nothing left unreleased"]
+    dev = make_repo(tmp_path / "dev", version="0.2.0.dev0", changelog="### Fixed\n- Late fix.\n")
+    assert "nothing left unreleased" not in failing(dev)
+
+
 def test_missing_package(tmp_path):
     assert failing(make_repo(tmp_path)) == []
     assert [c.name for c in crr.check_package(tmp_path, "absent")] == ["package exists"]
