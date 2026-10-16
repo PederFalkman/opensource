@@ -322,10 +322,16 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `--decimal`, so it opens in the same tools as the input; the default
       (comma, decimal point) is unchanged.
 
-### OSS-31: roadmap order — this change
+### OSS-31: roadmap order — merged in [#37](https://github.com/PederFalkman/opensource/pull/37)
 
 - [x] OSS-29 and OSS-30 in order and linked to their PRs (#36 merged before
       the ordering fix reached its branch).
+
+### OSS-32: readable CLI summary — this change
+
+- [x] `report --format text`: rows, completeness, flag counts, the first
+      three gaps and metadata issues per column. JSON stays the default and
+      the format for automation; `-o` and `--fail-on-issues` behave the same.
 
 ## Explicitly not planned
 

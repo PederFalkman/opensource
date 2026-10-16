@@ -260,6 +260,45 @@ def test_bad_delimiter(tmp_path, argv, message):
     assert (code, out) == (2, "") and message in err
 
 
+GAPPY = (
+    "timestamp,kwh,pv\n"
+    "2026-01-01T00:00:00Z,1,5\n"
+    "2026-01-01T00:15:00Z,,5\n"
+    "2026-01-01T01:00:00Z,3,5\n"
+    "2026-01-01T01:15:00Z,-1,5\n"
+)
+
+
+def test_text_summary(tmp_path):
+    path = str(write(tmp_path, GAPPY))
+    args = ("report", path, "--value-col", "kwh", "--freq", "15min", "--bounds", "0", "none")
+    code, out, err = run(*args, "--format", "text")
+    assert (code, err) == (0, "")
+    assert out.splitlines() == [
+        "kwh: 4 rows, 2026-01-01T00:00:00+00:00 to 2026-01-01T01:15:00+00:00",
+        "  completeness: 66.67% (4 of 6 expected); 2 missing in 1 gap(s)",
+        "  flagged rows: 2 (MISSING_VALUE 1, OUT_OF_BOUNDS 1)",
+        "  gap: 2026-01-01T00:30:00+00:00 to 2026-01-01T00:45:00+00:00 (2 missing)",
+        f"fingerprint: {json.loads(run(*args)[1])['fingerprint'][:16]} (energydata-kit {__version__})",
+    ]
+    # --fail-on-issues and -o work the same as with JSON.
+    target = tmp_path / "summary.txt"
+    code, out, _ = run(*args, "--format", "text", "-o", str(target), "--fail-on-issues")
+    assert (code, out) == (1, "") and target.read_text().startswith("kwh: 4 rows")
+
+
+def test_text_summary_columns_and_no_step(tmp_path):
+    path = str(write(tmp_path, GAPPY))
+    both = ("--value-col", "kwh", "--value-col", "pv")
+    out = run("report", path, *both, "--freq", "15min", "--format", "text")[1]
+    lines = out.splitlines()
+    assert lines[0] == "2 column(s)"
+    assert "  kwh: 4 rows, 2026-01-01T00:00:00+00:00 to 2026-01-01T01:15:00+00:00" in lines
+    assert "    flagged rows: 0" in lines  # pv
+    out = run("report", path, "--value-col", "kwh", "--format", "text")[1]
+    assert "  completeness: not checked (no --freq or --resolution)" in out.splitlines()
+
+
 def test_missing_file(tmp_path):
     code, _, err = run("report", str(tmp_path / "absent.csv"))
     assert code == 2 and "file not found" in err

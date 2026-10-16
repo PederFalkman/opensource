@@ -2,7 +2,8 @@
 
 Reads one timestamp column and one value column from a CSV file (comma-separated
 by default; see ``--delimiter`` and ``--decimal``), runs
-:func:`energydata_kit.assess_quality` and prints the deterministic JSON report.
+:func:`energydata_kit.assess_quality` and prints the deterministic JSON report
+(or, with ``--format text``, a short summary for reading).
 Optionally writes the non-destructive flagged table from
 :func:`energydata_kit.flag_series`. With several ``--value-col`` options it
 runs :func:`energydata_kit.assess_frame` and prints one report with a section
@@ -138,7 +139,13 @@ def build_parser() -> argparse.ArgumentParser:
     meta.add_argument("--timezone", default=None, help="metadata time zone (default: --tz, else UTC)")
 
     out = rep.add_argument_group("output")
-    out.add_argument("-o", "--output", help="write the JSON report here instead of standard output")
+    out.add_argument("-o", "--output", help="write the report here instead of standard output")
+    out.add_argument(
+        "--format",
+        choices=["json", "text"],
+        default="json",
+        help="json: the deterministic report (default); text: a short summary for reading",
+    )
     out.add_argument(
         "--flags-csv",
         help="also write values and quality flags to this CSV (quality_flag_<col> per column with several)",
@@ -309,11 +316,53 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
 def _write_report(
     args: argparse.Namespace, report: QualityReport | FrameQualityReport, stdout: TextIO
 ) -> None:
-    text = report.to_json() + "\n"
+    text = report.to_json() + "\n" if args.format == "json" else _summary(report.to_dict())
     if args.output:
         Path(args.output).write_text(text, encoding="utf-8")
     else:
         stdout.write(text)
+
+
+def _series_summary(name: str, data: dict[str, Any], indent: str = "") -> list[str]:
+    """Summary lines for one single-series report dict."""
+    lines = [f"{indent}{name}: {data['n_rows']} rows"]
+    if data["n_rows"]:
+        lines[0] += f", {data['first_timestamp']} to {data['last_timestamp']}"
+    pad = indent + "  "
+    if data["completeness"] is None:
+        lines.append(f"{pad}completeness: not checked (no --freq or --resolution)")
+    else:
+        present = round(data["completeness"] * data["n_expected_intervals"])
+        lines.append(
+            f"{pad}completeness: {data['completeness']:.2%} ({present} of {data['n_expected_intervals']} "
+            f"expected); {data['n_missing_intervals']} missing in {data['n_gaps']} gap(s)"
+        )
+    flags = {k: v for k, v in data["flag_counts"].items() if v and k != "ANY"}
+    detail = ", ".join(f"{k} {v}" for k, v in flags.items())
+    lines.append(f"{pad}flagged rows: {data['flag_counts']['ANY']}" + (f" ({detail})" if detail else ""))
+    if data["n_duplicate_timestamps"]:
+        lines.append(f"{pad}duplicate timestamps: {data['n_duplicate_timestamps']}")
+    gaps = data["gaps"]
+    for gap in gaps[:3]:
+        lines.append(f"{pad}gap: {gap['start']} to {gap['end']} ({gap['missing_count']} missing)")
+    if data["n_gaps"] > 3:
+        lines.append(f"{pad}... {data['n_gaps'] - 3} more gap(s) in the JSON report")
+    if data["metadata_issues"]:
+        codes = ", ".join(issue["code"] for issue in data["metadata_issues"])
+        lines.append(f"{pad}metadata issues: {codes}")
+    return lines
+
+
+def _summary(data: dict[str, Any]) -> str:
+    """A short human-readable summary of a report dict (``--format text``)."""
+    if "columns" not in data:
+        lines = _series_summary(data["series_name"] or "series", data)
+    else:
+        lines = [f"{len(data['column_order'])} column(s)"]
+        for name in data["column_order"]:
+            lines += _series_summary(name, data["columns"][name], indent="  ")
+    lines.append(f"fingerprint: {data['fingerprint'][:16]} (energydata-kit {data['package_version']})")
+    return "\n".join(lines) + "\n"
 
 
 def _run_frame_report(
