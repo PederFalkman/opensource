@@ -8,6 +8,8 @@ Checks, per package under ``packages/``:
 
 - the version is a final release (``X.Y.Z``, no ``dev``/``a``/``b``/``rc``);
 - ``CHANGELOG.md`` has a dated section ``## [X.Y.Z] - YYYY-MM-DD``;
+- with a final version, ``## [Unreleased]`` is empty: anything listed there
+  would ship in ``X.Y.Z`` without being named in its section;
 - a ``LICENSE`` file exists at the repository root (gate G2);
 - the package directory has its own copy of it, identical to the root one,
   because the build backend only ships licence files from inside the
@@ -35,6 +37,7 @@ GUARD_CLASSIFIER = "Private :: Do Not Upload"
 LICENSE_NAMES = ("LICENSE", "LICENSE.txt", "LICENSE.md")
 _FINAL_VERSION = re.compile(r"^\d+\.\d+\.\d+$")
 _VERSION_ASSIGN = re.compile(r"""^__version__\s*=\s*["']([^"']+)["']""", re.MULTILINE)
+_UNRELEASED = re.compile(r"^## \[Unreleased\][^\n]*\n(.*?)(?=^## \[|\Z)", re.MULTILINE | re.DOTALL)
 
 
 @dataclass(frozen=True)
@@ -87,6 +90,18 @@ def check_package(root: Path, name: str, tag: str | None = None) -> list[Check]:
             f"found {heading.group(0).strip()!r}" if heading else f"no '## [{version}] - YYYY-MM-DD' heading",
         )
     )
+
+    unreleased = None
+    if changelog.is_file():
+        match = _UNRELEASED.search(changelog.read_text(encoding="utf-8"))
+        unreleased = match.group(1).strip() if match else None
+    if not (version and _FINAL_VERSION.match(version)):
+        empty, detail = True, "not checked for a pre-release version"
+    elif unreleased:
+        empty, detail = False, f"move the '## [Unreleased]' entries into the {version} section"
+    else:
+        empty, detail = True, "empty"
+    checks.append(Check("nothing left unreleased", empty, detail))
 
     has_license_file = any((root / n).is_file() for n in LICENSE_NAMES)
     checks.append(
