@@ -15,6 +15,8 @@ versioning: [SemVer](https://semver.org/).
 - Command line (OSS-32): `report --format text` prints a short readable
   summary (rows, completeness, flag counts, first gaps, metadata issues per
   column) instead of the JSON report. JSON stays the default and unchanged.
+  `compare --format text` does the same for comparisons: the verdict, then
+  count, flag, gap and metadata changes per column (OSS-33).
 
 ### Changed
 - Clearer errors for awkward input (OSS-27): timestamps that are not ISO 8601

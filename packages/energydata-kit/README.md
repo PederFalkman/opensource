@@ -111,7 +111,7 @@ then apply to every column; `--unit` needs a single column). With several
 columns, `--flags-csv` writes each value column followed by its
 `quality_flag_<column>`.
 `energydata-kit compare before.json after.json` prints what changed between
-two saved reports; with `--fail-if-worse` it exits `1` if more rows are
+two saved reports (`--format text` for a short summary per column); with `--fail-if-worse` it exits `1` if more rows are
 flagged, more intervals are missing or completeness fell.
 Exit status: `0` OK, `1` issues found with `--fail-on-issues`, `2` usage or
 input error. `python -m energydata_kit` is equivalent. See
