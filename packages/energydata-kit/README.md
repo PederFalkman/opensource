@@ -109,7 +109,10 @@ Calendar steps work as in the library: `--freq D --tz Europe/Stockholm`.
 Repeat `--value-col` for one report covering several columns (check options
 then apply to every column; `--unit` needs a single column). With several
 columns, `--flags-csv` writes each value column followed by its
-`quality_flag_<column>`.
+`quality_flag_<column>`. `--schema data.schema.json` reads unit, resolution and
+other metadata per column from a Table Schema written by `to_table_schema`;
+its columns become the default `--value-col`, and their resolution is the
+step when `--freq` is not given.
 `energydata-kit compare before.json after.json` prints what changed between
 two saved reports (`--format text` for a short summary per column); with `--fail-if-worse` it exits `1` if more rows are
 flagged, more intervals are missing or completeness fell.
@@ -188,7 +191,7 @@ use Pint or pint-pandas directly, e.g. `series.astype(f"pint[{meta.unit}]")`.
 - `assess_frame` repeats the timestamp sections (gaps, duplicates, off-grid)
   in every column's report, because each column's report is exactly what
   `assess_quality` gives for it. On the command line, `--unit` works with a
-  single `--value-col` only.
+  single `--value-col`; use `--schema` for metadata on several columns.
 - `compare_reports` matches gaps exactly (a gap that shrank appears as one
   resolved and one new gap) and only compares listed gaps; check
   `lists_truncated` when reports capped their lists with `max_listed`.

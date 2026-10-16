@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+import energydata_kit as ek
 from energydata_kit import __version__
 from energydata_kit.cli import main
 
@@ -329,6 +330,57 @@ def test_compare_text_summary(tmp_path):
     assert code == 1 and out.startswith("data changed; worse:")
     out = run("compare", str(after), str(after), "--format", "text")[1]
     assert out.splitlines() == ["same data; not worse", "kwh: no changes", "pv: no changes"]
+
+
+def _schema(tmp_path, *metas):
+    schema = ek.to_table_schema(metas[0])
+    schema["fields"] += [ek.to_table_schema(m)["fields"][1] for m in metas[1:]]
+    path = tmp_path / "data.schema.json"
+    path.write_text(json.dumps(schema))
+    return str(path)
+
+
+KWH = ek.MeasurementMetadata(
+    name="kwh", unit="kWh", resolution="15min", aggregation="sum", interval_label="end"
+)
+PV = ek.MeasurementMetadata(name="pv", unit="kW", resolution="15min", aggregation="mean")
+
+
+def test_schema_sets_metadata_columns_and_step(tmp_path):
+    path, schema = str(write(tmp_path, GAPPY)), _schema(tmp_path, KWH, PV)
+    flags = tmp_path / "flags.csv"
+    code, out, err = run("report", path, "--schema", schema, "--flags-csv", str(flags), "--insert-missing")
+    assert (code, err) == (0, "")
+    report = json.loads(out)
+    assert report["column_order"] == ["kwh", "pv"]  # the schema's columns, no --value-col needed
+    assert report["columns"]["kwh"]["metadata"] == KWH.to_dict()
+    assert report["columns"]["pv"]["metadata"] == PV.to_dict()
+    assert report["columns"]["kwh"]["n_missing_intervals"] == 2  # step from the schema, no --freq
+    assert len(pd.read_csv(flags)) == 6  # --flags-csv uses the same step
+
+    # One column: the same metadata as --unit would give, from the schema.
+    single = json.loads(run("report", path, "--schema", schema, "--value-col", "kwh")[1])
+    assert single["metadata"] == KWH.to_dict() and single["completeness"] == pytest.approx(4 / 6, abs=1e-6)
+
+
+def test_schema_errors(tmp_path):
+    path = str(write(tmp_path, GAPPY))
+    schema = _schema(tmp_path, KWH)
+    empty = tmp_path / "empty.json"
+    empty.write_text('{"fields": []}')
+    other = ek.MeasurementMetadata(name="other", unit="kW", resolution="15min")
+    elsewhere = tmp_path / "elsewhere.json"
+    elsewhere.write_text(json.dumps(ek.to_table_schema(other)))
+    hourly = _schema(tmp_path, KWH, ek.MeasurementMetadata(name="pv", unit="kW", resolution="1h"))
+    for argv, message in [
+        (["--schema", schema, "--unit", "kW"], "--schema and --unit both set metadata"),
+        (["--schema", str(tmp_path / "absent.json")], "file not found"),
+        (["--schema", str(empty)], "no fields with 'energydata_kit' metadata"),
+        (["--schema", str(elsewhere)], "none of the --schema columns ['other'] are in the file"),
+        (["--schema", hourly, "--flags-csv", str(tmp_path / "f.csv")], "different resolutions"),
+    ]:
+        code, _, err = run("report", path, *argv)
+        assert code == 2 and message in err, (argv, err)
 
 
 def test_missing_file(tmp_path):

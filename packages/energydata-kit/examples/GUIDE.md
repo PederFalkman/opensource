@@ -406,5 +406,24 @@ assert json.loads(Path("report_eu.json").read_text()) == report
 assert Path("flagged_eu.csv").read_text().splitlines()[0] == "timestamp;kw;quality_flag"
 ```
 
+Metadata for one or more columns can come from a Table Schema (section 9)
+instead of `--unit`. Its resolution is then the expected step:
+
+```python
+schema = ek.to_table_schema(
+    ek.MeasurementMetadata(name="kw", unit="kW", resolution="15min", aggregation="mean")
+)
+Path("meter.schema.json").write_text(json.dumps(schema))
+```
+
+```bash
+energydata-kit report meter.csv --schema meter.schema.json -o report_schema.json
+```
+
+```python
+from_schema = json.loads(Path("report_schema.json").read_text())
+assert from_schema["metadata"]["unit"] == "kW" and from_schema["n_missing_intervals"] == 2
+```
+
 Exit status: `0` OK, `1` issues found with `--fail-on-issues`, `2` usage or
 input error. See `energydata-kit report --help` for every option.

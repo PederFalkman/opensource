@@ -339,12 +339,19 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       not), then count, flag, gap, metadata-issue and parameter changes per
       column. JSON stays the default; `--fail-if-worse` behaves the same.
 
-### OSS-34: guide covers the newer CLI options — this change
+### OSS-34: guide covers the newer CLI options — merged in [#40](https://github.com/PederFalkman/opensource/pull/40)
 
 - [x] `examples/GUIDE.md` section 11 shows `--format text` for reports and
       comparisons and reading a `;`/decimal-comma export with `--delimiter`
       and `--decimal`; the test suite runs these blocks and checks their
       output, so the guide cannot drift from the CLI.
+
+### OSS-35: Table Schema metadata in the CLI — this change
+
+- [x] `report --schema`: metadata per column from a Table Schema written by
+      `to_table_schema`; its columns are the default `--value-col` and its
+      resolution the step without `--freq`. Lifts the one-column limit of
+      `--unit`. Conflicting options and unusable schemas exit 2.
 
 ## Explicitly not planned
 
