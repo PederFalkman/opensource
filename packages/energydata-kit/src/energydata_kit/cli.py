@@ -163,7 +163,12 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
         raise CliError(f"could not read CSV: {exc}") from exc
 
     if args.timestamp_col not in frame.columns:
-        raise CliError(f"timestamp column {args.timestamp_col!r} not found; columns: {list(frame.columns)}")
+        hint = ""
+        if len(frame.columns) == 1 and any(sep in str(frame.columns[0]) for sep in ";\t|"):
+            hint = " (only comma-separated files are read; is this file separated by ';', tab or '|'?)"
+        raise CliError(
+            f"timestamp column {args.timestamp_col!r} not found; columns: {list(frame.columns)}{hint}"
+        )
     value_cols = args.value_col
     if value_cols is None:
         others = [c for c in frame.columns if c != args.timestamp_col]

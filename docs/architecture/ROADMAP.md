@@ -280,7 +280,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       section, as the release PR will.
 - [x] Release decisions, checklist and roadmap updated for the merge of #30.
 
-### OSS-26: contributor docs — this change
+### OSS-26: contributor docs — merged in [#32](https://github.com/PederFalkman/opensource/pull/32)
 
 - [x] `CONTRIBUTING.md`: the API, docstring, performance and changelog rules
       from OSS-13, OSS-18, OSS-20 and OSS-24; contribution terms point to
@@ -289,6 +289,17 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Issue templates: bug report (synthetic data only), scope proposal
       (with the out-of-scope list); blank issues off and security reports
       routed to private vulnerability reporting.
+
+### OSS-27: edge-case hardening — this change
+
+- [x] Probed the public API and CLI with empty, single-row, all-missing,
+      non-numeric, naive-timestamp and malformed inputs. Most already gave
+      clear results; tests now pin them.
+- [x] Fixed: an unparseable timestamp in a mix with aware ones was reported
+      as "mix of timezone-aware and naive"; unparseable values are now
+      named with their position.
+- [x] CLI hints at the delimiter when a file reads as one `;`/tab/`|`
+      column; completeness documented as counting timestamps.
 
 ## Explicitly not planned
 

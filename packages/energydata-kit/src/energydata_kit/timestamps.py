@@ -46,6 +46,18 @@ def _is_aware(value: object) -> bool:
     raise TimestampError(f"unsupported timestamp value {value!r} of type {type(value).__name__}")
 
 
+def _unparseable(items: pd.Series) -> TimestampError | None:
+    """An error naming the values that are not ISO 8601 timestamps, if any."""
+    if pd.api.types.infer_dtype(items, skipna=False) != "string":
+        return None
+    parsed = pd.to_datetime(items, utc=True, format="ISO8601", errors="coerce")
+    bad = np.flatnonzero(np.asarray(pd.isna(parsed)))
+    if not len(bad):
+        return None
+    examples = ", ".join(f"position {i}: {items.iloc[i]!r}" for i in bad[:3])
+    return TimestampError(f"could not parse {len(bad)} timestamp(s) as ISO 8601 ({examples})")
+
+
 def _to_datetime_index(values: Iterable[object] | pd.Index | pd.Series) -> pd.DatetimeIndex:
     if isinstance(values, pd.DatetimeIndex):
         return values
@@ -71,7 +83,12 @@ def _to_datetime_index(values: Iterable[object] | pd.Index | pd.Series) -> pd.Da
         if not bool(aware.any()):
             return pd.DatetimeIndex(pd.to_datetime(items, format="ISO8601"))
     except (ValueError, TypeError) as exc:
-        raise TimestampError(f"could not parse timestamps: {exc}") from exc
+        raise (_unparseable(items) or TimestampError(f"could not parse timestamps: {exc}")) from exc
+    # An unparseable string has no offset suffix, so it would otherwise be
+    # reported as a naive timestamp in a mixed input.
+    unparseable = _unparseable(items)
+    if unparseable is not None:
+        raise unparseable
     raise TimestampError(
         f"mix of timezone-aware ({int(aware.sum())}) and naive "
         f"({int((~aware).sum())}) timestamps; refusing to guess"
