@@ -23,6 +23,7 @@ cd packages/energydata-kit
 python -m pip install --upgrade "pip>=25.1"
 python -m pip install -e . --group dev
 pytest && ruff check . && mypy
+cd ../.. && python tools/check_all.py   # every check from CONTRIBUTING.md, one summary
 ```
 
 ## Documentation

@@ -17,7 +17,6 @@
 
 ## Checks
 
-- [ ] Package: `ruff check`, `ruff format --check`, `mypy`, `pytest`
-- [ ] Repository: the `tools/check_*.py` scripts and `pytest tools/tests` (see `CONTRIBUTING.md`)
+- [ ] `python tools/check_all.py` passes (package lint, format, mypy and tests; repository checks; tools tests; release dry run)
 - [ ] `CHANGELOG.md` entry under `[Unreleased]` for user-visible changes
 - [ ] Docs updated (package README, duplication register) for a new capability
