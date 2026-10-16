@@ -32,6 +32,7 @@ pytest && ruff check . && mypy
   [duplication register](docs/architecture/DUPLICATION_REGISTER.md)
 - [Roadmap](docs/architecture/ROADMAP.md) and [public API review](docs/architecture/API_REVIEW.md)
 - [IP boundary](docs/governance/IP_BOUNDARY.md): read this before contributing
-- [Release gates](docs/governance/RELEASE_GATES.md) and
-  [release checklist](docs/governance/RELEASE_CHECKLIST.md)
+- [Release gates](docs/governance/RELEASE_GATES.md),
+  [release checklist](docs/governance/RELEASE_CHECKLIST.md) and
+  [third-party licences](docs/governance/THIRD_PARTY_LICENSES.md)
 - [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)

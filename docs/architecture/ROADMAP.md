@@ -138,7 +138,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       in-process, `energydata-kit` commands as subprocesses), so stale docs
       fail CI. Pandera blocks are skipped where the extra is not installed.
 
-### OSS-13: pre-release API review — this change
+### OSS-13: pre-release API review — merged in [#18](https://github.com/PederFalkman/opensource/pull/18)
 
 - [x] Rule: required inputs positional, optional arguments keyword-only;
       applied across the core API and the Pandera factories
@@ -146,6 +146,17 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] `tests/test_public_api.py` pins every public signature and the rule.
 - [x] Known gaps recorded (stale/counter fine-tuning options only on the
       mask functions), not changed.
+
+### OSS-14: third-party licence evidence (G4) — this change
+
+- [x] `docs/governance/THIRD_PARTY_LICENSES.md`: licence of every direct
+      dependency (runtime, Pandera extra, dev, build) and of the runtime
+      dependencies' own dependencies, with sources and an assessment for
+      legal review. No licence chosen for energydata-kit (G2).
+- [x] `tools/check_third_party.py`: CI keeps the table in sync with
+      `pyproject.toml` and rejects copyleft licences on shipped
+      dependencies; `--report` lists installed runtime dependencies and
+      their declared licences for refreshing the table.
 
 ## Explicitly not planned
 
