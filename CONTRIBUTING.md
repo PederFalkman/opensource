@@ -3,6 +3,10 @@
 Thanks for your interest. The project is pre-release and not yet licensed
 for reuse (see `docs/governance/RELEASE_GATES.md`), so external contributions
 cannot be accepted until a license and contribution terms are in place.
+Whether contributors will sign off commits (Developer Certificate of Origin)
+or sign a contributor agreement is an open decision, D2 in
+[`RELEASE_DECISIONS.md`](docs/governance/RELEASE_DECISIONS.md). Issues
+(bug reports, questions, scope proposals) are welcome now.
 
 ## Before you start
 
@@ -12,6 +16,9 @@ cannot be accepted until a license and contribution terms are in place.
 2. Check [`docs/architecture/DUPLICATION_REGISTER.md`](docs/architecture/DUPLICATION_REGISTER.md):
    prefer an existing, maintained library over new code.
 3. For anything beyond a small fix, open an issue describing the change first.
+   Proposals outside the current scope are recorded as `P-n` in the
+   [roadmap](docs/architecture/ROADMAP.md) and are not implemented until
+   authorized.
 
 ## Development
 
@@ -57,8 +64,20 @@ python -m pytest tools/tests
   `docs/governance/THIRD_PARTY_LICENSES.md`. Prefer no new dependency.
 - Keep PRs small and focused. Update docs and the duplication register in the
   same PR when adding a capability.
-- Public API changes, including `QualityFlag` values and the report schema,
-  need a changelog entry.
+- Public API: required inputs are positional and every optional argument is
+  keyword-only (see `docs/architecture/API_REVIEW.md`). Signatures are pinned
+  in `tests/test_public_api.py`; change that snapshot only on purpose.
+- Every public function, class, method and property has a docstring
+  (`tools/check_docs.py`), and every exported name is mentioned in the
+  package README.
+- Performance: `tests/test_performance.py` keeps generous time budgets; a
+  change that slows the year-of-minute-data cases noticeably needs a note in
+  `docs/architecture/PERFORMANCE.md`.
+- User-visible changes, including public API, `QualityFlag` values and the
+  report schema, need an entry under `## [Unreleased]` in the package
+  `CHANGELOG.md`. `main` already carries the version `0.1.0` and its dated
+  section although nothing is released; the release PR folds `[Unreleased]`
+  into that section, so do not edit the `0.1.0` section directly.
 
 ## Pull request checklist
 
