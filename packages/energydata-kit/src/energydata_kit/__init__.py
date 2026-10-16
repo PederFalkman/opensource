@@ -19,7 +19,7 @@ from energydata_kit.flags import (
     out_of_bounds_mask,
     stale_mask,
 )
-from energydata_kit.frame_report import FrameQualityReport, assess_frame
+from energydata_kit.frame_report import FrameQualityReport, assess_frame, flag_column, flag_frame
 from energydata_kit.intervals import (
     Gap,
     duplicate_mask,
@@ -82,6 +82,8 @@ __all__ = [
     "find_duplicate_timestamps",
     "find_missing_intervals",
     "fingerprint_series",
+    "flag_column",
+    "flag_frame",
     "flag_series",
     "from_table_schema",
     "infer_resolution",

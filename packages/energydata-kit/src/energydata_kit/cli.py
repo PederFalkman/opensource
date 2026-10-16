@@ -20,14 +20,14 @@ import json
 import sys
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TextIO
+from typing import Any, TextIO
 
 import pandas as pd
 
 from energydata_kit import __version__
 from energydata_kit.compare import compare_reports
 from energydata_kit.flags import VALUE_COLUMN, flag_series
-from energydata_kit.frame_report import FrameQualityReport, assess_frame
+from energydata_kit.frame_report import FrameQualityReport, assess_frame, flag_frame
 from energydata_kit.metadata import Aggregation, IntervalLabel, MeasurementMetadata
 from energydata_kit.report import QualityReport, assess_quality
 from energydata_kit.timestamps import TimestampError, normalize_timestamps
@@ -125,7 +125,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     out = rep.add_argument_group("output")
     out.add_argument("-o", "--output", help="write the JSON report here instead of standard output")
-    out.add_argument("--flags-csv", help="also write value and quality_flag columns to this CSV")
+    out.add_argument(
+        "--flags-csv",
+        help="also write values and quality flags to this CSV (quality_flag_<col> per column with several)",
+    )
     out.add_argument("--insert-missing", action="store_true", help="add rows for absent grid timestamps")
     out.add_argument("--max-listed", type=_positive_int, default=100, help="cap on listed gaps/duplicates")
     out.add_argument(
@@ -278,26 +281,28 @@ def _run_frame_report(
     bounds: tuple[float | None, float | None] | None,
     stdout: TextIO,
 ) -> int:
-    # Metadata and flagged CSVs describe one column; refuse rather than guess.
+    # Metadata describes one column; refuse rather than guess.
     if args.unit is not None:
         raise CliError("--unit describes one column; use a single --value-col (or assess_frame in Python)")
-    if args.flags_csv:
-        raise CliError("--flags-csv needs a single --value-col")
+    checks: dict[str, Any] = {
+        "bounds": bounds,
+        "stale_min_run": args.stale_min_run,
+        "stale_atol": args.stale_atol,
+        "stale_exclude": args.stale_exclude,
+        "cumulative": args.cumulative,
+        "counter_tolerance": args.counter_tolerance,
+        "jump_max_delta": args.jump_max_delta,
+    }
     report = assess_frame(
-        frame,
-        freq=args.freq,
-        bounds=bounds,
-        stale_min_run=args.stale_min_run,
-        stale_atol=args.stale_atol,
-        stale_exclude=args.stale_exclude,
-        cumulative=args.cumulative,
-        counter_tolerance=args.counter_tolerance,
-        jump_max_delta=args.jump_max_delta,
-        origin=origin,
-        tz=args.tz,
-        max_listed=args.max_listed,
+        frame, freq=args.freq, origin=origin, tz=args.tz, max_listed=args.max_listed, **checks
     )
     _write_report(args, report, stdout)
+    if args.flags_csv:
+        flagged = flag_frame(
+            frame, freq=args.freq, insert_missing=args.insert_missing, origin=origin, tz=args.tz, **checks
+        )
+        flagged.index.name = args.timestamp_col
+        flagged.to_csv(args.flags_csv, date_format="%Y-%m-%dT%H:%M:%S%z")
     return 1 if args.fail_on_issues and _has_issues(report) else 0
 
 

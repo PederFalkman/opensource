@@ -68,14 +68,14 @@ opensource/
         └──────────────────┬────────────────────┘
                            ▼
                       report.py  → QualityReport (deterministic JSON + SHA-256 fingerprint)
-                      frame_report.py → FrameQualityReport (one QualityReport per column)
+                      frame_report.py → FrameQualityReport and flag_frame (per column)
                       compare.py → ReportComparison (what changed between two reports)
 
   semantics.py → interval labels, metadata consistency, local-day completeness (feeds report.py)
   table_schema.py → Frictionless Table Schema export/import of MeasurementMetadata
   pandera_checks.py → optional [pandera] extra: the same masks as Pandera checks (not imported by default)
   synthetic.py → seeded test series with explicitly placed defects
-  cli.py → `energydata-kit report` / `compare` over assess_quality, assess_frame, flag_series, compare_reports
+  cli.py → `energydata-kit report` / `compare` over assess_quality, assess_frame, flag_series, flag_frame, compare_reports
 ```
 
 Key decisions:
@@ -90,7 +90,7 @@ Key decisions:
 | Pint registry extended with `var` | Pint has no reactive-power unit; `var` is defined as dimensionally equal to `VA`. |
 | Calendar grids only with an explicit `tz` | Daily and longer steps in local time are laid out by pandas in wall-clock time (23/25-hour DST days). They are never inferred from metadata, so a fixed `"1D"` step stays 24 h in UTC unless the caller says otherwise. |
 | Opt-in checks for stale values, counters and jumps | A sensible run length or jump limit depends on the signal, and whether a series is cumulative is the caller's knowledge; all three stay off by default and the package ships no limits. |
-| CLI is a thin layer | `energydata-kit report` and `compare` only parse arguments, CSV and JSON, then call the library (`assess_quality`, `assess_frame`, `flag_series`, `compare_reports`); exit status 1 for issues (`--fail-on-issues`, `--fail-if-worse`), 2 for input errors. |
+| CLI is a thin layer | `energydata-kit report` and `compare` only parse arguments, CSV and JSON, then call the library (`assess_quality`, `assess_frame`, `flag_series`, `flag_frame`, `compare_reports`); exit status 1 for issues (`--fail-on-issues`, `--fail-if-worse`), 2 for input errors. |
 
 ## Supported versions
 
