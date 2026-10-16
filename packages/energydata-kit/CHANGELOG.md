@@ -12,6 +12,9 @@ versioning: [SemVer](https://semver.org/).
   as a comma-separated file, and `--flags-csv` is written in the same format
   as the input (OSS-30). The single-column hint now suggests the matching
   `--delimiter`.
+- Command line (OSS-32): `report --format text` prints a short readable
+  summary (rows, completeness, flag counts, first gaps, metadata issues per
+  column) instead of the JSON report. JSON stays the default and unchanged.
 
 ### Changed
 - Clearer errors for awkward input (OSS-27): timestamps that are not ISO 8601

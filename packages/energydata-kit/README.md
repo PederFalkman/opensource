@@ -99,7 +99,9 @@ energydata-kit report meter.csv \
 ```
 
 Prints the deterministic JSON report to standard output (`-o` writes a file;
-`-` reads the CSV from standard input). Files separated by `;`, tab or `|` are
+`-` reads the CSV from standard input). `--format text` prints a short summary
+for reading instead: rows, completeness, flag counts, the first gaps and
+metadata issues per column; use the JSON report for anything automated. Files separated by `;`, tab or `|` are
 read with `--delimiter ';'` (or `--delimiter tab`); `--decimal ,` reads
 decimal commas such as `1,5`. `--flags-csv` writes the original rows, in the
 same delimiter and decimal format as the input, with a `quality_flag` column, plus inserted rows with `--insert-missing`.
