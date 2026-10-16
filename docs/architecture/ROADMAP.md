@@ -22,11 +22,15 @@ Questions and evidence for each: `docs/governance/RELEASE_DECISIONS.md`.
   `series.astype(f"pint[{meta.unit}]")` already works for Pint's built-in
   units. Revisit if users need it.
 
-## Proposed
-
 ## Proposed — gated, not authorized for implementation
 
-### OSS-16: Energy Tariff Data Quality (Engrate-inspired)
+Proposals get a `P-` label; an `OSS-` number is assigned only when work is
+authorized, so numbers stay unique.
+
+### P-1: Energy Tariff Data Quality (Engrate-inspired)
+
+*Added by the repository owner in `46e01f1` as "OSS-16"; relabelled in
+OSS-23 because OSS-16 is the release dry run (#21). Text otherwise unchanged.*
 
 **Status: PROPOSED / DEFERRED.** Consider only after release and ownership/licensing gates G1–G7 for energydata-kit. This is a narrow, independent extension of the existing Python data-quality tooling, not a tariff calculation or commercial market product.
 
@@ -41,8 +45,7 @@ Admission gates:
 
 **Out of scope:** tariff bill/cost calculations, solver optimizations, market-data downloads, live DSO catalogues, BRP messaging and operations, settlement, MICA physical modeling/capacity intelligence, customer economic scenarios and proprietary algorithms. Those remain governed separately and are not implicitly authorized by this entry.
 
-**Ordering:** Existing OSS release gates first; OSS-16 assessment second; no implementation before separate approval. MICA REL-01/REL-02/VER-01 engineering priorities are unaffected.
-
+**Ordering:** Existing OSS release gates first; P-1 assessment second; no implementation before separate approval. MICA REL-01/REL-02/VER-01 engineering priorities are unaffected.
 
 ## Done
 
@@ -239,13 +242,20 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] CLI `--flags-csv` with several `--value-col`, closing the limitation
       recorded in OSS-17 and OSS-20.
 
-### OSS-22: release decision pack — this change
+### OSS-22: release decision pack — merged in [#28](https://github.com/PederFalkman/opensource/pull/28)
 
 - [x] `docs/governance/RELEASE_DECISIONS.md`: each open decision (visibility,
       G1 ownership, G2 licence, G3 IP review, branch protection, G7
       publication) with its owner, the evidence already in the repository,
       the questions to answer and the next step after each answer. Linked
       from the release gates, the checklist and the README. No code changes.
+
+### OSS-23: roadmap tidy — this change
+
+- [x] One "Proposed" section instead of two; proposals labelled `P-n`
+      until authorized. The owner's tariff-data proposal is now P-1 (it
+      reused OSS-16, which is the release dry run); its text is unchanged
+      apart from that label.
 
 ## Explicitly not planned
 
