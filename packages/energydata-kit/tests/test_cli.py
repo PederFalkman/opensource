@@ -100,6 +100,24 @@ def test_stale_and_counter_tuning(tmp_path):
     assert code == 2 and out == "" and "counter_tolerance requires cumulative" in err
 
 
+def test_multiple_value_columns(tmp_path):
+    rows = [f"2024-01-01T{h:02d}:00Z,{h},{10 - h}" for h in range(4)]
+    path = write(tmp_path, "timestamp,a,b\n" + "\n".join(rows) + "\n")
+    code, out, _ = run("report", str(path), "--value-col", "a", "--value-col", "b", "--freq", "1h")
+    data = json.loads(out)
+    assert code == 0 and data["column_order"] == ["a", "b"]
+    assert data["columns"]["b"]["series_name"] == "b" and data["summary"]["a"]["n_flagged_rows"] == 0
+    args = ["report", str(path), "--value-col", "a", "--value-col", "b", "--freq", "1h"]
+    assert run(*args, "--fail-on-issues", "--jump-max-delta", "0.5")[0] == 1
+    for extra, message in [
+        (["--unit", "kW"], "--unit describes one column"),
+        (["--flags-csv", str(tmp_path / "f.csv")], "--flags-csv needs a single --value-col"),
+        (["--value-col", "a"], "only once"),
+    ]:
+        code, out, err = run(*args, *extra)
+        assert code == 2 and out == "" and message in err
+
+
 def test_flags_csv_keeps_rows_and_inserts_missing(tmp_path):
     path = write(tmp_path, DEFECTIVE)
     flags = tmp_path / "flags.csv"

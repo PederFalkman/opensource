@@ -183,7 +183,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       the gap recorded in `API_REVIEW.md`. Keyword-only, recorded in the
       report `parameters`, rejected without their check.
 
-### OSS-16: release dry run — this change
+### OSS-16: release dry run — merged in [#21](https://github.com/PederFalkman/opensource/pull/21)
 
 - [x] `tools/release_dry_run.py`: applies the release PR edits (final
       version, dated changelog, placeholder LICENSE and licence declaration,
@@ -193,6 +193,15 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Finding: a root `LICENSE` alone does not ship in the wheel or sdist.
       The readiness check now also requires an identical copy in the package
       directory, and the release checklist says so.
+
+### OSS-17: multi-column reports — this change
+
+- [x] `assess_frame` → `FrameQualityReport`: each column gets exactly the
+      `assess_quality` report, plus a combined fingerprint and a per-column
+      summary. Shared options for all columns, `per_column` overrides for
+      check options and metadata.
+- [x] CLI: repeat `--value-col`; `--unit` and `--flags-csv` stay
+      single-column and are rejected with several columns.
 
 ## Explicitly not planned
 

@@ -3,7 +3,9 @@
 Reads one timestamp column and one value column from a CSV file, runs
 :func:`energydata_kit.assess_quality` and prints the deterministic JSON report.
 Optionally writes the non-destructive flagged table from
-:func:`energydata_kit.flag_series`.
+:func:`energydata_kit.flag_series`. With several ``--value-col`` options it
+runs :func:`energydata_kit.assess_frame` and prints one report with a section
+per column.
 
 Exit codes: 0 success; 1 ``--fail-on-issues`` and issues were found;
 2 usage, input or data error.
@@ -21,6 +23,7 @@ import pandas as pd
 
 from energydata_kit import __version__
 from energydata_kit.flags import VALUE_COLUMN, flag_series
+from energydata_kit.frame_report import FrameQualityReport, assess_frame
 from energydata_kit.metadata import Aggregation, IntervalLabel, MeasurementMetadata
 from energydata_kit.report import QualityReport, assess_quality
 from energydata_kit.timestamps import TimestampError, normalize_timestamps
@@ -58,14 +61,16 @@ def build_parser() -> argparse.ArgumentParser:
     rep = sub.add_parser(
         "report",
         help="print a JSON quality report for a CSV file",
-        description="Print a deterministic JSON quality report for one value column of a CSV file.",
+        description="Print a deterministic JSON quality report for value columns of a CSV file.",
     )
     rep.add_argument("csv", help="input CSV file, or '-' for standard input")
 
     cols = rep.add_argument_group("columns")
     cols.add_argument("--timestamp-col", default="timestamp", help="timestamp column (default: timestamp)")
     cols.add_argument(
-        "--value-col", help="value column (default: the only other column; required if there are several)"
+        "--value-col",
+        action="append",
+        help="value column; repeat for a multi-column report (default: the only other column)",
     )
 
     ts = rep.add_argument_group("timestamps")
@@ -126,7 +131,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _read_series(args: argparse.Namespace, stdin: TextIO) -> pd.Series:
+def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
     source = stdin if args.csv == "-" else args.csv
     try:
         frame = pd.read_csv(source, dtype={args.timestamp_col: str}, keep_default_na=True)
@@ -137,14 +142,17 @@ def _read_series(args: argparse.Namespace, stdin: TextIO) -> pd.Series:
 
     if args.timestamp_col not in frame.columns:
         raise CliError(f"timestamp column {args.timestamp_col!r} not found; columns: {list(frame.columns)}")
-    value_col = args.value_col
-    if value_col is None:
+    value_cols = args.value_col
+    if value_cols is None:
         others = [c for c in frame.columns if c != args.timestamp_col]
         if len(others) != 1:
             raise CliError(f"pass --value-col; candidate columns: {others}")
-        value_col = others[0]
-    elif value_col not in frame.columns:
-        raise CliError(f"value column {value_col!r} not found; columns: {list(frame.columns)}")
+        value_cols = others
+    for col in value_cols:
+        if col not in frame.columns:
+            raise CliError(f"value column {col!r} not found; columns: {list(frame.columns)}")
+    if len(set(value_cols)) != len(value_cols):
+        raise CliError("each --value-col may be given only once")
 
     try:
         index = normalize_timestamps(
@@ -160,7 +168,7 @@ def _read_series(args: argparse.Namespace, stdin: TextIO) -> pd.Series:
             .replace("assume_tz was given", "--assume-tz was given")
         )
         raise CliError(message) from exc
-    return pd.Series(frame[value_col].to_numpy(), index=index, name=str(value_col))
+    return pd.DataFrame({str(c): frame[c].to_numpy() for c in value_cols}, index=index)
 
 
 def _metadata(args: argparse.Namespace, name: str) -> MeasurementMetadata | None:
@@ -176,7 +184,7 @@ def _metadata(args: argparse.Namespace, name: str) -> MeasurementMetadata | None
     )
 
 
-def _has_issues(report: QualityReport) -> bool:
+def _has_issues(report: QualityReport | FrameQualityReport) -> bool:
     return report.n_flagged_rows > 0 or report.n_missing_intervals > 0
 
 
@@ -186,11 +194,14 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
     if args.insert_missing and not args.flags_csv:
         raise CliError("--insert-missing only affects --flags-csv")
 
-    series = _read_series(args, stdin)
-    metadata = _metadata(args, str(series.name))
+    frame = _read_frame(args, stdin)
     origin = None if args.origin is None else pd.Timestamp(args.origin)
     bounds = None if args.bounds is None else (args.bounds[0], args.bounds[1])
+    if frame.shape[1] > 1:
+        return _run_frame_report(args, frame, origin, bounds, stdout)
 
+    series = frame.iloc[:, 0]
+    metadata = _metadata(args, str(series.name))
     report = assess_quality(
         series,
         metadata=metadata,
@@ -206,11 +217,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
         tz=args.tz,
         max_listed=args.max_listed,
     )
-    text = report.to_json() + "\n"
-    if args.output:
-        Path(args.output).write_text(text, encoding="utf-8")
-    else:
-        stdout.write(text)
+    _write_report(args, report, stdout)
 
     if args.flags_csv:
         freq = args.freq if args.freq else (metadata.resolution if metadata else None)
@@ -232,6 +239,46 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
         flagged.index.name = args.timestamp_col
         flagged.to_csv(args.flags_csv, date_format="%Y-%m-%dT%H:%M:%S%z")
 
+    return 1 if args.fail_on_issues and _has_issues(report) else 0
+
+
+def _write_report(
+    args: argparse.Namespace, report: QualityReport | FrameQualityReport, stdout: TextIO
+) -> None:
+    text = report.to_json() + "\n"
+    if args.output:
+        Path(args.output).write_text(text, encoding="utf-8")
+    else:
+        stdout.write(text)
+
+
+def _run_frame_report(
+    args: argparse.Namespace,
+    frame: pd.DataFrame,
+    origin: pd.Timestamp | None,
+    bounds: tuple[float | None, float | None] | None,
+    stdout: TextIO,
+) -> int:
+    # Metadata and flagged CSVs describe one column; refuse rather than guess.
+    if args.unit is not None:
+        raise CliError("--unit describes one column; use a single --value-col (or assess_frame in Python)")
+    if args.flags_csv:
+        raise CliError("--flags-csv needs a single --value-col")
+    report = assess_frame(
+        frame,
+        freq=args.freq,
+        bounds=bounds,
+        stale_min_run=args.stale_min_run,
+        stale_atol=args.stale_atol,
+        stale_exclude=args.stale_exclude,
+        cumulative=args.cumulative,
+        counter_tolerance=args.counter_tolerance,
+        jump_max_delta=args.jump_max_delta,
+        origin=origin,
+        tz=args.tz,
+        max_listed=args.max_listed,
+    )
+    _write_report(args, report, stdout)
     return 1 if args.fail_on_issues and _has_issues(report) else 0
 
 
