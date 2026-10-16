@@ -42,13 +42,19 @@ commit and branch is already visible. Without a LICENSE file the default is
 
 - **Question:** does the publishing legal entity own all code in the
   repository, so that it can license it?
-- **Facts for the answer** (from `git log` on `main`, 2026-10-16): 60 commits.
-  26 commits containing the code and docs were written with an AI coding
-  assistant (author "Claude", with a `Co-Authored-By` trailer) in sessions
-  run by the repository owner; 28 are the owner's pull-request merges, 2 are
-  the owner's own commits (the initial commit and a roadmap note), and 4 are
-  Dependabot updates of pinned GitHub Actions. No external contributor
-  has committed.
+- **Facts for the answer** (from `git log` on `main` at `eafdb8c`, after #40,
+  2026-10-16): 90 commits.
+  - 41 by an AI coding assistant (author "Claude", with a `Co-Authored-By`
+    trailer) in sessions run by the repository owner: 38 contain the code
+    and docs, 3 merge `main` into a pull-request branch.
+  - 45 by the repository owner: 39 pull-request merges, 4 merges of `main`
+    into a pull-request branch, and 2 own commits (the initial commit and a
+    roadmap note).
+  - 4 Dependabot updates of pinned GitHub Actions.
+  - No external contributor has committed.
+
+  The counts grow with every pull request; the categories have not changed.
+  To recount: `git log --format='%an %s' main`.
 - **Ask counsel to confirm** how employment terms and AI-assisted authorship
   affect ownership and the ability to license, and whether future external
   contributions need a contributor agreement or a Developer Certificate of
@@ -110,10 +116,10 @@ Not a release gate, but it protects the release commit.
 
 - **Questions:**
   1. Publish to PyPI, or keep releases as GitHub-only build artifacts?
-  2. Confirm the name `energydata-kit`. On 2026-10-16 the names
-     `energydata-kit` and `energydata_kit` were not taken on PyPI or TestPyPI
-     (HTTP 404 from their JSON APIs); availability can change until the
-     first upload.
+  2. Confirm the name `energydata-kit`. On 2026-10-16 (checked twice that
+     day, in OSS-22 and OSS-36) the names `energydata-kit` and
+     `energydata_kit` were not taken on PyPI or TestPyPI (HTTP 404 from
+     their JSON APIs); availability can change until the first upload.
   3. Who owns the PyPI project and its trusted-publishing configuration?
 - **After approval:** the release PR removes the `Private :: Do Not Upload`
   classifier; trusted publishing is set up in a separate, reviewed change.
