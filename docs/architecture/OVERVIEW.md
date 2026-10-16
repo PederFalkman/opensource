@@ -63,6 +63,7 @@ opensource/
         └──────────────────┬────────────────────┘
                            ▼
                       report.py  → QualityReport (deterministic JSON + SHA-256 fingerprint)
+                      frame_report.py → FrameQualityReport (one QualityReport per column)
 
   semantics.py → interval labels, metadata consistency, local-day completeness (feeds report.py)
   table_schema.py → Frictionless Table Schema export/import of MeasurementMetadata

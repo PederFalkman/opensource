@@ -70,6 +70,11 @@ versioning: [SemVer](https://semver.org/).
   `counter_tolerance`, also as CLI `--stale-atol`, `--stale-exclude` and
   `--counter-tolerance`. Recorded in report `parameters`; giving one without
   its check raises `ValueError` (OSS-15).
+- `assess_frame` → `FrameQualityReport`: one deterministic report for several
+  columns sharing a timestamp index. Each column's section equals
+  `assess_quality` on that column; shared options apply to all columns and
+  `per_column` overrides check options and metadata per column. Combined
+  fingerprint and a per-column summary. CLI: repeat `--value-col` (OSS-17).
 - `examples/GUIDE.md`: worked examples from raw local meter timestamps to a
   reproducible report, the command line and Pandera. `tests/test_guide.py`
   runs every code block, so the guide fails CI when it goes stale (OSS-12).

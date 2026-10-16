@@ -250,6 +250,27 @@ assert ek.fingerprint_series(shown) == report.fingerprint
 print(report.to_json())
 ```
 
+Meter exports often hold several channels with one timestamp column.
+`assess_frame` gives each column exactly the report `assess_quality` would,
+in one deterministic document. Options can differ per column:
+
+```python
+channels = pd.DataFrame(
+    {
+        "power_kw": ek.make_synthetic_series(periods=6, name="power_kw"),
+        "energy_kwh": [10.0, 10.4, 10.9, 0.3, 0.8, 1.2],  # register reset at row 3
+    }
+)
+frame_report = ek.assess_frame(
+    channels,
+    freq="15min",
+    per_column={"power_kw": {"bounds": (0, None)}, "energy_kwh": {"cumulative": True}},
+)
+assert list(frame_report.columns) == ["power_kw", "energy_kwh"]
+assert frame_report.summary["energy_kwh"]["n_flagged_rows"] == 1
+assert frame_report.columns["energy_kwh"].flag_counts["COUNTER_DECREASE"] == 1
+```
+
 ## 9. Exchanging metadata as a Table Schema
 
 Metadata can travel with a CSV file as a

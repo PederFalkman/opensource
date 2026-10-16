@@ -18,6 +18,7 @@ from energydata_kit.flags import (
     out_of_bounds_mask,
     stale_mask,
 )
+from energydata_kit.frame_report import FrameQualityReport, assess_frame
 from energydata_kit.intervals import (
     Gap,
     duplicate_mask,
@@ -57,6 +58,7 @@ __all__ = [
     "FLAG_COLUMN",
     "VALUE_COLUMN",
     "Aggregation",
+    "FrameQualityReport",
     "Gap",
     "IntervalLabel",
     "MeasurementMetadata",
@@ -67,6 +69,7 @@ __all__ = [
     "TimestampSummary",
     "UnitError",
     "__version__",
+    "assess_frame",
     "assess_quality",
     "check_metadata_consistency",
     "counter_decrease_mask",
