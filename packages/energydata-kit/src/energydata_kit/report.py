@@ -158,6 +158,11 @@ def assess_quality(
     skipped and only the inferred resolution is reported; the step is never
     guessed silently.
 
+    ``completeness`` is the share of expected grid timestamps that are
+    present, whatever their values: a row with a missing value still counts
+    and is flagged ``MISSING_VALUE`` instead. It is ``None`` without a step
+    or for an empty series.
+
     ``origin`` anchors the grid and ``tz`` makes ``freq`` a local-calendar
     step (see :func:`energydata_kit.expected_grid`); the per-local-day
     section is only produced for fixed steps.

@@ -29,6 +29,15 @@ def test_mixed_aware_and_naive_rejected():
         normalize_timestamps(["2024-01-01T00:00Z", "2024-01-01T01:00"])
 
 
+def test_unparseable_value_named_instead_of_reported_as_naive():
+    # "not-a-date" has no offset suffix; it must not be counted as naive.
+    expected = r"could not parse 1 timestamp\(s\) as ISO 8601 \(position 0: 'not-a-date'\)"
+    with pytest.raises(TimestampError, match=expected):
+        normalize_timestamps(["not-a-date", "2024-01-01T01:00Z"])
+    with pytest.raises(TimestampError, match="position 1: '2024-13-01T00:00Z'"):
+        normalize_timestamps(["2024-01-01T00:00Z", "2024-13-01T00:00Z"])
+
+
 def test_assume_tz_with_aware_input_rejected():
     with pytest.raises(TimestampError, match="already timezone-aware"):
         normalize_timestamps(["2024-01-01T00:00Z"], assume_tz="UTC")

@@ -5,6 +5,15 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Clearer errors for awkward input (OSS-27): timestamps that are not ISO 8601
+  are named with their position (`could not parse 1 timestamp(s) as ISO 8601
+  (position 0: 'not-a-date')`) instead of pandas' parser hint, and in a mix
+  with timezone-aware values they are no longer miscounted as naive. The
+  command line suggests checking the delimiter when a file reads as a single
+  `;`-, tab- or `|`-separated column. The `assess_quality` docstring states
+  that completeness counts timestamps, not values.
+
 ## [0.1.0] - 2026-10-16
 
 ### Changed

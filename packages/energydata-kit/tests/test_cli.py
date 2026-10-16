@@ -194,6 +194,25 @@ def test_input_errors_exit_2_without_traceback(tmp_path, argv, message):
     assert "Traceback" not in err
 
 
+def test_edge_case_files(tmp_path):
+    empty = tmp_path / "empty.csv"
+    empty.write_text("")
+    code, _, err = run("report", str(empty))
+    assert code == 2 and "could not read CSV" in err
+
+    code, out, err = run("report", str(write(tmp_path, "timestamp,kwh\n")), "--freq", "15min")
+    assert (code, err) == (0, "") and json.loads(out)["n_rows"] == 0
+
+    semi = tmp_path / "semi.csv"
+    semi.write_text("timestamp;kwh\n2026-01-01T00:00:00Z;1\n")
+    code, _, err = run("report", str(semi))
+    assert code == 2 and "only comma-separated files are read" in err
+
+    bad = write(tmp_path, "timestamp,kwh\nnot-a-date,1\n2026-01-01T00:15:00Z,2\n")
+    code, _, err = run("report", str(bad))
+    assert code == 2 and "position 0: 'not-a-date'" in err and "naive" not in err
+
+
 def test_missing_file(tmp_path):
     code, _, err = run("report", str(tmp_path / "absent.csv"))
     assert code == 2 and "file not found" in err

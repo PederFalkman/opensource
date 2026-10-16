@@ -90,3 +90,14 @@ def test_fingerprint_canonical_nan():
 def test_empty_series():
     r = assess_quality(pd.Series([], index=pd.DatetimeIndex([], tz="UTC"), dtype=float), freq="1h")
     assert r.n_rows == 0 and r.first_timestamp is None and r.completeness is None
+
+
+def test_single_row_and_all_missing_values():
+    idx = pd.date_range("2026-01-01", periods=4, freq="15min", tz="UTC")
+    one = assess_quality(pd.Series([1.0], index=idx[:1]), freq="15min")
+    assert (one.n_rows, one.completeness, one.n_flagged_rows) == (1, 1.0, 0)
+    assert assess_quality(pd.Series([1.0], index=idx[:1])).completeness is None  # no step, no guess
+    # Completeness counts timestamps; missing values are flagged separately.
+    nan = assess_quality(pd.Series([np.nan] * 4, index=idx), freq="15min")
+    assert nan.completeness == 1.0
+    assert nan.flag_counts["MISSING_VALUE"] == 4 and nan.n_flagged_rows == 4
