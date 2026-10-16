@@ -301,12 +301,20 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] CLI hints at the delimiter when a file reads as one `;`/tab/`|`
       column; completeness documented as counting timestamps.
 
-### OSS-28: CLI `--delimiter` and `--decimal` — this change
+### OSS-28: CLI `--delimiter` and `--decimal` — merged in [#34](https://github.com/PederFalkman/opensource/pull/34)
 
 - [x] `report` reads `;`-, tab- and `|`-separated files and decimal commas;
       the report equals that of the same data as a comma-separated file.
 - [x] Invalid delimiters (several characters, letters, digits, quotes, or
       the same as `--decimal`) exit 2 with a message.
+
+### OSS-29: security policy refresh — this change
+
+- [x] `SECURITY.md`: what to include in a report (synthetic data only), what
+      is and is not a security issue, how reports are handled, history
+      cleaning after a leak, how the package limits exposure, and supported
+      versions; the policy for released versions is left to the first
+      release.
 
 ## Explicitly not planned
 
