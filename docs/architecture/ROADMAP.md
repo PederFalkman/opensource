@@ -301,6 +301,14 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] CLI hints at the delimiter when a file reads as one `;`/tab/`|`
       column; completeness documented as counting timestamps.
 
+### OSS-29: security policy refresh — this change
+
+- [x] `SECURITY.md`: what to include in a report (synthetic data only), what
+      is and is not a security issue, how reports are handled, history
+      cleaning after a leak, how the package limits exposure, and supported
+      versions; the policy for released versions is left to the first
+      release.
+
 ## Explicitly not planned
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
