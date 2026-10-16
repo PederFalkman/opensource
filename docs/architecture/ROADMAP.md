@@ -346,12 +346,18 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       and `--decimal`; the test suite runs these blocks and checks their
       output, so the guide cannot drift from the CLI.
 
-### OSS-35: Table Schema metadata in the CLI — this change
+### OSS-35: Table Schema metadata in the CLI — merged in [#41](https://github.com/PederFalkman/opensource/pull/41)
 
 - [x] `report --schema`: metadata per column from a Table Schema written by
       `to_table_schema`; its columns are the default `--value-col` and its
       resolution the step without `--freq`. Lifts the one-column limit of
       `--unit`. Conflicting options and unusable schemas exit 2.
+
+### OSS-36: release decision facts refreshed — this change
+
+- [x] `RELEASE_DECISIONS.md` D2: commit and authorship counts as of `eafdb8c`
+      (90 commits; same categories as in OSS-22) with the command to recount.
+      D6: PyPI and TestPyPI names re-checked, still free.
 
 ## Explicitly not planned
 
