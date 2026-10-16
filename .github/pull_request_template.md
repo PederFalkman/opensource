@@ -14,3 +14,10 @@
 - [ ] No credentials, private endpoints or internal hostnames
 - [ ] Not in the out-of-scope list in `docs/governance/IP_BOUNDARY.md`
 - [ ] New dependencies (if any) added to `tools/ip_boundary.toml` with justification
+
+## Checks
+
+- [ ] Package: `ruff check`, `ruff format --check`, `mypy`, `pytest`
+- [ ] Repository: the `tools/check_*.py` scripts and `pytest tools/tests` (see `CONTRIBUTING.md`)
+- [ ] `CHANGELOG.md` entry under `[Unreleased]` for user-visible changes
+- [ ] Docs updated (package README, duplication register) for a new capability
