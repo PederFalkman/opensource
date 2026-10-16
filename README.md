@@ -34,6 +34,7 @@ pytest && ruff check . && mypy
   and [performance](docs/architecture/PERFORMANCE.md)
 - [IP boundary](docs/governance/IP_BOUNDARY.md): read this before contributing
 - [Release gates](docs/governance/RELEASE_GATES.md),
-  [release checklist](docs/governance/RELEASE_CHECKLIST.md) and
-  [third-party licences](docs/governance/THIRD_PARTY_LICENSES.md)
+  [release checklist](docs/governance/RELEASE_CHECKLIST.md),
+  [third-party licences](docs/governance/THIRD_PARTY_LICENSES.md) and the
+  [open release decisions](docs/governance/RELEASE_DECISIONS.md)
 - [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
