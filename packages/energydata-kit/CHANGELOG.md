@@ -6,6 +6,11 @@ versioning: [SemVer](https://semver.org/).
 ## [Unreleased]
 
 ### Changed
+- Pre-release polish (OSS-20): every public function, class, method and
+  property has a docstring (now checked in CI); `fingerprint_series` gives the
+  same `normalize_timestamps()` hint as the other timezone errors; README
+  limitations cover multi-column reports, report comparison and slow
+  offset-string parsing.
 - Faster on long series, same results (OSS-18): nanosecond timestamps are read
   without copying the index, grid membership uses a sorted search, and string
   timestamps are checked for UTC offsets vectorised. With pandas 3,

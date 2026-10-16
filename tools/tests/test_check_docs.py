@@ -11,8 +11,11 @@ cd = importlib.util.module_from_spec(spec)
 sys.modules["check_docs"] = cd
 spec.loader.exec_module(cd)
 
-INIT = '__version__ = "0"\n__all__ = ["__version__", "alpha", "Beta"]\n'
-FLAGS = "from enum import IntFlag\nclass QualityFlag(IntFlag):\n    OK = 0\n    BAD = 1\n"
+INIT = '"""Demo."""\n__version__ = "0"\n__all__ = ["__version__", "alpha", "Beta"]\n'
+FLAGS = (
+    '"""Flags."""\nfrom enum import IntFlag\n'
+    'class QualityFlag(IntFlag):\n    """Flags."""\n    OK = 0\n    BAD = 1\n'
+)
 README = "# demo\n\nUse `alpha` and `Beta`.\n\n| `OK` | `BAD` |\n\nSee [docs](docs/guide.md).\n"
 
 
@@ -66,6 +69,46 @@ def test_links(tmp_path):
     )
     msgs = messages(make_repo(tmp_path, readme=readme))
     assert len(msgs) == 1 and "broken link 'missing.md'" in msgs[0]
+
+
+def test_docstrings(tmp_path):
+    root = make_repo(tmp_path)
+    src = root / "packages" / "demo" / "src" / "demo"
+    (src / "api.py").write_text(
+        '''"""API."""
+
+
+def documented():
+    """Yes."""
+
+
+def undocumented():
+    pass
+
+
+def _private():
+    pass
+
+
+class Thing:
+    """A thing."""
+
+    def method(self):
+        pass
+
+    @property
+    def size(self):
+        """Size."""
+        return 1
+'''
+    )
+    (src / "bare.py").write_text("x = 1\n")
+    messages = sorted(p.message for p in cd.run(root))
+    assert messages == [
+        "<module> has no docstring",
+        "Thing.method has no docstring",
+        "undocumented has no docstring",
+    ]
 
 
 def test_real_repository_passes():

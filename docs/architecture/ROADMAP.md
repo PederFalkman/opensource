@@ -214,12 +214,20 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] `tests/test_performance.py`: coarse 10-second budget for a year of
       minute data (about 0.3 s today), catching accidental quadratic steps.
 
-### OSS-19: report comparison — this change
+### OSS-19: report comparison — merged in [#25](https://github.com/PederFalkman/opensource/pull/25)
 
 - [x] `compare_reports` → `ReportComparison`: only what differs between two
       reports (objects or saved JSON, same report schema), per series or per
       column, with deltas; plus a narrowly defined `worse` flag.
 - [x] CLI `energydata-kit compare BEFORE AFTER [--fail-if-worse]`.
+
+### OSS-20: pre-release polish — this change
+
+- [x] `tools/check_docs.py` also requires docstrings on every package module
+      and public function, class, method and property; missing ones added.
+- [x] README and architecture overview checked against the code: CLI
+      `compare`, multi-column reports, new tools and docs, limitations.
+- [x] Error messages: one consistent hint for timezone-naive input.
 
 ## Explicitly not planned
 

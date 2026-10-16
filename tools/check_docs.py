@@ -8,6 +8,8 @@ Checks:
 2. Every ``QualityFlag`` member appears as ``NAME`` in the README flag table.
 3. Every package ``CHANGELOG.md`` has an ``## [Unreleased]`` section.
 4. Every relative Markdown link in tracked docs points to an existing file.
+5. Every package module, and every public function, class, method and
+   property in it (names not starting with ``_``), has a docstring.
 
 Code is read with ``ast`` and never imported, so this needs no dependencies.
 
@@ -92,6 +94,34 @@ def check_package(root: Path, pkg_dir: Path) -> list[Problem]:
     return problems
 
 
+def missing_docstrings(module_path: Path) -> list[str]:
+    """Public definitions in ``module_path`` without a docstring, as dotted names."""
+    tree = _module_ast(module_path)
+    missing = [] if ast.get_docstring(tree) else ["<module>"]
+
+    def visit(body: list[ast.stmt], prefix: str) -> None:
+        for node in body:
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                continue
+            if node.name.startswith("_"):
+                continue
+            if not ast.get_docstring(node):
+                missing.append(prefix + node.name)
+            if isinstance(node, ast.ClassDef):
+                visit(node.body, f"{prefix}{node.name}.")
+
+    visit(tree.body, "")
+    return missing
+
+
+def check_docstrings(root: Path, pkg_dir: Path) -> list[Problem]:
+    problems = []
+    for module in sorted((pkg_dir / "src").rglob("*.py")):
+        for name in missing_docstrings(module):
+            problems.append(Problem(module.relative_to(root), f"{name} has no docstring"))
+    return problems
+
+
 def markdown_files(root: Path) -> list[Path]:
     return sorted(p for p in root.rglob("*.md") if not _SKIP_DIRS & set(p.relative_to(root).parts))
 
@@ -119,6 +149,7 @@ def run(root: Path) -> list[Problem]:
     problems: list[Problem] = []
     for pyproject in sorted(root.glob("packages/*/pyproject.toml")):
         problems.extend(check_package(root, pyproject.parent))
+        problems.extend(check_docstrings(root, pyproject.parent))
     problems.extend(check_links(root))
     return problems
 

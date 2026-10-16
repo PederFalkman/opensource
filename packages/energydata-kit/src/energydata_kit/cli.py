@@ -58,6 +58,7 @@ def _positive_int(text: str) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """The ``energydata-kit`` argument parser with its ``report`` and ``compare`` subcommands."""
     parser = argparse.ArgumentParser(prog=PROG, description="Quality checks for energy time-series data.")
     parser.add_argument("--version", action="version", version=f"{PROG} {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)

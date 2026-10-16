@@ -59,6 +59,7 @@ class FrameQualityReport:
         return max((r.n_missing_intervals for r in self.columns.values()), default=0)
 
     def to_dict(self) -> dict[str, Any]:
+        """The report as plain JSON-compatible data (what ``to_json`` writes)."""
         return {
             "schema_version": self.schema_version,
             "package_version": self.package_version,
