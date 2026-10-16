@@ -9,7 +9,8 @@ repository itself:
    without its ``.devN`` suffix);
 2. the ``## [Unreleased]`` changelog content moved under a dated
    ``## [X.Y.Z] - YYYY-MM-DD`` heading, with a fresh empty ``[Unreleased]``
-   (skipped if that dated heading already exists, as on a release branch);
+   (if that dated heading already exists, anything under ``[Unreleased]`` is
+   folded into it instead);
 3. a ``LICENSE`` file at the root, a copy in the package directory (only
    files there ship in the wheel and sdist) and a ``license`` declaration,
    all **placeholders** (``LicenseRef-Dry-Run-Placeholder``): no licence is
@@ -94,10 +95,19 @@ def apply_release_edits(root: Path, package: str, version: str, date: str) -> No
     text = changelog.read_text(encoding="utf-8")
     if "## [Unreleased]" not in text:
         raise DryRunError(f"{changelog.name} has no '## [Unreleased]' section")
-    dated = rf"^## \[{re.escape(version)}\] - \d{{4}}-\d{{2}}-\d{{2}}\s*$"
-    if re.search(dated, text, re.MULTILINE) is None:
+    dated = re.search(rf"^## \[{re.escape(version)}\] - \d{{4}}-\d{{2}}-\d{{2}}[ \t]*\n", text, re.MULTILINE)
+    if dated is None:
         heading = f"## [Unreleased]\n\n## [{version}] - {date}"
         changelog.write_text(text.replace("## [Unreleased]", heading, 1))
+    else:
+        # The dated section exists already: fold anything added since into it.
+        start = text.index("## [Unreleased]")
+        body_start = text.index("\n", start) + 1
+        pending = text[body_start : dated.start()].strip()
+        if pending:
+            head, rest = text[:body_start], text[dated.end() :]
+            text = f"{head}\n{dated.group(0)}\n{pending}\n{rest}"
+            changelog.write_text(text)
 
     (root / "LICENSE").write_text(PLACEHOLDER_TEXT, encoding="utf-8")
     (pkg_dir / "LICENSE").write_text(PLACEHOLDER_TEXT, encoding="utf-8")
