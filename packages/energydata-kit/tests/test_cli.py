@@ -161,6 +161,20 @@ def test_flags_csv_keeps_rows_and_inserts_missing(tmp_path):
     assert table["quality_flag"].tolist() == [0, 0, 65, 8, 8, 2]
 
 
+def test_flags_csv_uses_the_input_format(tmp_path):
+    path = write(tmp_path, CLEAN.replace(",", ";").replace(".", ","), name="eu.csv")
+    flags = tmp_path / "flags.csv"
+    args = ("report", str(path), "--freq", "15min", "--delimiter", ";", "--decimal", ",")
+    assert run(*args, "--flags-csv", str(flags))[0] == 0
+    text = flags.read_text()
+    assert text.splitlines()[0] == "timestamp;kwh;quality_flag"
+    assert ";0,25;0" in text
+    table = pd.read_csv(flags, sep=";", decimal=",")
+    reference = pd.read_csv(io.StringIO(CLEAN))
+    assert table["kwh"].tolist() == reference["kwh"].tolist()
+    assert (table["quality_flag"] == 0).all()
+
+
 def test_calendar_step(tmp_path):
     days = pd.date_range("2024-03-29", periods=5, freq="D", tz="Europe/Stockholm").delete(2)
     text = "timestamp,kwh\n" + "".join(f"{t.isoformat()},1.0\n" for t in days)

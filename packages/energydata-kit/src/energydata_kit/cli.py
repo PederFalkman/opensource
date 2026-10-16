@@ -245,6 +245,13 @@ def _has_issues(report: QualityReport | FrameQualityReport) -> bool:
     return report.n_flagged_rows > 0 or report.n_missing_intervals > 0
 
 
+def _write_flags(args: argparse.Namespace, flagged: pd.DataFrame) -> None:
+    """Write the flagged table in the input's CSV format (delimiter and decimal mark)."""
+    flagged.to_csv(
+        args.flags_csv, sep=_delimiter(args), decimal=args.decimal, date_format="%Y-%m-%dT%H:%M:%S%z"
+    )
+
+
 def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
     if args.tz and not args.freq:
         raise CliError("--tz needs --freq")
@@ -294,7 +301,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
         )
         flagged = flagged.rename(columns={VALUE_COLUMN: series.name})
         flagged.index.name = args.timestamp_col
-        flagged.to_csv(args.flags_csv, date_format="%Y-%m-%dT%H:%M:%S%z")
+        _write_flags(args, flagged)
 
     return 1 if args.fail_on_issues and _has_issues(report) else 0
 
@@ -337,7 +344,7 @@ def _run_frame_report(
             frame, freq=args.freq, insert_missing=args.insert_missing, origin=origin, tz=args.tz, **checks
         )
         flagged.index.name = args.timestamp_col
-        flagged.to_csv(args.flags_csv, date_format="%Y-%m-%dT%H:%M:%S%z")
+        _write_flags(args, flagged)
     return 1 if args.fail_on_issues and _has_issues(report) else 0
 
 

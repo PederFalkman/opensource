@@ -308,6 +308,12 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Invalid delimiters (several characters, letters, digits, quotes, or
       the same as `--decimal`) exit 2 with a message.
 
+### OSS-30: flags CSV in the input's format — this change
+
+- [x] `--flags-csv` is written with the input's `--delimiter` and
+      `--decimal`, so it opens in the same tools as the input; the default
+      (comma, decimal point) is unchanged.
+
 ## Explicitly not planned
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
