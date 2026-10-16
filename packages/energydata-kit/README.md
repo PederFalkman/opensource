@@ -99,8 +99,10 @@ energydata-kit report meter.csv \
 ```
 
 Prints the deterministic JSON report to standard output (`-o` writes a file;
-`-` reads the CSV from standard input). `--flags-csv` writes the original rows
-with a `quality_flag` column, plus inserted rows with `--insert-missing`.
+`-` reads the CSV from standard input). Files separated by `;`, tab or `|` are
+read with `--delimiter ';'` (or `--delimiter tab`); `--decimal ,` reads
+decimal commas such as `1,5`. `--flags-csv` writes the original rows (always
+with commas and decimal points) with a `quality_flag` column, plus inserted rows with `--insert-missing`.
 Calendar steps work as in the library: `--freq D --tz Europe/Stockholm`.
 Repeat `--value-col` for one report covering several columns (check options
 then apply to every column; `--unit` needs a single column). With several
