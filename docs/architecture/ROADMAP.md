@@ -359,13 +359,22 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       (90 commits; same categories as in OSS-22) with the command to recount.
       D6: PyPI and TestPyPI names re-checked, still free.
 
-### OSS-37: 0.1.0 release notes — this change
+### OSS-37: 0.1.0 release notes — merged in [#43](https://github.com/PederFalkman/opensource/pull/43)
 
 - [x] `CHANGELOG.md` 0.1.0 rewritten as first-release notes, grouped by area
       (timestamps, flags, metadata, reports, command line, integrations,
       conventions) instead of development history; the `[Unreleased]`
       entries (OSS-27 to OSS-35) folded in, as the release PR would have.
       Later changes still go under `[Unreleased]`.
+
+### OSS-38: one-command local checks — this change
+
+- [x] `tools/check_all.py` (standard library only) runs every check in
+      `CONTRIBUTING.md`: lint, format, mypy and tests per package, the
+      repository checks, the tools tests and the release dry run, with the
+      readiness report as information. It keeps going after a failure and
+      prints one summary with the output of failed checks. `--quick` and
+      `--build` options. A test keeps it in sync with `CONTRIBUTING.md`.
 
 ## Explicitly not planned
 

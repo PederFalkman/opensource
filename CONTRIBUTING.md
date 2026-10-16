@@ -33,6 +33,15 @@ python -m mypy
 python -m pytest
 ```
 
+Or run every check below at once, with one summary at the end (from the
+repository root, in the environment where the package's dev dependencies are
+installed; `--quick` skips the test suites and the dry run, `--build` also
+builds the wheel):
+
+```bash
+python tools/check_all.py
+```
+
 Repository-level checks:
 
 ```bash
