@@ -94,9 +94,10 @@ def test_missing_package(tmp_path):
 
 
 def test_real_repository_is_not_release_ready():
-    # The gates are not passed yet: the real package must not look releasable.
+    # Gates G2 and G7 are not passed yet: the real package must not look
+    # releasable, even on a release branch that already has the final version.
     failed = {c.name for c in crr.check_package(REPO, "energydata-kit") if not c.ok}
-    expected = {"final version", "LICENSE file", "LICENSE shipped with package", "license declared"}
-    assert expected | {"upload guard removed"} <= failed
+    gated = {"LICENSE file", "LICENSE shipped with package", "license declared", "upload guard removed"}
+    assert gated <= failed
     assert crr.main(["energydata-kit", "--root", str(REPO)]) == 0
     assert crr.main(["energydata-kit", "--strict", "--root", str(REPO)]) == 1

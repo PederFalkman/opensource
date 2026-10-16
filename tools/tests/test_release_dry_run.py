@@ -41,6 +41,16 @@ def make_repo(tmp_path: Path, version: str = "0.3.0.dev2") -> Path:
     return tmp_path
 
 
+def test_release_edits_keep_an_existing_dated_section(tmp_path):
+    root = make_repo(tmp_path, version="0.3.0")
+    changelog = root / "packages" / "demo" / "CHANGELOG.md"
+    changelog.write_text("# Changelog\n\n## [Unreleased]\n\n## [0.3.0] - 2026-10-01\n\n- Things.\n")
+    rdr.apply_release_edits(root, "demo", "0.3.0", "2026-11-01")
+    text = changelog.read_text()
+    assert text.count("## [0.3.0]") == 1
+    assert "2026-11-01" not in text
+
+
 def test_final_version():
     assert rdr.final_version("0.1.0.dev0") == "0.1.0"
     assert rdr.final_version("1.2.3rc1") == "1.2.3"
