@@ -9,6 +9,9 @@ Checks, per package under ``packages/``:
 - the version is a final release (``X.Y.Z``, no ``dev``/``a``/``b``/``rc``);
 - ``CHANGELOG.md`` has a dated section ``## [X.Y.Z] - YYYY-MM-DD``;
 - a ``LICENSE`` file exists at the repository root (gate G2);
+- the package directory has its own copy of it, identical to the root one,
+  because the build backend only ships licence files from inside the
+  package directory (in the wheel and sdist);
 - ``pyproject.toml`` declares a ``license`` (gate G2);
 - the ``Private :: Do Not Upload`` classifier is gone (gate G7);
 - with ``--tag``, the tag equals ``<package>-v<version>``.
@@ -29,6 +32,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 GUARD_CLASSIFIER = "Private :: Do Not Upload"
+LICENSE_NAMES = ("LICENSE", "LICENSE.txt", "LICENSE.md")
 _FINAL_VERSION = re.compile(r"^\d+\.\d+\.\d+$")
 _VERSION_ASSIGN = re.compile(r"""^__version__\s*=\s*["']([^"']+)["']""", re.MULTILINE)
 
@@ -84,10 +88,23 @@ def check_package(root: Path, name: str, tag: str | None = None) -> list[Check]:
         )
     )
 
-    has_license_file = any((root / n).is_file() for n in ("LICENSE", "LICENSE.txt", "LICENSE.md"))
+    has_license_file = any((root / n).is_file() for n in LICENSE_NAMES)
     checks.append(
         Check("LICENSE file", has_license_file, "present" if has_license_file else "missing (gate G2)")
     )
+
+    root_license = next((root / n for n in LICENSE_NAMES if (root / n).is_file()), None)
+    pkg_license = next((pkg_dir / n for n in LICENSE_NAMES if (pkg_dir / n).is_file()), None)
+    if pkg_license is None:
+        shipped, detail = False, f"no LICENSE in packages/{name}/, so none would ship in the wheel or sdist"
+    elif root_license is not None and pkg_license.read_bytes() != root_license.read_bytes():
+        shipped, detail = (
+            False,
+            f"packages/{name}/{pkg_license.name} differs from the root {root_license.name}",
+        )
+    else:
+        shipped, detail = True, f"packages/{name}/{pkg_license.name}"
+    checks.append(Check("LICENSE shipped with package", shipped, detail))
 
     declared = project.get("license") if isinstance(project, dict) else None
     checks.append(

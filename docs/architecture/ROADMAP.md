@@ -158,12 +158,23 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       dependencies; `--report` lists installed runtime dependencies and
       their declared licences for refreshing the table.
 
-### OSS-15: tuning options for the opt-in checks — this change
+### OSS-15: tuning options for the opt-in checks — merged in [#20](https://github.com/PederFalkman/opensource/pull/20)
 
 - [x] `stale_atol`, `stale_exclude` and `counter_tolerance` on
       `flag_series`, `assess_quality`, `series_schema` and the CLI, closing
       the gap recorded in `API_REVIEW.md`. Keyword-only, recorded in the
       report `parameters`, rejected without their check.
+
+### OSS-16: release dry run — this change
+
+- [x] `tools/release_dry_run.py`: applies the release PR edits (final
+      version, dated changelog, placeholder LICENSE and licence declaration,
+      upload guard removed) to a temporary copy, runs the strict readiness
+      check and, with `--build`, builds, `twine check`s and inspects the
+      wheel and sdist. Never changes the repository or uploads. New CI job.
+- [x] Finding: a root `LICENSE` alone does not ship in the wheel or sdist.
+      The readiness check now also requires an identical copy in the package
+      directory, and the release checklist says so.
 
 ## Explicitly not planned
 
