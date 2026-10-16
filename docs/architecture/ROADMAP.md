@@ -308,18 +308,24 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Invalid delimiters (several characters, letters, digits, quotes, or
       the same as `--decimal`) exit 2 with a message.
 
-### OSS-30: flags CSV in the input's format — this change
-
-- [x] `--flags-csv` is written with the input's `--delimiter` and
-      `--decimal`, so it opens in the same tools as the input; the default
-      (comma, decimal point) is unchanged.
-### OSS-29: security policy refresh — this change
+### OSS-29: security policy refresh — merged in [#35](https://github.com/PederFalkman/opensource/pull/35)
 
 - [x] `SECURITY.md`: what to include in a report (synthetic data only), what
       is and is not a security issue, how reports are handled, history
       cleaning after a leak, how the package limits exposure, and supported
       versions; the policy for released versions is left to the first
       release.
+
+### OSS-30: flags CSV in the input's format — merged in [#36](https://github.com/PederFalkman/opensource/pull/36)
+
+- [x] `--flags-csv` is written with the input's `--delimiter` and
+      `--decimal`, so it opens in the same tools as the input; the default
+      (comma, decimal point) is unchanged.
+
+### OSS-31: roadmap order — this change
+
+- [x] OSS-29 and OSS-30 in order and linked to their PRs (#36 merged before
+      the ordering fix reached its branch).
 
 ## Explicitly not planned
 
