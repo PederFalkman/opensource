@@ -268,16 +268,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] `tools/release_dry_run.py` keeps an existing dated changelog section,
       so the dry run also passes on the release branch.
 
-### OSS-26: contributor docs — this change
-
-- [x] `CONTRIBUTING.md`: the API, docstring, performance and changelog rules
-      from OSS-13, OSS-18, OSS-20 and OSS-24; contribution terms point to
-      decision D2 without deciding it; scope proposals become `P-n`.
-- [x] PR template gains a short checks list.
-- [x] Issue templates: bug report (synthetic data only), scope proposal
-      (with the out-of-scope list); blank issues off and security reports
-      routed to private vulnerability reporting.
-### OSS-25: keep 0.1.0 on `main` until release — this change
+### OSS-25: keep 0.1.0 on `main` until release — merged in [#31](https://github.com/PederFalkman/opensource/pull/31)
 
 - [x] Decision: `main` stays at `0.1.0` until the gates pass (no return to
       `.dev0`). Anything added under `[Unreleased]` meanwhile is folded into
@@ -288,6 +279,16 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] `release_dry_run.py` folds `[Unreleased]` into an existing dated
       section, as the release PR will.
 - [x] Release decisions, checklist and roadmap updated for the merge of #30.
+
+### OSS-26: contributor docs — this change
+
+- [x] `CONTRIBUTING.md`: the API, docstring, performance and changelog rules
+      from OSS-13, OSS-18, OSS-20 and OSS-24; contribution terms point to
+      decision D2 without deciding it; scope proposals become `P-n`.
+- [x] PR template gains a short checks list.
+- [x] Issue templates: bug report (synthetic data only), scope proposal
+      (with the out-of-scope list); blank issues off and security reports
+      routed to private vulnerability reporting.
 
 ## Explicitly not planned
 
