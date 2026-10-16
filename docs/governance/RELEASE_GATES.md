@@ -15,8 +15,13 @@ Supporting tooling (none of it publishes anything):
 
 - `RELEASE_CHECKLIST.md`: template for the release pull request.
 - `tools/check_release_readiness.py`: reports the mechanical conditions (final
-  version, dated changelog section, LICENSE, declared license, guard removed,
-  tag matching version); `--strict` fails if any is unmet.
+  version, dated changelog section, LICENSE at the root and shipped with the
+  package, declared license, guard removed, tag matching version); `--strict`
+  fails if any is unmet.
+- `tools/release_dry_run.py`: rehearses the release PR edits in a temporary
+  copy with a placeholder licence, runs the strict readiness check and (with
+  `--build`) builds, `twine check`s and inspects the files. Runs in CI on every
+  change; it never changes the repository and never uploads.
 - `THIRD_PARTY_LICENSES.md`: licence table for every dependency (evidence
   for G4), kept in sync with `pyproject.toml` by
   `tools/check_third_party.py` in CI.

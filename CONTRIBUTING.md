@@ -34,6 +34,7 @@ python tools/check_workflow_pins.py
 python tools/check_docs.py
 python tools/check_third_party.py
 python tools/check_release_readiness.py   # informational until the release gates pass
+python tools/release_dry_run.py           # rehearses the release in a temp copy; --build to build too
 python -m pytest tools/tests
 ```
 

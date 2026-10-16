@@ -26,12 +26,16 @@ publishes a package. Publishing is a separate, explicitly approved step (G7).
 - [ ] `__version__` set to `X.Y.Z` (no `.devN`).
 - [ ] `CHANGELOG.md`: `## [Unreleased]` content moved under
       `## [X.Y.Z] - YYYY-MM-DD`; a fresh empty `## [Unreleased]` above it.
-- [ ] `pyproject.toml`: `license = "<SPDX id>"` declared; `license-files`
-      includes the LICENSE if needed.
+- [ ] `LICENSE` (and `NOTICE` if required) at the repository root **and an
+      identical copy in `packages/energydata-kit/`**: the build backend only
+      ships licence files from inside the package directory.
+- [ ] `pyproject.toml`: `license = "<SPDX id>"` declared.
 - [ ] `pyproject.toml`: classifier `Private :: Do Not Upload` removed (only
       after G7).
 - [ ] `python tools/check_release_readiness.py energydata-kit --strict` passes
       locally.
+- [ ] Before opening the PR, `python tools/release_dry_run.py energydata-kit --build`
+      passed on `main` (CI runs it on every change).
 
 ## After merge
 

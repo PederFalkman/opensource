@@ -21,6 +21,7 @@ def make_repo(
     version: str = "0.1.0",
     changelog: str = "## [0.1.0] - 2026-11-01\n",
     license_file: bool = True,
+    package_license: str | None = "license text\n",
     license_field: bool = True,
     guard: bool = False,
 ) -> Path:
@@ -43,6 +44,8 @@ def make_repo(
     (pkg / "CHANGELOG.md").write_text("# Changelog\n\n## [Unreleased]\n\n" + changelog)
     if license_file:
         (tmp_path / "LICENSE").write_text("license text\n")
+    if package_license is not None:
+        (pkg / "LICENSE").write_text(package_license)
     return tmp_path
 
 
@@ -64,6 +67,8 @@ def test_ready_package_passes(tmp_path):
         ({"version": "0.1.0rc1", "changelog": "## [0.1.0rc1] - 2026-11-01\n"}, ["final version"]),
         ({"changelog": "## [0.1.0] - unreleased\n"}, ["dated changelog section"]),
         ({"license_file": False}, ["LICENSE file"]),
+        ({"package_license": None}, ["LICENSE shipped with package"]),
+        ({"package_license": "other text\n"}, ["LICENSE shipped with package"]),
         ({"license_field": False}, ["license declared"]),
         ({"guard": True}, ["upload guard removed"]),
     ],
@@ -91,6 +96,7 @@ def test_missing_package(tmp_path):
 def test_real_repository_is_not_release_ready():
     # The gates are not passed yet: the real package must not look releasable.
     failed = {c.name for c in crr.check_package(REPO, "energydata-kit") if not c.ok}
-    assert {"final version", "LICENSE file", "license declared", "upload guard removed"} <= failed
+    expected = {"final version", "LICENSE file", "LICENSE shipped with package", "license declared"}
+    assert expected | {"upload guard removed"} <= failed
     assert crr.main(["energydata-kit", "--root", str(REPO)]) == 0
     assert crr.main(["energydata-kit", "--strict", "--root", str(REPO)]) == 1
