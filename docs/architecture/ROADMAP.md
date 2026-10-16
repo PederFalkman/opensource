@@ -327,11 +327,17 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] OSS-29 and OSS-30 in order and linked to their PRs (#36 merged before
       the ordering fix reached its branch).
 
-### OSS-32: readable CLI summary — this change
+### OSS-32: readable CLI summary — merged in [#38](https://github.com/PederFalkman/opensource/pull/38)
 
 - [x] `report --format text`: rows, completeness, flag counts, the first
       three gaps and metadata issues per column. JSON stays the default and
       the format for automation; `-o` and `--fail-on-issues` behave the same.
+
+### OSS-33: readable comparison summary — this change
+
+- [x] `compare --format text`: the verdict (same data or changed; worse or
+      not), then count, flag, gap, metadata-issue and parameter changes per
+      column. JSON stays the default; `--fail-if-worse` behaves the same.
 
 ## Explicitly not planned
 

@@ -167,6 +167,12 @@ def build_parser() -> argparse.ArgumentParser:
     cmp.add_argument("after", help="later report (JSON)")
     cmp.add_argument("-o", "--output", help="write the comparison here instead of standard output")
     cmp.add_argument(
+        "--format",
+        choices=["json", "text"],
+        default="json",
+        help="json: the deterministic comparison (default); text: a short summary for reading",
+    )
+    cmp.add_argument(
         "--fail-if-worse",
         action="store_true",
         help="exit with status 1 if more rows are flagged, more intervals are missing or completeness fell",
@@ -409,9 +415,70 @@ def _load_report(path: str) -> dict[str, object]:
     return data
 
 
+def _change(label: str, entry: dict[str, Any], percent: bool = False) -> str:
+    def fmt(value: Any) -> str:
+        if value is None:
+            return "none"
+        return f"{value:.2%}" if percent else str(value)
+
+    text = f"{label} {fmt(entry['before'])} -> {fmt(entry['after'])}"
+    if not percent and isinstance(entry.get("delta"), int):
+        text += f" ({entry['delta']:+d})"
+    return text
+
+
+def _comparison_summary(data: dict[str, Any]) -> str:
+    """A short human-readable summary of a comparison dict (``compare --format text``)."""
+    verdict = "same data" if data["same_data"] else "data changed"
+    if data["worse"]:
+        verdict += "; worse: more rows flagged, more intervals missing or lower completeness"
+    else:
+        verdict += "; not worse"
+    lines = [verdict]
+    counts_order = (
+        ("n_rows", "rows"),
+        ("n_missing_intervals", "missing intervals"),
+        ("n_gaps", "gaps"),
+        ("n_duplicate_timestamps", "duplicate timestamps"),
+    )
+    for name, changes in data["changes"].items():
+        label = name or "series"
+        if not changes:
+            lines.append(f"{label}: no changes")
+            continue
+        lines.append(f"{label}:")
+        counts = changes.get("counts", {})
+        parts = [_change(text, counts[key]) for key, text in counts_order if key in counts]
+        if "completeness" in counts:
+            parts.append(_change("completeness", counts["completeness"], percent=True))
+        if parts:
+            lines.append("  " + "; ".join(parts))
+        flags = changes.get("flag_counts", {})
+        if flags:
+            detail = ", ".join(_change(k, v) for k, v in flags.items() if k != "ANY")
+            head = _change("flagged rows", flags["ANY"]) if "ANY" in flags else "flags"
+            lines.append(f"  {head}" + (f": {detail}" if detail else ""))
+        if "gaps" in changes:
+            gaps = changes["gaps"]
+            note = " (lists truncated; see the JSON reports)" if gaps["lists_truncated"] else ""
+            lines.append(f"  gaps resolved: {len(gaps['resolved'])}, new: {len(gaps['new'])}{note}")
+        if "metadata_issues" in changes:
+            issues = changes["metadata_issues"]
+            resolved, new = ", ".join(issues["resolved"]) or "none", ", ".join(issues["new"]) or "none"
+            lines.append(f"  metadata issues resolved: {resolved}; new: {new}")
+        for key in ("parameters", "metadata"):
+            if key in changes:
+                lines.append(f"  {key} changed: {', '.join(changes[key])}")
+    if data["columns_added"]:
+        lines.append(f"columns added: {', '.join(data['columns_added'])}")
+    if data["columns_removed"]:
+        lines.append(f"columns removed: {', '.join(data['columns_removed'])}")
+    return "\n".join(lines) + "\n"
+
+
 def _run_compare(args: argparse.Namespace, stdout: TextIO) -> int:
     comparison = compare_reports(_load_report(args.before), _load_report(args.after))
-    text = comparison.to_json() + "\n"
+    text = comparison.to_json() + "\n" if args.format == "json" else _comparison_summary(comparison.to_dict())
     if args.output:
         Path(args.output).write_text(text, encoding="utf-8")
     else:

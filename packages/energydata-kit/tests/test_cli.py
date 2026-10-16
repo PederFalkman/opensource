@@ -269,6 +269,17 @@ GAPPY = (
 )
 
 
+FIXED = (
+    "timestamp,kwh,pv\n"
+    "2026-01-01T00:00:00Z,1,5\n"
+    "2026-01-01T00:15:00Z,2,5\n"
+    "2026-01-01T00:30:00Z,2,5\n"
+    "2026-01-01T00:45:00Z,2,5\n"
+    "2026-01-01T01:00:00Z,3,5\n"
+    "2026-01-01T01:15:00Z,-1,5\n"
+)
+
+
 def test_text_summary(tmp_path):
     path = str(write(tmp_path, GAPPY))
     args = ("report", path, "--value-col", "kwh", "--freq", "15min", "--bounds", "0", "none")
@@ -297,6 +308,27 @@ def test_text_summary_columns_and_no_step(tmp_path):
     assert "    flagged rows: 0" in lines  # pv
     out = run("report", path, "--value-col", "kwh", "--format", "text")[1]
     assert "  completeness: not checked (no --freq or --resolution)" in out.splitlines()
+
+
+def test_compare_text_summary(tmp_path):
+    gappy, fixed = write(tmp_path, GAPPY, name="gappy.csv"), write(tmp_path, FIXED, name="fixed.csv")
+    before, after = tmp_path / "before.json", tmp_path / "after.json"
+    cols = ("--value-col", "kwh", "--value-col", "pv", "--freq", "15min", "--bounds", "0", "none")
+    assert run("report", str(gappy), *cols, "-o", str(before))[0] == 0
+    assert run("report", str(fixed), *cols, "-o", str(after))[0] == 0
+    code, out, err = run("compare", str(before), str(after), "--format", "text")
+    assert (code, err) == (0, "")
+    assert out.splitlines()[:5] == [
+        "data changed; not worse",
+        "kwh:",
+        "  rows 4 -> 6 (+2); missing intervals 2 -> 0 (-2); gaps 1 -> 0 (-1); completeness 66.67% -> 100.00%",
+        "  flagged rows 2 -> 1 (-1): MISSING_VALUE 1 -> 0 (-1)",
+        "  gaps resolved: 1, new: 0",
+    ]
+    code, out, _ = run("compare", str(after), str(before), "--format", "text", "--fail-if-worse")
+    assert code == 1 and out.startswith("data changed; worse:")
+    out = run("compare", str(after), str(after), "--format", "text")[1]
+    assert out.splitlines() == ["same data; not worse", "kwh: no changes", "pv: no changes"]
 
 
 def test_missing_file(tmp_path):
