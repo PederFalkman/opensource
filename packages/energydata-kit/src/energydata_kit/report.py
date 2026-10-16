@@ -55,7 +55,7 @@ def fingerprint_series(series: pd.Series) -> str:
     """
     index = series.index
     if not isinstance(index, pd.DatetimeIndex) or index.tz is None:
-        raise ValueError("series must have a timezone-aware DatetimeIndex")
+        raise ValueError("series must have a timezone-aware DatetimeIndex; use normalize_timestamps()")
     h = hashlib.sha256()
     h.update(repr(series.name).encode())
     h.update(np.asarray(utc_ns(index), dtype="<i8").tobytes())
@@ -97,9 +97,11 @@ class QualityReport:
 
     @property
     def n_flagged_rows(self) -> int:
+        """Rows with at least one flag set (``flag_counts["ANY"]``)."""
         return self.flag_counts.get("ANY", 0)
 
     def to_dict(self) -> dict[str, Any]:
+        """The report as plain JSON-compatible data (what ``to_json`` writes)."""
         return {
             "schema_version": self.schema_version,
             "package_version": self.package_version,

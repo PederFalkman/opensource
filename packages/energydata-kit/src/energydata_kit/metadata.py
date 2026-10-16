@@ -130,6 +130,7 @@ class MeasurementMetadata:
         return None if self.resolution is None else to_step(self.resolution)
 
     def to_dict(self) -> dict[str, Any]:
+        """Plain JSON-compatible fields; enums as their string values."""
         data = asdict(self)
         data["aggregation"] = self.aggregation.value
         data["interval_label"] = self.interval_label.value
@@ -137,4 +138,5 @@ class MeasurementMetadata:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> MeasurementMetadata:
+        """Inverse of :meth:`to_dict`; validates like the constructor."""
         return cls(**data)

@@ -26,7 +26,7 @@ cover for metered energy data:
 | One report for several columns sharing a timestamp index, with per-column options | `assess_frame`, `FrameQualityReport` |
 | What changed between two reports (e.g. before and after a fix, or two deliveries) | `compare_reports`, `ReportComparison` |
 | Deterministic synthetic test series | `make_synthetic_series` |
-| Command line: JSON report (and flagged CSV) for a CSV file | `energydata-kit report` |
+| Command line: JSON report for one or more CSV columns, flagged CSV, report comparison | `energydata-kit report`, `energydata-kit compare` |
 | Supporting types and constants | `Aggregation`, `IntervalLabel`, `TimestampSummary`, `FLAG_COLUMN` / `VALUE_COLUMN` (column names in `flag_series` output); errors `TimestampError`, `UnitError` (both `ValueError`s) |
 | Export/import metadata as a Frictionless Table Schema (no extra dependency) | `to_table_schema`, `from_table_schema` |
 | The same checks as Pandera checks and a ready `SeriesSchema` (optional extra) | `energydata_kit.pandera_checks.series_schema` and check factories |
@@ -108,7 +108,8 @@ two saved reports; with `--fail-if-worse` it exits `1` if more rows are
 flagged, more intervals are missing or completeness fell.
 Exit status: `0` OK, `1` issues found with `--fail-on-issues`, `2` usage or
 input error. `python -m energydata_kit` is equivalent. See
-`energydata-kit report --help` for every option.
+`energydata-kit report --help` and `energydata-kit compare --help` for every
+option.
 
 ## Design rules
 
@@ -177,3 +178,14 @@ use Pint or pint-pandas directly, e.g. `series.astype(f"pint[{meta.unit}]")`.
   the row after it. Choosing the limit is left to the caller.
 - Local days that are not a whole number of steps long (e.g. 30-minute DST
   shifts with a 1-hour step) report the floor of the expected count.
+- `assess_frame` repeats the timestamp sections (gaps, duplicates, off-grid)
+  in every column's report, because each column's report is exactly what
+  `assess_quality` gives for it. On the command line, `--unit` and
+  `--flags-csv` work with a single `--value-col` only.
+- `compare_reports` matches gaps exactly (a gap that shrank appears as one
+  resolved and one new gap) and only compares listed gaps; check
+  `lists_truncated` when reports capped their lists with `max_listed`.
+- Parsing timestamp strings whose UTC offset changes across DST is slow in
+  pandas itself (about 2 s per 350,000 rows); pass a `DatetimeIndex` when you
+  have one. Measured numbers are in the repository's
+  `docs/architecture/PERFORMANCE.md`.
