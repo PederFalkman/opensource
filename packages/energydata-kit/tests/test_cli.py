@@ -206,11 +206,44 @@ def test_edge_case_files(tmp_path):
     semi = tmp_path / "semi.csv"
     semi.write_text("timestamp;kwh\n2026-01-01T00:00:00Z;1\n")
     code, _, err = run("report", str(semi))
-    assert code == 2 and "only comma-separated files are read" in err
+    assert code == 2 and "try --delimiter ';'" in err
 
     bad = write(tmp_path, "timestamp,kwh\nnot-a-date,1\n2026-01-01T00:15:00Z,2\n")
     code, _, err = run("report", str(bad))
     assert code == 2 and "position 0: 'not-a-date'" in err and "naive" not in err
+
+
+@pytest.mark.parametrize(("delimiter", "sep"), [(";", ";"), ("tab", "\t"), ("\\t", "\t"), ("|", "|")])
+def test_delimiter_gives_the_same_report(tmp_path, delimiter, sep):
+    reference = json.loads(run("report", str(write(tmp_path, CLEAN)), "--freq", "15min")[1])
+    path = write(tmp_path, CLEAN.replace(",", sep), name="other.csv")
+    code, out, err = run("report", str(path), "--freq", "15min", "--delimiter", delimiter)
+    assert (code, err) == (0, "") and json.loads(out) == reference
+
+
+def test_decimal_comma(tmp_path):
+    reference = json.loads(run("report", str(write(tmp_path, CLEAN)), "--freq", "15min")[1])
+    # "2024-01-01T00:15:00Z;0,25": semicolons between fields, decimal commas in values.
+    path = write(tmp_path, CLEAN.replace(",", ";").replace(".", ","), name="eu.csv")
+    args = ("report", str(path), "--freq", "15min", "--delimiter", ";")
+    code, out, _ = run(*args, "--decimal", ",")
+    assert code == 0 and json.loads(out) == reference
+    # Without --decimal the values are not numbers, and the report says so.
+    assert json.loads(run(*args)[1])["flag_counts"]["NON_NUMERIC"] > 0
+
+
+@pytest.mark.parametrize(
+    ("argv", "message"),
+    [
+        (["--delimiter", ";;"], "--delimiter must be one character"),
+        (["--delimiter", "a"], "--delimiter must be one character"),
+        (["--delimiter", '"'], "--delimiter must be one character"),
+        (["--delimiter", ",", "--decimal", ","], "--delimiter and --decimal are both ','"),
+    ],
+)
+def test_bad_delimiter(tmp_path, argv, message):
+    code, out, err = run("report", str(write(tmp_path, CLEAN)), *argv)
+    assert (code, out) == (2, "") and message in err
 
 
 def test_missing_file(tmp_path):

@@ -290,7 +290,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       (with the out-of-scope list); blank issues off and security reports
       routed to private vulnerability reporting.
 
-### OSS-27: edge-case hardening — this change
+### OSS-27: edge-case hardening — merged in [#33](https://github.com/PederFalkman/opensource/pull/33)
 
 - [x] Probed the public API and CLI with empty, single-row, all-missing,
       non-numeric, naive-timestamp and malformed inputs. Most already gave
@@ -300,6 +300,13 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       named with their position.
 - [x] CLI hints at the delimiter when a file reads as one `;`/tab/`|`
       column; completeness documented as counting timestamps.
+
+### OSS-28: CLI `--delimiter` and `--decimal` — this change
+
+- [x] `report` reads `;`-, tab- and `|`-separated files and decimal commas;
+      the report equals that of the same data as a comma-separated file.
+- [x] Invalid delimiters (several characters, letters, digits, quotes, or
+      the same as `--decimal`) exit 2 with a message.
 
 ## Explicitly not planned
 
