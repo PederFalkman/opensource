@@ -194,6 +194,23 @@ assert [ek.decode_flags(f) for f in flags] == [
 ]
 ```
 
+Both checks can be tuned. `stale_exclude` leaves expected flat runs alone
+(e.g. zero generation at night), `stale_atol` treats near-equal values as
+repeated, and `counter_tolerance` ignores tiny decreases such as rounding:
+
+```python
+solar = pd.Series(
+    [0.0, 0.0, 0.0, 0.0, 3.2, 3.2001, 3.1999, 3.2],
+    index=pd.date_range("2024-01-01", periods=8, freq="1h", tz="UTC"),
+)
+flags = ek.flag_series(solar, stale_min_run=4, stale_exclude=[0.0], stale_atol=0.001)[ek.FLAG_COLUMN]
+assert [ek.decode_flags(f) for f in flags] == [["OK"]] * 4 + [["STALE_VALUE"]] * 4
+
+meter = pd.Series([100.0, 99.99, 100.5], index=solar.index[:3])
+flags = ek.flag_series(meter, cumulative=True, counter_tolerance=0.05)[ek.FLAG_COLUMN]
+assert [ek.decode_flags(f) for f in flags] == [["OK"], ["OK"], ["OK"]]
+```
+
 The jump check flags a change from the previous valid value larger than a
 limit you choose. A single outlier flags two rows: the jump away and the jump
 back.

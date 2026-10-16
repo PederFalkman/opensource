@@ -147,7 +147,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Known gaps recorded (stale/counter fine-tuning options only on the
       mask functions), not changed.
 
-### OSS-14: third-party licence evidence (G4) — this change
+### OSS-14: third-party licence evidence (G4) — merged in [#19](https://github.com/PederFalkman/opensource/pull/19)
 
 - [x] `docs/governance/THIRD_PARTY_LICENSES.md`: licence of every direct
       dependency (runtime, Pandera extra, dev, build) and of the runtime
@@ -157,6 +157,13 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `pyproject.toml` and rejects copyleft licences on shipped
       dependencies; `--report` lists installed runtime dependencies and
       their declared licences for refreshing the table.
+
+### OSS-15: tuning options for the opt-in checks — this change
+
+- [x] `stale_atol`, `stale_exclude` and `counter_tolerance` on
+      `flag_series`, `assess_quality`, `series_schema` and the CLI, closing
+      the gap recorded in `API_REVIEW.md`. Keyword-only, recorded in the
+      report `parameters`, rejected without their check.
 
 ## Explicitly not planned
 

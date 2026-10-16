@@ -27,6 +27,7 @@ except ImportError as exc:  # pragma: no cover - exercised only without the extr
     ) from exc
 
 from energydata_kit.flags import (
+    _check_options,
     counter_decrease_mask,
     jump_mask,
     non_finite_mask,
@@ -197,7 +198,10 @@ def series_schema(
     freq: str | pd.Timedelta | None = None,
     bounds: tuple[float | None, float | None] | None = None,
     stale_min_run: int | None = None,
+    stale_atol: float = 0.0,
+    stale_exclude: Collection[float] = (),
     cumulative: bool = False,
+    counter_tolerance: float = 0.0,
     jump_max_delta: float | None = None,
     origin: pd.Timestamp | None = None,
     tz: str | None = None,
@@ -208,6 +212,7 @@ def series_schema(
     The step comes from ``freq``, else ``metadata.resolution``; without one,
     grid checks are left out. The schema name is ``metadata.name`` if given.
     """
+    _check_options(stale_min_run, stale_atol, stale_exclude, cumulative, counter_tolerance)
     if freq is None and metadata is not None:
         freq = metadata.resolution
     index_checks = [timezone_aware_check(), no_duplicate_timestamps_check()]
@@ -220,9 +225,9 @@ def series_schema(
     if bounds is not None:
         value_checks.append(within_bounds_check(lower=bounds[0], upper=bounds[1]))
     if stale_min_run is not None:
-        value_checks.append(stale_check(stale_min_run))
+        value_checks.append(stale_check(stale_min_run, atol=stale_atol, exclude=stale_exclude))
     if cumulative:
-        value_checks.append(counter_check())
+        value_checks.append(counter_check(tolerance=counter_tolerance))
     if jump_max_delta is not None:
         value_checks.append(jump_check(jump_max_delta))
     return pa.SeriesSchema(

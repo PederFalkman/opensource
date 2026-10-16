@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Collection
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -139,7 +140,10 @@ def assess_quality(
     freq: str | pd.Timedelta | None = None,
     bounds: tuple[float | None, float | None] | None = None,
     stale_min_run: int | None = None,
+    stale_atol: float = 0.0,
+    stale_exclude: Collection[float] = (),
     cumulative: bool = False,
+    counter_tolerance: float = 0.0,
     jump_max_delta: float | None = None,
     origin: pd.Timestamp | None = None,
     tz: str | None = None,
@@ -157,7 +161,8 @@ def assess_quality(
     section is only produced for fixed steps.
 
     ``stale_min_run``, ``cumulative`` and ``jump_max_delta`` enable the opt-in
-    stale-value, counter-decrease and jump checks (see
+    stale-value, counter-decrease and jump checks; ``stale_atol``,
+    ``stale_exclude`` and ``counter_tolerance`` tune them (see
     :func:`energydata_kit.flag_series`).
 
     ``series`` must have a timezone-aware ``DatetimeIndex`` and is not modified.
@@ -176,7 +181,10 @@ def assess_quality(
         freq=grid_freq,
         bounds=bounds,
         stale_min_run=stale_min_run,
+        stale_atol=stale_atol,
+        stale_exclude=stale_exclude,
         cumulative=cumulative,
+        counter_tolerance=counter_tolerance,
         jump_max_delta=jump_max_delta,
         origin=origin,
         tz=tz,
@@ -239,7 +247,10 @@ def assess_quality(
             "bounds": None if bounds is None else list(bounds),
             "max_listed": max_listed,
             "stale_min_run": stale_min_run,
+            "stale_atol": stale_atol,
+            "stale_exclude": [float(x) for x in stale_exclude],
             "cumulative": cumulative,
+            "counter_tolerance": counter_tolerance,
             "jump_max_delta": jump_max_delta,
         },
         metadata=None if metadata is None else metadata.to_dict(),
