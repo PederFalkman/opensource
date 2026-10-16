@@ -367,5 +367,44 @@ again = ek.compare_reports(report, json.loads(Path("fixed.json").read_text()))
 assert again.to_dict() == changes
 ```
 
+For a person reading in a terminal, `--format text` prints a short summary
+instead of JSON, for reports and comparisons alike. Use JSON for anything
+automated.
+
+```bash
+energydata-kit report meter.csv --freq 15min --format text -o summary.txt
+energydata-kit compare report.json fixed.json --format text -o changes.txt
+```
+
+```python
+summary = Path("summary.txt").read_text().splitlines()
+assert summary[1] == "  completeness: 97.92% (94 of 96 expected); 2 missing in 1 gap(s)"
+assert summary[2] == "  flagged rows: 1 (NON_FINITE 1)"
+
+changes_text = Path("changes.txt").read_text().splitlines()
+assert changes_text[0] == "data changed; not worse"
+assert "missing intervals 2 -> 0 (-2)" in changes_text[2]
+```
+
+Files exported with semicolons and decimal commas, as many European meter
+portals do, are read with `--delimiter` and `--decimal`. The report is the
+same as for the comma-separated file, and `--flags-csv` is written in the
+input's format:
+
+```python
+pd.read_csv("meter.csv").to_csv("meter_eu.csv", sep=";", decimal=",", index=False)
+assert ";" in Path("meter_eu.csv").read_text().splitlines()[1]
+```
+
+```bash
+energydata-kit report meter_eu.csv --delimiter ";" --decimal , \
+    --freq 15min --unit kW --aggregation mean -o report_eu.json --flags-csv flagged_eu.csv
+```
+
+```python
+assert json.loads(Path("report_eu.json").read_text()) == report
+assert Path("flagged_eu.csv").read_text().splitlines()[0] == "timestamp;kw;quality_flag"
+```
+
 Exit status: `0` OK, `1` issues found with `--fail-on-issues`, `2` usage or
 input error. See `energydata-kit report --help` for every option.
