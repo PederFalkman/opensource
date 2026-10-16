@@ -28,6 +28,8 @@ The questions and evidence for each open gate are in `RELEASE_DECISIONS.md`.
 - [ ] `__version__` set to `X.Y.Z` (no `.devN`).
 - [ ] `CHANGELOG.md`: `## [Unreleased]` content moved under
       `## [X.Y.Z] - YYYY-MM-DD`; a fresh empty `## [Unreleased]` above it.
+- [ ] Changelog date set to the day the release PR merges (a draft release
+      branch may carry an earlier date).
 - [ ] `LICENSE` (and `NOTICE` if required) at the repository root **and an
       identical copy in `packages/energydata-kit/`**: the build backend only
       ships licence files from inside the package directory.

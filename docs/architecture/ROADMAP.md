@@ -250,12 +250,23 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       the questions to answer and the next step after each answer. Linked
       from the release gates, the checklist and the README. No code changes.
 
-### OSS-23: roadmap tidy — this change
+### OSS-23: roadmap tidy — merged in [#29](https://github.com/PederFalkman/opensource/pull/29)
 
 - [x] One "Proposed" section instead of two; proposals labelled `P-n`
       until authorized. The owner's tariff-data proposal is now P-1 (it
       reused OSS-16, which is the release dry run); its text is unchanged
       apart from that label.
+
+### OSS-24: draft release PR for 0.1.0 — this change
+
+- [x] Release branch with the edits that need no decision: version `0.1.0`,
+      a dated `## [0.1.0]` changelog section (date reset on the merge day),
+      README status. Stays unmerged until the decisions in
+      `RELEASE_DECISIONS.md` are made.
+- [x] Left out on purpose: the LICENSE files and `license` declaration
+      (G2) and removing the upload guard (G7).
+- [x] `tools/release_dry_run.py` keeps an existing dated changelog section,
+      so the dry run also passes on the release branch.
 
 ## Explicitly not planned
 

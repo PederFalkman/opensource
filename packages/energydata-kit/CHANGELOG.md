@@ -5,6 +5,8 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-16
+
 ### Changed
 - Pre-release polish (OSS-20): every public function, class, method and
   property has a docstring (now checked in CI); `fingerprint_series` gives the

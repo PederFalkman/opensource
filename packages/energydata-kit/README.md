@@ -2,8 +2,8 @@
 
 Framework-independent quality checks for energy time-series data.
 
-> **Status: pre-alpha (0.1.0.dev0).** Not published. No license has been granted
-> yet; see the repository's `docs/governance/RELEASE_GATES.md`.
+> **Status: 0.1.0 release candidate, not released.** Not published. No license
+> has been granted yet; see the repository's `docs/governance/RELEASE_GATES.md`.
 
 energydata-kit is a small layer on top of [pandas](https://pandas.pydata.org)
 and [Pint](https://pint.readthedocs.io). It adds the parts those libraries do not

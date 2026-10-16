@@ -8,7 +8,8 @@ repository itself:
 1. ``__version__`` set to the final version (default: the current version
    without its ``.devN`` suffix);
 2. the ``## [Unreleased]`` changelog content moved under a dated
-   ``## [X.Y.Z] - YYYY-MM-DD`` heading, with a fresh empty ``[Unreleased]``;
+   ``## [X.Y.Z] - YYYY-MM-DD`` heading, with a fresh empty ``[Unreleased]``
+   (skipped if that dated heading already exists, as on a release branch);
 3. a ``LICENSE`` file at the root, a copy in the package directory (only
    files there ship in the wheel and sdist) and a ``license`` declaration,
    all **placeholders** (``LicenseRef-Dry-Run-Placeholder``): no licence is
@@ -93,7 +94,10 @@ def apply_release_edits(root: Path, package: str, version: str, date: str) -> No
     text = changelog.read_text(encoding="utf-8")
     if "## [Unreleased]" not in text:
         raise DryRunError(f"{changelog.name} has no '## [Unreleased]' section")
-    changelog.write_text(text.replace("## [Unreleased]", f"## [Unreleased]\n\n## [{version}] - {date}", 1))
+    dated = rf"^## \[{re.escape(version)}\] - \d{{4}}-\d{{2}}-\d{{2}}\s*$"
+    if re.search(dated, text, re.MULTILINE) is None:
+        heading = f"## [Unreleased]\n\n## [{version}] - {date}"
+        changelog.write_text(text.replace("## [Unreleased]", heading, 1))
 
     (root / "LICENSE").write_text(PLACEHOLDER_TEXT, encoding="utf-8")
     (pkg_dir / "LICENSE").write_text(PLACEHOLDER_TEXT, encoding="utf-8")
