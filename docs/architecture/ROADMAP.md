@@ -22,7 +22,25 @@ Merged items stay listed here as a record of what was agreed.
 
 ## Proposed
 
-Nothing is proposed at the moment. New items are agreed first, then added here.
+## Proposed — gated, not authorized for implementation
+
+### OSS-16: Energy Tariff Data Quality (Engrate-inspired)
+
+**Status: PROPOSED / DEFERRED.** Consider only after release and ownership/licensing gates G1–G7 for energydata-kit. This is a narrow, independent extension of the existing Python data-quality tooling, not a tariff calculation or commercial market product.
+
+Scope candidate: non-destructive validation of published tariff data and schedules—effective-date coverage, overlapping rate periods, missing time bands, timestamp/DST consistency, unit/aggregation semantics, source identity, revision/version integrity and deterministic quality reports. Use synthetic fixtures and lawfully reusable public examples only; do not ingest tariff catalogues without verifying source rights.
+
+Admission gates:
+1. Complete current release, ownership and licensing decisions; do not assume Apache-2.0 is granted.
+2. Perform independent IP isolation, prior-art and open-source duplication review (including tariff/price libraries) before changing the existing-tools audit.
+3. Demonstrate demand for this independent developer utility; define acceptance cases and maintenance owner.
+4. Authorize a small scoped PR, reusing energydata-kit quality primitives, not a new calculation stack. CI, security and release governance must pass.
+5. Explicit Control Tower cross-reference: this is a standalone OSS proposal, not an active MICA reliability/calibration or capacity package.
+
+**Out of scope:** tariff bill/cost calculations, solver optimizations, market-data downloads, live DSO catalogues, BRP messaging and operations, settlement, MICA physical modeling/capacity intelligence, customer economic scenarios and proprietary algorithms. Those remain governed separately and are not implicitly authorized by this entry.
+
+**Ordering:** Existing OSS release gates first; OSS-16 assessment second; no implementation before separate approval. MICA REL-01/REL-02/VER-01 engineering priorities are unaffected.
+
 
 ## Done
 
