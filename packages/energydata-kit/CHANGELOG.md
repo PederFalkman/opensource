@@ -5,6 +5,11 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Python 3.14 is tested in CI and declared in the package classifiers; the
+  test suite, including the byte-for-byte golden reports, passes unchanged
+  (OSS-51).
+
 ### Fixed
 - Command line on Windows: `-o` files and `--flags-csv` were written with
   `\r\n` line endings, so reports were not byte-identical to those made on
