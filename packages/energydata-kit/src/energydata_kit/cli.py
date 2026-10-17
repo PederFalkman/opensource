@@ -313,9 +313,16 @@ def _has_issues(report: QualityReport | FrameQualityReport) -> bool:
 
 
 def _write_flags(args: argparse.Namespace, flagged: pd.DataFrame) -> None:
-    """Write the flagged table in the input's CSV format (delimiter and decimal mark)."""
+    """Write the flagged table in the input's CSV format (delimiter and decimal mark).
+
+    Lines end in ``\n`` on every platform, so the file is the same on Windows.
+    """
     flagged.to_csv(
-        args.flags_csv, sep=_delimiter(args), decimal=args.decimal, date_format="%Y-%m-%dT%H:%M:%S%z"
+        args.flags_csv,
+        sep=_delimiter(args),
+        decimal=args.decimal,
+        date_format="%Y-%m-%dT%H:%M:%S%z",
+        lineterminator="\n",
     )
 
 
@@ -381,7 +388,7 @@ def _write_report(
 ) -> None:
     text = report.to_json() + "\n" if args.format == "json" else _summary(report.to_dict())
     if args.output:
-        Path(args.output).write_text(text, encoding="utf-8")
+        Path(args.output).write_text(text, encoding="utf-8", newline="\n")  # same bytes on Windows
     else:
         stdout.write(text)
 
@@ -552,7 +559,7 @@ def _run_compare(args: argparse.Namespace, stdout: TextIO) -> int:
     comparison = compare_reports(_load_report(args.before), _load_report(args.after))
     text = comparison.to_json() + "\n" if args.format == "json" else _comparison_summary(comparison.to_dict())
     if args.output:
-        Path(args.output).write_text(text, encoding="utf-8")
+        Path(args.output).write_text(text, encoding="utf-8", newline="\n")  # same bytes on Windows
     else:
         stdout.write(text)
     return 1 if args.fail_if_worse and comparison.worse else 0

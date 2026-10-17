@@ -96,5 +96,6 @@ Key decisions:
 ## Supported versions
 
 - Python 3.11, 3.12, 3.13 (CI matrix).
+- Linux for every check; the tests also run on Windows and macOS (CI).
 - Lowest supported runtime dependencies are tested in CI: numpy 1.26,
   pandas 2.1, Pint 0.24. Latest tested locally: pandas 3.0, Pint 0.26.

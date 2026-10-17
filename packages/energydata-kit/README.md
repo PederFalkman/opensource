@@ -132,7 +132,9 @@ option.
   unless you choose a policy. Grid checks need a stated step: the step is never
   guessed silently.
 - **Deterministic.** Reports contain no wall-clock time or randomness. The same
-  input, parameters and package version produce byte-identical JSON.
+  input, parameters and package version produce byte-identical JSON, on
+  Linux, macOS and Windows: files written with `-o` and `--flags-csv` end
+  lines in `\n` everywhere.
 - **UTC grid by default.** Sub-daily gap detection runs on a fixed UTC grid, so
   a 23- or 25-hour local DST day is not reported as missing or duplicated
   data. Daily and longer steps in local time use an explicit calendar grid
