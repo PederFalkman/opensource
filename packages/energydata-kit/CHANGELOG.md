@@ -5,6 +5,11 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Python 3.14 is tested in CI and declared in the package classifiers; the
+  test suite, including the byte-for-byte golden reports, passes unchanged
+  (OSS-51).
+
 ### Fixed
 - `from_table_schema` (and `energydata-kit report --schema`) let a `name`
   inside the `energydata_kit` property override the field's own name, so
