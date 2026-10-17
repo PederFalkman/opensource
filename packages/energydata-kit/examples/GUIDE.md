@@ -425,5 +425,6 @@ from_schema = json.loads(Path("report_schema.json").read_text())
 assert from_schema["metadata"]["unit"] == "kW" and from_schema["n_missing_intervals"] == 2
 ```
 
-Exit status: `0` OK, `1` issues found with `--fail-on-issues`, `2` usage or
-input error. See `energydata-kit report --help` for every option.
+Exit status: `0` OK, `1` issues found with `--fail-on-issues` or
+`--fail-if-worse`, `2` usage, input or file error, with the reason on
+standard error. See `energydata-kit report --help` for every option.
