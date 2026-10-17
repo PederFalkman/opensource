@@ -434,6 +434,23 @@ def test_usage_errors_and_version(capsys):
     assert exc.value.code == 0 and __version__ in capsys.readouterr().out
 
 
+@pytest.mark.parametrize(
+    ("argv", "status_1"),
+    [
+        ([], "1 issues found (--fail-on-issues, --fail-if-worse)"),
+        (["report"], "1 issues found with --fail-on-issues"),
+        (["compare"], "1 worse with --fail-if-worse"),
+    ],
+)
+def test_help_lists_exit_status(argv, status_1, capsys, monkeypatch):
+    monkeypatch.setenv("COLUMNS", "200")  # keep argparse from wrapping the epilog
+    with pytest.raises(SystemExit) as exc:
+        main([*argv, "--help"])
+    out = capsys.readouterr().out
+    assert exc.value.code == 0
+    assert f"exit status: 0 OK; {status_1}; 2 usage, input or file error" in out
+
+
 def test_python_dash_m(tmp_path):
     result = subprocess.run(
         [sys.executable, "-m", "energydata_kit", "report", str(write(tmp_path, CLEAN)), "--freq", "15min"],
