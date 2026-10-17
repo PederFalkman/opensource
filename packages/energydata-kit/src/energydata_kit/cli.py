@@ -60,9 +60,20 @@ def _positive_int(text: str) -> int:
     return value
 
 
+_EXIT_REPORT = "exit status: 0 OK; 1 issues found with --fail-on-issues; 2 usage, input or file error"
+_EXIT_COMPARE = "exit status: 0 OK; 1 worse with --fail-if-worse; 2 usage, input or file error"
+
+
 def build_parser() -> argparse.ArgumentParser:
     """The ``energydata-kit`` argument parser with its ``report`` and ``compare`` subcommands."""
-    parser = argparse.ArgumentParser(prog=PROG, description="Quality checks for energy time-series data.")
+    parser = argparse.ArgumentParser(
+        prog=PROG,
+        description="Quality checks for energy time-series data.",
+        epilog=(
+            "exit status: 0 OK; 1 issues found (--fail-on-issues, --fail-if-worse); "
+            "2 usage, input or file error"
+        ),
+    )
     parser.add_argument("--version", action="version", version=f"{PROG} {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -70,6 +81,7 @@ def build_parser() -> argparse.ArgumentParser:
         "report",
         help="print a JSON quality report for a CSV file",
         description="Print a deterministic JSON quality report for value columns of a CSV file.",
+        epilog=_EXIT_REPORT,
     )
     rep.add_argument("csv", help="input CSV file, or '-' for standard input")
 
@@ -168,6 +180,7 @@ def build_parser() -> argparse.ArgumentParser:
         "compare",
         help="print what changed between two saved JSON reports",
         description="Print a deterministic JSON comparison of two reports written by 'report'.",
+        epilog=_EXIT_COMPARE,
     )
     cmp.add_argument("before", help="earlier report (JSON)")
     cmp.add_argument("after", help="later report (JSON)")
