@@ -433,13 +433,18 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `decode_flags` on negative or unknown bits; non-string metadata
       `name`/`timezone`. Regression tests fail on the previous code.
 
-### OSS-45: documentation polish — this change
+### OSS-45: documentation polish — merged in [#51](https://github.com/PederFalkman/opensource/pull/51)
 
 - [x] Re-read the READMEs, guide, architecture overview and docstrings
       against the behaviour after OSS-40 to OSS-44: exit status 2 now
       covers file errors; days shorter than one step are a documented
       limitation; docstrings mention `NaT`, empty and numpy inputs; the
       overview lists `check_all.py` and the golden tests.
+
+### OSS-46: exit statuses in `--help` — this change
+
+- [x] `energydata-kit --help`, `report --help` and `compare --help` list
+      the exit statuses (follow-up from OSS-45), pinned by a test.
 
 ## Explicitly not planned
 
