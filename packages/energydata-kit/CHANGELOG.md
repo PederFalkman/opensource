@@ -5,13 +5,15 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- `energydata-kit --help`, `report --help` and `compare --help` list the
+  exit statuses (OSS-46).
+
 ### Fixed
 - Command line: an unreadable input or unwritable output (a directory, a
   missing parent directory, no permission) ended in a traceback with exit
   status 1, which reads as "issues found"; it now exits 2 with a one-line
   message (OSS-43).
-
-### Fixed
 - Local-calendar grids (`tz=`) with an `origin` after the first timestamp
   ran only forward from `origin`, so earlier timestamps were flagged
   off-grid and gaps before `origin` were missed. The grid now runs through
