@@ -402,7 +402,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       Schema; unchecked `per_column` metadata names. Regression tests fail on
       the previous code.
 
-### OSS-42: cross-version determinism — this change
+### OSS-42: cross-version determinism — merged in [#48](https://github.com/PederFalkman/opensource/pull/48)
 
 - [x] Generated reports (single series with every check, local days across
       DST, frame, comparison), a flags CSV and fingerprints on Python 3.13 /
@@ -411,6 +411,16 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] `tests/test_golden.py` pins them in `tests/golden/` (version masked),
       so CI on every supported version and the lowest dependencies catches
       drift. Regeneration documented in `CONTRIBUTING.md`.
+
+### OSS-43: command-line bug hunt — this change
+
+- [x] Fuzzed `energydata-kit report` in-process with 3,000 random CSVs (`,`
+      `;` tab, decimal commas, bad and DST timestamps, odd values, missing
+      or duplicate columns) and option combinations; every run must exit 0,
+      1 or 2, with a message on 2 and valid JSON on success.
+- [x] Fixed: file-system errors on input or output paths escaped as
+      tracebacks with exit status 1 (read as "issues found"); they now exit
+      2 with a message. Regression test fails on the previous code.
 
 ## Explicitly not planned
 

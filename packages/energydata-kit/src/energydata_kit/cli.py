@@ -566,6 +566,13 @@ def main(
         # ValueErrors; report them plainly instead of with a traceback.
         print(f"{PROG}: error: {exc}", file=stderr)
         return 2
+    except OSError as exc:
+        # Unreadable inputs or unwritable outputs (a directory, a missing parent
+        # directory, no permission). Exit 2, not a traceback: Python's own exit
+        # status 1 would read as "issues found".
+        where = f": {exc.filename}" if exc.filename else ""
+        print(f"{PROG}: error: {exc.strerror or exc}{where}", file=stderr)
+        return 2
 
 
 def console_main() -> None:

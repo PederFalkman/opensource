@@ -403,6 +403,23 @@ def test_text_summary_says_when_gaps_are_not_listed(tmp_path):
     assert "  ... 2 more gap(s); see the JSON report" in lines
 
 
+def test_file_system_errors_exit_2_without_traceback(tmp_path):
+    data = str(write(tmp_path, CLEAN))
+    report = tmp_path / "r.json"
+    assert run("report", data, "-o", str(report))[0] == 0
+    for argv in [
+        ["report", str(tmp_path)],  # a directory as input
+        ["report", data, "-o", str(tmp_path)],  # a directory as output
+        ["report", data, "-o", str(tmp_path / "missing" / "r.json")],
+        ["report", data, "--flags-csv", str(tmp_path / "missing" / "f.csv")],
+        ["report", data, "--schema", str(tmp_path)],
+        ["compare", str(report), str(tmp_path)],
+    ]:
+        code, _, err = run(*argv)
+        assert code == 2 and err.startswith("energydata-kit: error:"), (argv, err)
+        assert "Traceback" not in err
+
+
 def test_missing_file(tmp_path):
     code, _, err = run("report", str(tmp_path / "absent.csv"))
     assert code == 2 and "file not found" in err
