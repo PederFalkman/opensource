@@ -441,10 +441,21 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       limitation; docstrings mention `NaT`, empty and numpy inputs; the
       overview lists `check_all.py` and the golden tests.
 
-### OSS-46: exit statuses in `--help` — this change
+### OSS-46: exit statuses in `--help` — merged in [#52](https://github.com/PederFalkman/opensource/pull/52)
 
 - [x] `energydata-kit --help`, `report --help` and `compare --help` list
       the exit statuses (follow-up from OSS-45), pinned by a test.
+
+### OSS-47: comparison bug hunt — this change
+
+- [x] Fuzzed `compare_reports` with 100 real single-series and frame
+      reports (1,500 real pairs, 4,000 with keys deleted or values
+      replaced). Real reports compared cleanly.
+- [x] Fixed: a saved comparison (also schema "1") was accepted as a
+      report, and hand-edited reports crashed; with `--fail-if-worse`
+      both read as "worse". Non-report input now raises `ValueError`
+      naming the first bad field, and the command exits 2. Regression
+      tests fail on the previous code.
 
 ## Explicitly not planned
 
