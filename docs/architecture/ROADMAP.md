@@ -367,7 +367,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       entries (OSS-27 to OSS-35) folded in, as the release PR would have.
       Later changes still go under `[Unreleased]`.
 
-### OSS-38: one-command local checks — this change
+### OSS-38: one-command local checks — merged in [#44](https://github.com/PederFalkman/opensource/pull/44)
 
 - [x] `tools/check_all.py` (standard library only) runs every check in
       `CONTRIBUTING.md`: lint, format, mypy and tests per package, the
@@ -375,6 +375,11 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       readiness report as information. It keeps going after a failure and
       prints one summary with the output of failed checks. `--quick` and
       `--build` options. A test keeps it in sync with `CONTRIBUTING.md`.
+
+### OSS-39: roadmap up to date — this change
+
+- [x] OSS-38 linked to #44. Engineering for 0.1.0 is complete; the release
+      waits on decisions D1–D6 in `docs/governance/RELEASE_DECISIONS.md`.
 
 ## Explicitly not planned
 
