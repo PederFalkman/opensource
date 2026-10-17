@@ -467,7 +467,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       fails only on LICENSE, the licence declaration and the upload guard,
       which wait on D2, D3 and D6.
 
-### OSS-49: Table Schema bug hunt — this change
+### OSS-49: Table Schema bug hunt — merged in [#55](https://github.com/PederFalkman/opensource/pull/55)
 
 - [x] Round-tripped 500 random metadata sets through `to_table_schema` /
       `from_table_schema` (all equal) and fed 3,000 mutated schemas to
@@ -477,6 +477,13 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       relabelled the column's metadata; malformed schemas raised
       `KeyError`/`AttributeError`. Both now raise `ValueError` naming the
       problem. Regression tests fail on the previous code.
+
+### OSS-50: performance re-check — this change
+
+- [x] Re-ran `benchmarks/run.py` on Python 3.13 / pandas 3.0.6 and
+      Python 3.11 / pandas 2.1.4 after the input checks of OSS-40 to
+      OSS-49: no regression, peak memory unchanged. `PERFORMANCE.md`
+      updated; `compare_reports` with its new input check takes ~0.4 ms.
 
 ## Explicitly not planned
 
