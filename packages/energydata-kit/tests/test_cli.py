@@ -434,6 +434,14 @@ def test_compare_rejects_its_own_output_with_exit_2(tmp_path):
     assert "before is not a quality report" in err
 
 
+def test_schema_with_name_inside_namespace_exits_2(tmp_path):
+    schema = ek.to_table_schema(ek.MeasurementMetadata(name="kwh", unit="kWh"))
+    schema["fields"][1]["energydata_kit"]["name"] = "other"  # was accepted: report labelled "other"
+    path = write(tmp_path, json.dumps(schema), "schema.json")
+    code, out, err = run("report", str(write(tmp_path, CLEAN)), "--freq", "15min", "--schema", str(path))
+    assert (code, out) == (2, "") and "belong on the field" in err
+
+
 def test_usage_errors_and_version(capsys):
     with pytest.raises(SystemExit) as exc:
         main(["report"])

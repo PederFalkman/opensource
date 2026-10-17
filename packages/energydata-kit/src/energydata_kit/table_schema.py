@@ -68,9 +68,13 @@ def from_table_schema(schema: dict[str, Any], *, field: str | None = None) -> Me
     """Rebuild :class:`MeasurementMetadata` from a schema made by :func:`to_table_schema`.
 
     ``field`` picks the measurement column by name; by default the single
-    field carrying the ``"energydata_kit"`` property is used.
+    field carrying the ``"energydata_kit"`` property is used. A malformed
+    schema raises ``ValueError`` naming the problem.
     """
-    candidates = [f for f in schema.get("fields", []) if NAMESPACE in f]
+    fields = schema.get("fields") if isinstance(schema, dict) else None
+    if not isinstance(fields, list):
+        raise ValueError("not a Table Schema: expected an object with a 'fields' list")
+    candidates = [f for f in fields if isinstance(f, dict) and NAMESPACE in f]
     if field is not None:
         candidates = [f for f in candidates if f.get("name") == field]
     if len(candidates) != 1:
@@ -80,6 +84,19 @@ def from_table_schema(schema: dict[str, Any], *, field: str | None = None) -> Me
             + f", found {len(candidates)}"
         )
     found = candidates[0]
-    return MeasurementMetadata.from_dict(
-        {"name": found["name"], "description": found.get("description", ""), **found[NAMESPACE]}
-    )
+    name, extra = found.get("name"), found[NAMESPACE]
+    if not isinstance(name, str):
+        raise ValueError(f"a field with {NAMESPACE!r} metadata has no string 'name'")
+    if not isinstance(extra, dict):
+        raise ValueError(f"field {name!r}: {NAMESPACE!r} must be an object")
+    # The field's own name and description are the only source; a copy inside
+    # the namespace would silently describe a different column.
+    misplaced = sorted({"name", "description"} & set(extra))
+    if misplaced:
+        raise ValueError(f"field {name!r}: {misplaced} belong on the field, not inside {NAMESPACE!r}")
+    try:
+        return MeasurementMetadata.from_dict(
+            {"name": name, "description": found.get("description", ""), **extra}
+        )
+    except TypeError as exc:  # missing or unknown keys
+        raise ValueError(f"field {name!r}: invalid {NAMESPACE!r} metadata: {exc}") from exc

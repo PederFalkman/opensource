@@ -5,6 +5,15 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- `from_table_schema` (and `energydata-kit report --schema`) let a `name`
+  inside the `energydata_kit` property override the field's own name, so
+  the report for one column carried metadata named after another. Such a
+  schema is now rejected, and every malformed schema (not an object, a
+  field without a name, a non-object or incomplete `energydata_kit`
+  property) raises `ValueError` naming the problem instead of `KeyError`,
+  `AttributeError` or an internal `TypeError` (OSS-49).
+
 ## [0.1.0] - 2026-10-16
 
 First release: quality checks for metered energy time series, on top of
