@@ -116,8 +116,9 @@ step when `--freq` is not given.
 `energydata-kit compare before.json after.json` prints what changed between
 two saved reports (`--format text` for a short summary per column); with `--fail-if-worse` it exits `1` if more rows are
 flagged, more intervals are missing or completeness fell.
-Exit status: `0` OK, `1` issues found with `--fail-on-issues`, `2` usage or
-input error. `python -m energydata_kit` is equivalent. See
+Exit status: `0` OK, `1` issues found with `--fail-on-issues` or
+`--fail-if-worse`, `2` usage, input or file error (for example a directory
+given as the CSV, or `-o` in a folder that does not exist). `python -m energydata_kit` is equivalent. See
 `energydata-kit report --help` and `energydata-kit compare --help` for every
 option.
 
@@ -187,7 +188,11 @@ use Pint or pint-pandas directly, e.g. `series.astype(f"pint[{meta.unit}]")`.
   and flags the row where the change lands: a single outlier flags itself and
   the row after it. Choosing the limit is left to the caller.
 - Local days that are not a whole number of steps long (e.g. 30-minute DST
-  shifts with a 1-hour step) report the floor of the expected count.
+  shifts with a 1-hour step) report the floor of the expected count. A day
+  shorter than one step (a fixed `"2D"` step, or `"24h"` on a 23-hour DST
+  day) expects no interval: its completeness is `NaN` and it is left out of
+  the report's `min_completeness`. Use a calendar step (`tz=`) for daily
+  data in local time.
 - `assess_frame` repeats the timestamp sections (gaps, duplicates, off-grid)
   in every column's report, because each column's report is exactly what
   `assess_quality` gives for it. On the command line, `--unit` works with a

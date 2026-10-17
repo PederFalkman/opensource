@@ -224,7 +224,8 @@ def flag_series(
     Parameters
     ----------
     series:
-        Values indexed by a timezone-aware ``DatetimeIndex``. Not modified.
+        Values indexed by a timezone-aware ``DatetimeIndex`` without ``NaT``.
+        Not modified.
     freq:
         Expected step. Enables ``OFF_GRID_TIMESTAMP`` and, with
         ``insert_missing``, ``MISSING_INTERVAL``. A fixed step unless ``tz``

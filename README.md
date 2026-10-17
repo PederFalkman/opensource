@@ -14,7 +14,7 @@ dependencies, tests and version.
 
 | Package | Status | Description |
 |---|---|---|
-| [`energydata-kit`](packages/energydata-kit) | pre-alpha | Quality checks for energy time series: UTC timestamp normalization, gap/duplicate detection (UTC or local-calendar grids), interval semantics, unit metadata, non-destructive quality flags, reproducible reports, optional Pandera checks and an `energydata-kit report` command line |
+| [`energydata-kit`](packages/energydata-kit) | pre-alpha; 0.1.0 release candidate, not released | Quality checks for energy time series: UTC timestamp normalization, gap/duplicate detection (UTC or local-calendar grids), interval semantics, unit metadata, non-destructive quality flags, reproducible reports, optional Pandera checks and an `energydata-kit report` command line |
 
 ## Quick start
 
