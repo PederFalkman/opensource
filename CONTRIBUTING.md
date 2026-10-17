@@ -79,6 +79,11 @@ python -m pytest tools/tests
 - Every public function, class, method and property has a docstring
   (`tools/check_docs.py`), and every exported name is mentioned in the
   package README.
+- Reports are deterministic across supported pandas, numpy and Python
+  versions. `tests/test_golden.py` compares fixed reports, a flags CSV and
+  fingerprints byte for byte with `tests/golden/`; after an intended change
+  to report content, regenerate with `EDK_UPDATE_GOLDEN=1 pytest
+  tests/test_golden.py`, review the diff and note it in the changelog.
 - Performance: `tests/test_performance.py` keeps generous time budgets; a
   change that slows the year-of-minute-data cases noticeably needs a note in
   `docs/architecture/PERFORMANCE.md`.

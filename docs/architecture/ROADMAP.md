@@ -391,7 +391,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       errors from calendar grids; two CLI messages. Each has a regression
       test that fails on the previous code.
 
-### OSS-41: pre-release bug hunt, part 2 — this change
+### OSS-41: pre-release bug hunt, part 2 — merged in [#47](https://github.com/PederFalkman/opensource/pull/47)
 
 - [x] Fuzzed the Pandera checks against `flag_series` / `assess_quality`
       (1,500 random series, pandas 2.1 and 3) and probed metadata, Table
@@ -401,6 +401,16 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       the Pandera gap check; duplicate `quality_flag` fields in a Table
       Schema; unchecked `per_column` metadata names. Regression tests fail on
       the previous code.
+
+### OSS-42: cross-version determinism — this change
+
+- [x] Generated reports (single series with every check, local days across
+      DST, frame, comparison), a flags CSV and fingerprints on Python 3.13 /
+      pandas 3.0.6 / numpy 2.5 and Python 3.11 / pandas 2.1.4 / numpy 1.26:
+      byte-identical, so no fix was needed.
+- [x] `tests/test_golden.py` pins them in `tests/golden/` (version masked),
+      so CI on every supported version and the lowest dependencies catches
+      drift. Regeneration documented in `CONTRIBUTING.md`.
 
 ## Explicitly not planned
 

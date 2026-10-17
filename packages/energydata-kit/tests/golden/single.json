@@ -1,0 +1,99 @@
+{
+  "completeness": 0.984375,
+  "duplicate_timestamps": [
+    "2024-03-30T10:00:00+00:00"
+  ],
+  "expected_resolution": "P0DT0H15M0S",
+  "fingerprint": "a696ee41cf6a21c2d3a4887339ef4d2db57c049d3d214fa373b5f5d708f8d197",
+  "first_timestamp": "2024-03-30T00:00:00+00:00",
+  "flag_counts": {
+    "ANY": 67,
+    "COUNTER_DECREASE": 0,
+    "DUPLICATE_TIMESTAMP": 2,
+    "JUMP": 0,
+    "MISSING_VALUE": 1,
+    "NON_FINITE": 1,
+    "NON_NUMERIC": 0,
+    "OFF_GRID_TIMESTAMP": 0,
+    "OUT_OF_BOUNDS": 63,
+    "STALE_VALUE": 6
+  },
+  "gaps": [
+    {
+      "end": "2024-03-30T01:30:00+00:00",
+      "missing_count": 2,
+      "start": "2024-03-30T01:15:00+00:00"
+    },
+    {
+      "end": "2024-03-31T01:00:00+00:00",
+      "missing_count": 1,
+      "start": "2024-03-31T01:00:00+00:00"
+    }
+  ],
+  "inferred_resolution": "P0DT0H15M0S",
+  "last_timestamp": "2024-03-31T23:45:00+00:00",
+  "local_days": {
+    "incomplete_days": [
+      {
+        "date": "2024-03-30",
+        "expected": 96,
+        "present": 90
+      },
+      {
+        "date": "2024-03-31",
+        "expected": 92,
+        "present": 91
+      },
+      {
+        "date": "2024-04-01",
+        "expected": 96,
+        "present": 8
+      }
+    ],
+    "min_completeness": 0.083333,
+    "n_complete_days": 0,
+    "n_days": 3,
+    "n_incomplete_days": 3,
+    "timezone": "Europe/Stockholm"
+  },
+  "metadata": {
+    "aggregation": "mean",
+    "description": "",
+    "interval_label": "start",
+    "name": "synthetic_power",
+    "quantity": null,
+    "resolution": "15min",
+    "timezone": "Europe/Stockholm",
+    "unit": "kW"
+  },
+  "metadata_issues": [],
+  "n_duplicate_timestamps": 1,
+  "n_expected_intervals": 192,
+  "n_gaps": 2,
+  "n_missing_intervals": 3,
+  "n_rows": 190,
+  "package_version": "*",
+  "parameters": {
+    "bounds": [
+      0,
+      110
+    ],
+    "counter_tolerance": 0.0,
+    "cumulative": false,
+    "freq": "P0DT0H15M0S",
+    "jump_max_delta": 15,
+    "max_listed": 100,
+    "origin": null,
+    "stale_atol": 0.0,
+    "stale_exclude": [],
+    "stale_min_run": 4,
+    "tz": null
+  },
+  "schema_version": "1",
+  "series_name": "synthetic_power",
+  "truncated": {
+    "duplicate_timestamps": false,
+    "gaps": false,
+    "incomplete_local_days": false
+  }
+}
