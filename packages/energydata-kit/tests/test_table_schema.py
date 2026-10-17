@@ -75,3 +75,29 @@ def test_flag_column_name_clash_rejected():
     assert len(to_table_schema(meta)["fields"]) == 2  # fine without the flag column
     with pytest.raises(ValueError, match="no other field may be named 'quality_flag'"):
         to_table_schema(meta, include_flag=True)
+
+
+def test_name_inside_the_namespace_is_rejected():
+    # It would silently relabel the column: the report for "import_energy"
+    # carried metadata named "other".
+    schema = to_table_schema(META)
+    schema["fields"][1][NAMESPACE]["name"] = "other"
+    with pytest.raises(ValueError, match="belong on the field"):
+        from_table_schema(schema)
+
+
+@pytest.mark.parametrize(
+    ("schema", "message"),
+    [
+        ([], "expected an object with a 'fields' list"),
+        ({"fields": None}, "expected an object with a 'fields' list"),
+        ({"fields": [NAMESPACE]}, "found 0"),
+        ({"fields": [{NAMESPACE: {"unit": "kW"}}]}, "no string 'name'"),
+        ({"fields": [{"name": "p", NAMESPACE: ["kW"]}]}, "must be an object"),
+        ({"fields": [{"name": "p", NAMESPACE: {}}]}, "field 'p': invalid"),
+        ({"fields": [{"name": "p", NAMESPACE: {"unit": "kW", "colour": "red"}}]}, "field 'p': invalid"),
+    ],
+)
+def test_malformed_schema_raises_value_error(schema, message):
+    with pytest.raises(ValueError, match=message):
+        from_table_schema(schema)

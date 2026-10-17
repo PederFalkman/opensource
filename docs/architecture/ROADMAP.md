@@ -457,7 +457,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       naming the first bad field, and the command exits 2. Regression
       tests fail on the previous code.
 
-### OSS-48: release-readiness refresh — this change
+### OSS-48: release-readiness refresh — merged in [#54](https://github.com/PederFalkman/opensource/pull/54)
 
 - [x] Folded the `[Unreleased]` changelog entries from OSS-40 to OSS-47
       into the unreleased 0.1.0 notes as the behaviour users will see
@@ -466,6 +466,17 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       PyPI name check (still free), the G6 review. The readiness check now
       fails only on LICENSE, the licence declaration and the upload guard,
       which wait on D2, D3 and D6.
+
+### OSS-49: Table Schema bug hunt — this change
+
+- [x] Round-tripped 500 random metadata sets through `to_table_schema` /
+      `from_table_schema` (all equal) and fed 3,000 mutated schemas to
+      `from_table_schema` and `energydata-kit report --schema`. The command
+      line always exited 0, 1 or 2.
+- [x] Fixed: a `name` inside the `energydata_kit` property silently
+      relabelled the column's metadata; malformed schemas raised
+      `KeyError`/`AttributeError`. Both now raise `ValueError` naming the
+      problem. Regression tests fail on the previous code.
 
 ## Explicitly not planned
 
