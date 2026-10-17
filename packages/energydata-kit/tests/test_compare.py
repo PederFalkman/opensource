@@ -87,3 +87,30 @@ def test_rejects_mismatched_inputs():
         compare_reports(old, single)
     with pytest.raises(TypeError):
         compare_reports("report.json", single)  # type: ignore[arg-type]
+
+
+def test_rejects_a_comparison_or_a_hand_edited_report():
+    a, b = report(drop=[3]), report()
+    saved_comparison = json.loads(compare_reports(a, b).to_json())  # also schema "1"
+    with pytest.raises(ValueError, match="before is not a quality report: fingerprint"):
+        compare_reports(saved_comparison, b)
+
+    edited = a.to_dict()
+    del edited["gaps"][0]["end"]
+    with pytest.raises(ValueError, match="after is not a quality report: gaps"):
+        compare_reports(a, edited)
+
+    edited = a.to_dict() | {"flag_counts": "many"}
+    with pytest.raises(ValueError, match="flag_counts"):
+        compare_reports(edited, a)
+
+
+def test_rejects_a_frame_report_with_inconsistent_columns():
+    frame = assess_frame(make_synthetic_series(periods=4).to_frame("p"), freq="15min").to_dict()
+    renamed = frame | {"column_order": ["p", "q"]}
+    with pytest.raises(ValueError, match="column_order"):
+        compare_reports(frame, renamed)
+    broken = json.loads(json.dumps(frame))
+    broken["columns"]["p"]["metadata_issues"] = [{"message": "no code"}]
+    with pytest.raises(ValueError, match=r"columns\.p\.metadata_issues"):
+        compare_reports(broken, frame)

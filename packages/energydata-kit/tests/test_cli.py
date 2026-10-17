@@ -425,6 +425,15 @@ def test_missing_file(tmp_path):
     assert code == 2 and "file not found" in err
 
 
+def test_compare_rejects_its_own_output_with_exit_2(tmp_path):
+    data = write(tmp_path, CLEAN)
+    run("report", str(data), "--freq", "15min", "-o", str(tmp_path / "r.json"))
+    run("compare", str(tmp_path / "r.json"), str(tmp_path / "r.json"), "-o", str(tmp_path / "c.json"))
+    code, out, err = run("compare", str(tmp_path / "c.json"), str(tmp_path / "r.json"), "--fail-if-worse")
+    assert (code, out) == (2, "")  # was exit 1, read as "worse"
+    assert "before is not a quality report" in err
+
+
 def test_usage_errors_and_version(capsys):
     with pytest.raises(SystemExit) as exc:
         main(["report"])
