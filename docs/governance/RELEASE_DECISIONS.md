@@ -1,12 +1,18 @@
 # Release decisions for energydata-kit 0.1.0
 
-**Status:** prepared 2026-10-16 (OSS-22) · **For:** management, legal counsel
+**Status:** prepared 2026-10-16 (OSS-22), facts refreshed 2026-10-17
+(OSS-48) · **For:** management, legal counsel
 and the technical lead who sign off the release gates in `RELEASE_GATES.md`.
 
 This page collects every decision that still blocks the first release, the
 evidence already in the repository for each, and the exact questions to
 answer. It does not make any of these decisions. Engineering work for 0.1.0
 is complete; nothing below needs more code before the decisions are made.
+Since the first version of this page, five correctness passes (OSS-40 to
+OSS-47) fixed the bugs they found, and the changelog's `[Unreleased]`
+section has been folded into the 0.1.0 notes, so the only failing
+readiness checks are the ones these decisions resolve (LICENSE, licence
+declaration, upload guard).
 
 ## Where things stand
 
@@ -17,7 +23,7 @@ is complete; nothing below needs more code before the decisions are made.
 | G3 IP boundary review | **Open: review needed** | See D4 below |
 | G4 Third-party licences | Evidence ready; needs legal confirmation | `THIRD_PARTY_LICENSES.md`, kept in sync by `tools/check_third_party.py` in CI |
 | G5 CI green | Green on `main`; re-checked on the release commit | `.github/workflows/ci.yml`, `security.yml` |
-| G6 Documentation honest | Reviewed in OSS-20; re-checked in the release PR | Package `README.md` (capabilities and known limitations), `CHANGELOG.md`, `examples/GUIDE.md` (executed by the tests) |
+| G6 Documentation honest | Reviewed in OSS-20 and OSS-45; re-checked in the release PR | Package `README.md` (capabilities and known limitations), `CHANGELOG.md`, `examples/GUIDE.md` (executed by the tests) |
 | G7 Publication | **Open: decision needed** | See D6 below |
 
 The mechanical release steps are rehearsed on every change by the *Release
@@ -42,12 +48,12 @@ commit and branch is already visible. Without a LICENSE file the default is
 
 - **Question:** does the publishing legal entity own all code in the
   repository, so that it can license it?
-- **Facts for the answer** (from `git log` on `main` at `eafdb8c`, after #40,
-  2026-10-16): 90 commits.
-  - 41 by an AI coding assistant (author "Claude", with a `Co-Authored-By`
-    trailer) in sessions run by the repository owner: 38 contain the code
-    and docs, 3 merge `main` into a pull-request branch.
-  - 45 by the repository owner: 39 pull-request merges, 4 merges of `main`
+- **Facts for the answer** (from `git log` on `main` at `0b5be89`, after #53,
+  2026-10-17): 125 commits.
+  - 63 by an AI coding assistant (author "Claude", with a `Co-Authored-By`
+    trailer) in sessions run by the repository owner: 55 contain the code,
+    docs and roadmap updates, 8 merge `main` into a pull-request branch.
+  - 58 by the repository owner: 52 pull-request merges, 4 merges of `main`
     into a pull-request branch, and 2 own commits (the initial commit and a
     roadmap note).
   - 4 Dependabot updates of pinned GitHub Actions.
@@ -116,8 +122,8 @@ Not a release gate, but it protects the release commit.
 
 - **Questions:**
   1. Publish to PyPI, or keep releases as GitHub-only build artifacts?
-  2. Confirm the name `energydata-kit`. On 2026-10-16 (checked twice that
-     day, in OSS-22 and OSS-36) the names `energydata-kit` and
+  2. Confirm the name `energydata-kit`. On 2026-10-16 (OSS-22, OSS-36) and
+     again on 2026-10-17 (OSS-48) the names `energydata-kit` and
      `energydata_kit` were not taken on PyPI or TestPyPI (HTTP 404 from
      their JSON APIs); availability can change until the first upload.
   3. Who owns the PyPI project and its trusted-publishing configuration?
@@ -134,8 +140,8 @@ Not a release gate, but it protects the release commit.
 5. D6 publication approval.
 6. Release PR from `RELEASE_CHECKLIST.md`. `main` already has version
    `0.1.0` and a dated `## [0.1.0]` changelog section (OSS-24, #30; nothing
-   is released). The release PR folds any `[Unreleased]` entries into that
-   section, sets its date to the release day, adds LICENSE (root and
+   is released; `[Unreleased]` is empty since OSS-48). The release PR folds
+   in anything added there since, sets the section's date to the release day, adds LICENSE (root and
    package) and the licence declaration, and removes the guard;
    then tag `energydata-kit-v0.1.0`. The *Release build* workflow re-runs the
    strict readiness check on the tag and records build provenance.

@@ -5,64 +5,6 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
-### Changed
-- `energydata-kit --help`, `report --help` and `compare --help` list the
-  exit statuses (OSS-46).
-
-### Fixed
-- Command line: an unreadable input or unwritable output (a directory, a
-  missing parent directory, no permission) ended in a traceback with exit
-  status 1, which reads as "issues found"; it now exits 2 with a one-line
-  message (OSS-43).
-- Local-calendar grids (`tz=`) with an `origin` after the first timestamp
-  ran only forward from `origin`, so earlier timestamps were flagged
-  off-grid and gaps before `origin` were missed. The grid now runs through
-  `origin` in both directions, as fixed-step grids already did (OSS-40).
-- `assess_quality` raised `ZeroDivisionError` when `origin` left no grid
-  point inside the data's time span; `completeness` is now `None` there.
-- A local-calendar grid anchored at a wall-clock time that a DST change
-  skips or repeats (e.g. daily at 02:00) now raises a `ValueError` that says
-  so, instead of pandas' or pytz's raw error.
-- Command line: DST localization errors point to `--ambiguous infer` and
-  `--nonexistent`, and `--format text` says how many gaps are not listed
-  when `--max-listed` lists fewer than three.
-- Unit validation rejected nothing that Pint silently ignores: `"kW?"`,
-  `"kWh;"` or `"kW#x"` were accepted as kW/kWh, and `"(kW"` raised an
-  uncaught `TokenError`. Such units now raise `UnitError` (OSS-41).
-- `MeasurementMetadata(resolution=...)` accepted a `Timedelta`, which made
-  `report.to_json()` fail; it now raises `TypeError` asking for a string such
-  as `"15min"`.
-- `pandera_checks.no_missing_intervals_check` missed a gap at the start when
-  the series began off-grid with `origin`, although `assess_quality` counted
-  it; it is now reported on the last row before the gap.
-- `to_table_schema(..., include_flag=True)` wrote two fields named
-  `quality_flag` for a measurement of that name; it now raises `ValueError`.
-- `assess_frame` checks that metadata given through `per_column` is named
-  after its column, as it already did for `metadata=`.
-- A fixed step longer than a local day (e.g. `freq="2D"`, or `"24h"` across
-  a 23-hour DST day) divided by zero in the per-local-day section: the
-  report's JSON contained `NaN`, which is not valid JSON. Such days now have
-  `completeness` `NaN` in `local_day_completeness` and are left out of
-  `min_completeness`, which is `None` if no day expects an interval (OSS-44).
-- `assess_quality` and `assess_frame` accept numpy scalars as options (for
-  example bounds from `series.quantile()`) without breaking `to_json()`;
-  a non-integer `max_listed` raises `TypeError`.
-- A `NaT` in the index raises a `ValueError` in the flag, grid and interval
-  functions, instead of being silently ignored or failing inside pandas.
-- `normalize_timestamps([])` returns an empty UTC index, also with
-  `assume_tz`; a single string raises `TypeError` instead of being parsed
-  character by character.
-- `decode_flags` raises `ValueError` for a negative or fractional value or
-  one with bits no flag uses, instead of ignoring the unknown bits.
-- `MeasurementMetadata` raises `TypeError` for a non-string `name` or
-  `timezone`.
-- `compare_reports` (and `energydata-kit compare`) accepted a saved
-  comparison as a report, since both carry `schema_version` "1": with
-  `--fail-if-worse` the command exited 1 ("worse") or 0 without any error.
-  A hand-edited report crashed with a traceback and exit 1. Input lacking
-  the report fields the comparison reads now raises `ValueError` naming
-  the first bad field; the command exits 2 (OSS-47).
-
 ## [0.1.0] - 2026-10-16
 
 First release: quality checks for metered energy time series, on top of
@@ -91,8 +33,9 @@ reports.
   columns at once.
 
 ### Metadata
-- `MeasurementMetadata`: unit (validated with Pint, including `var`),
-  resolution, aggregation, interval label and time zone.
+- `MeasurementMetadata`: unit (validated with Pint, including `var`; units
+  with characters Pint would silently drop are rejected), resolution,
+  aggregation, interval label and time zone.
 - `check_metadata_consistency` returning `MetadataIssue`s with the stable codes
   `SUM_OF_POWER`, `AVERAGED_ENERGY`, `MISSING_RESOLUTION` and
   `LABEL_ON_INSTANTANEOUS`.
@@ -108,11 +51,12 @@ reports.
   equals `assess_quality` on that column.
 - `compare_reports` → `ReportComparison`: what changed between two reports
   (objects or saved JSON), with deltas, resolved and new gaps, and a `worse`
-  verdict.
+  verdict. Input that is not a report, such as a saved comparison, is
+  rejected with the first bad field named.
 
 ### Command line
 `energydata-kit` (also `python -m energydata_kit`); exit status 0 OK, 1 issues
-found on request, 2 usage or input error.
+found on request, 2 usage, input or file error (listed in `--help`).
 - `report`: JSON report for one or more CSV columns, every check option,
   `--flags-csv`, `--fail-on-issues` and `--format text` for a readable
   summary. Metadata from `--unit` (one column) or `--schema` (a Table Schema,
@@ -133,5 +77,10 @@ found on request, 2 usage or input error.
 ### Conventions
 - Required inputs are positional and every optional argument is keyword-only;
   the public signatures are pinned by `tests/test_public_api.py`.
+- Invalid input raises `ValueError` or `TypeError` with the reason (for
+  example a `NaT` timestamp or a flag value no flag uses), never a silent
+  guess.
+- Reports, flags CSVs and fingerprints are byte-identical on every
+  supported Python, pandas and numpy version, pinned by golden tests.
 - `assess_quality` on a year of one-minute data takes about a quarter of a
   second on the benchmark machine (`docs/architecture/PERFORMANCE.md`).
