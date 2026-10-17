@@ -16,10 +16,11 @@ opensource/
 │       ├── pyproject.toml       # own metadata, deps, lint/type/test config
 │       ├── README.md
 │       ├── src/energydata_kit/
-│       ├── tests/
+│       ├── tests/               # golden/: pinned reports, compared byte for byte
 │       ├── examples/            # runnable script + GUIDE.md (executed by the tests)
 │       └── benchmarks/          # run.py: timings on long series
 ├── tools/
+│   ├── check_all.py             # runs every check below plus lint, types and tests
 │   ├── check_ip_boundary.py     # CI tripwire (stdlib only)
 │   ├── check_workflow_pins.py   # actions pinned to commit SHAs
 │   ├── check_release_readiness.py # mechanical release conditions
@@ -90,7 +91,7 @@ Key decisions:
 | Pint registry extended with `var` | Pint has no reactive-power unit; `var` is defined as dimensionally equal to `VA`. |
 | Calendar grids only with an explicit `tz` | Daily and longer steps in local time are laid out by pandas in wall-clock time (23/25-hour DST days). They are never inferred from metadata, so a fixed `"1D"` step stays 24 h in UTC unless the caller says otherwise. |
 | Opt-in checks for stale values, counters and jumps | A sensible run length or jump limit depends on the signal, and whether a series is cumulative is the caller's knowledge; all three stay off by default and the package ships no limits. |
-| CLI is a thin layer | `energydata-kit report` and `compare` only parse arguments, CSV and JSON, then call the library (`assess_quality`, `assess_frame`, `flag_series`, `flag_frame`, `compare_reports`); exit status 1 for issues (`--fail-on-issues`, `--fail-if-worse`), 2 for input errors. |
+| CLI is a thin layer | `energydata-kit report` and `compare` only parse arguments, CSV and JSON, then call the library (`assess_quality`, `assess_frame`, `flag_series`, `flag_frame`, `compare_reports`); exit status 1 for issues (`--fail-on-issues`, `--fail-if-worse`), 2 for usage, input and file errors. |
 
 ## Supported versions
 

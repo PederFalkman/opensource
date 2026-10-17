@@ -179,7 +179,11 @@ def assess_quality(
     ``stale_exclude`` and ``counter_tolerance`` tune them (see
     :func:`energydata_kit.flag_series`).
 
-    ``series`` must have a timezone-aware ``DatetimeIndex`` and is not modified.
+    Options may be numpy scalars (e.g. bounds from ``series.quantile()``);
+    the report stores them as plain Python numbers.
+
+    ``series`` must have a timezone-aware ``DatetimeIndex`` without ``NaT``
+    and is not modified.
     """
     max_listed = operator.index(max_listed)  # TypeError for 1.5; accepts numpy integers
     if max_listed < 0:

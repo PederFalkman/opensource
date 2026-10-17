@@ -412,7 +412,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       so CI on every supported version and the lowest dependencies catches
       drift. Regeneration documented in `CONTRIBUTING.md`.
 
-### OSS-43: command-line bug hunt — this change
+### OSS-43: command-line bug hunt — merged in [#49](https://github.com/PederFalkman/opensource/pull/49)
 
 - [x] Fuzzed `energydata-kit report` in-process with 3,000 random CSVs (`,`
       `;` tab, decimal commas, bad and DST timestamps, odd values, missing
@@ -421,6 +421,25 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Fixed: file-system errors on input or output paths escaped as
       tracebacks with exit status 1 (read as "issues found"); they now exit
       2 with a message. Regression test fails on the previous code.
+
+### OSS-44: Python API bug hunt — merged in [#50](https://github.com/PederFalkman/opensource/pull/50)
+
+- [x] Probed about 130 edge-case inputs across the exported functions (odd
+      steps, numpy scalars, `NaT`, empty and wrongly typed inputs, flag
+      values out of range).
+- [x] Fixed: `NaN` in report JSON for steps longer than a local day; numpy
+      scalar options breaking `to_json()`; `NaT` indexes accepted silently;
+      `normalize_timestamps` on empty input or a single string;
+      `decode_flags` on negative or unknown bits; non-string metadata
+      `name`/`timezone`. Regression tests fail on the previous code.
+
+### OSS-45: documentation polish — this change
+
+- [x] Re-read the READMEs, guide, architecture overview and docstrings
+      against the behaviour after OSS-40 to OSS-44: exit status 2 now
+      covers file errors; days shorter than one step are a documented
+      limitation; docstrings mention `NaT`, empty and numpy inputs; the
+      overview lists `check_all.py` and the golden tests.
 
 ## Explicitly not planned
 

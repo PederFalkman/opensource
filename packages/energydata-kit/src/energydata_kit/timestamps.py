@@ -110,7 +110,8 @@ def normalize_timestamps(
     ----------
     values:
         Timestamps as a ``DatetimeIndex``, datetime-like ``Series``, or an
-        iterable of ISO 8601 strings / ``datetime`` objects.
+        iterable of ISO 8601 strings / ``datetime`` objects (a single string
+        raises ``TypeError``). Empty input gives an empty UTC index.
     assume_tz:
         IANA time zone used to localize *naive* timestamps, e.g.
         ``"Europe/Stockholm"``. Required when the input is naive; ignored
