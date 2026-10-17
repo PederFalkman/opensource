@@ -27,6 +27,7 @@ enforces this in CI. Scopes: `runtime` (installed with the package),
 | `hatchling` | build | MIT | No (build backend only) | `License-Expression` on PyPI |
 | `build` | dev | MIT | No | `License-Expression` metadata |
 | `hypothesis` | dev | MPL-2.0 | No | `License-Expression` metadata |
+| `jsonschema` | dev | MIT | No | `License-Expression` metadata |
 | `mypy` | dev | MIT | No | `License-Expression` metadata |
 | `pandas-stubs` | dev | BSD-3-Clause | No | `License-Expression` metadata |
 | `pytest` | dev | MIT | No | `License-Expression` metadata |

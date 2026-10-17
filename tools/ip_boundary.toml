@@ -31,6 +31,8 @@ energydata-kit = [
     "build",
     # property-based tests only (MPL-2.0; dev dependency, never shipped or copied)
     "hypothesis",
+    # tests only: validates reports against report_schema.json (MIT)
+    "jsonschema",
     "mypy",
     "pandas-stubs",
     "pytest",
