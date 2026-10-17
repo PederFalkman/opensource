@@ -381,7 +381,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] OSS-38 linked to #44. Engineering for 0.1.0 is complete; the release
       waits on decisions D1–D6 in `docs/governance/RELEASE_DECISIONS.md`.
 
-### OSS-40: pre-release bug hunt — this change
+### OSS-40: pre-release bug hunt — merged in [#46](https://github.com/PederFalkman/opensource/pull/46)
 
 - [x] Reviewed grids, flags, timestamps, reports and the CLI and fuzzed the
       public API (unsorted, duplicate, off-grid, NaN/inf/text values, DST
