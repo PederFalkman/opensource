@@ -250,6 +250,12 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
             .replace("pass assume_tz", "pass --assume-tz")
             .replace("assume_tz was given", "--assume-tz was given")
         )
+        if message.startswith("could not localize"):
+            lower = message.lower()
+            if "infer dst" in lower or "ambiguous" in lower:
+                message += " (repeated wall-clock times at the end of DST: try --ambiguous infer)"
+            elif "nonexistent" in lower:
+                message += " (wall-clock times skipped at the start of DST: see --nonexistent)"
         raise CliError(message) from exc
     return pd.DataFrame({str(c): frame[c].to_numpy() for c in value_cols}, index=index)
 
@@ -387,10 +393,11 @@ def _series_summary(name: str, data: dict[str, Any], indent: str = "") -> list[s
     if data["n_duplicate_timestamps"]:
         lines.append(f"{pad}duplicate timestamps: {data['n_duplicate_timestamps']}")
     gaps = data["gaps"]
-    for gap in gaps[:3]:
+    shown = gaps[:3]
+    for gap in shown:
         lines.append(f"{pad}gap: {gap['start']} to {gap['end']} ({gap['missing_count']} missing)")
-    if data["n_gaps"] > 3:
-        lines.append(f"{pad}... {data['n_gaps'] - 3} more gap(s) in the JSON report")
+    if data["n_gaps"] > len(shown):  # also when --max-listed listed fewer than three
+        lines.append(f"{pad}... {data['n_gaps'] - len(shown)} more gap(s); see the JSON report")
     if data["metadata_issues"]:
         codes = ", ".join(issue["code"] for issue in data["metadata_issues"])
         lines.append(f"{pad}metadata issues: {codes}")

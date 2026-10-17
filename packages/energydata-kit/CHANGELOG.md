@@ -5,6 +5,20 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- Local-calendar grids (`tz=`) with an `origin` after the first timestamp
+  ran only forward from `origin`, so earlier timestamps were flagged
+  off-grid and gaps before `origin` were missed. The grid now runs through
+  `origin` in both directions, as fixed-step grids already did (OSS-40).
+- `assess_quality` raised `ZeroDivisionError` when `origin` left no grid
+  point inside the data's time span; `completeness` is now `None` there.
+- A local-calendar grid anchored at a wall-clock time that a DST change
+  skips or repeats (e.g. daily at 02:00) now raises a `ValueError` that says
+  so, instead of pandas' or pytz's raw error.
+- Command line: DST localization errors point to `--ambiguous infer` and
+  `--nonexistent`, and `--format text` says how many gaps are not listed
+  when `--max-listed` lists fewer than three.
+
 ## [0.1.0] - 2026-10-16
 
 First release: quality checks for metered energy time series, on top of
