@@ -85,7 +85,12 @@ def _no_gap_after(
     present = on_index(grid, index)
     # A gap starts where a present grid point is followed by an absent one.
     before_gap = grid[:-1][present[:-1] & ~present[1:]]
-    return _rows(obj, ~on_index(index, before_gap))
+    failed = on_index(index, before_gap)
+    if len(grid) and not present[0]:
+        # A leading gap has no present grid point before it (the series starts
+        # off-grid); report it on the last row before the first grid point.
+        failed |= index == index[index < grid[0]].max()
+    return _rows(obj, ~failed)
 
 
 def timezone_aware_check() -> pa.Check:
@@ -125,7 +130,8 @@ def no_missing_intervals_check(
 ) -> pa.Check:
     """No grid timestamp between the first and last is absent.
 
-    Each gap is reported on the last present row before it.
+    Each gap is reported on the last present row before it; a gap at the
+    start (the series begins off-grid) on the last row before the gap.
     """
     return pa.Check(
         lambda idx: _no_gap_after(idx, freq, origin, tz),

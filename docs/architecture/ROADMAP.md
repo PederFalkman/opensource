@@ -381,7 +381,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] OSS-38 linked to #44. Engineering for 0.1.0 is complete; the release
       waits on decisions D1–D6 in `docs/governance/RELEASE_DECISIONS.md`.
 
-### OSS-40: pre-release bug hunt — this change
+### OSS-40: pre-release bug hunt — merged in [#46](https://github.com/PederFalkman/opensource/pull/46)
 
 - [x] Reviewed grids, flags, timestamps, reports and the CLI and fuzzed the
       public API (unsorted, duplicate, off-grid, NaN/inf/text values, DST
@@ -390,6 +390,17 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `ZeroDivisionError` when no grid point falls in the span; raw DST
       errors from calendar grids; two CLI messages. Each has a regression
       test that fails on the previous code.
+
+### OSS-41: pre-release bug hunt, part 2 — this change
+
+- [x] Fuzzed the Pandera checks against `flag_series` / `assess_quality`
+      (1,500 random series, pandas 2.1 and 3) and probed metadata, Table
+      Schema, frame reports and comparisons.
+- [x] Fixed: units with stray characters accepted (Pint drops them);
+      `Timedelta` resolutions breaking JSON reports; a leading gap missed by
+      the Pandera gap check; duplicate `quality_flag` fields in a Table
+      Schema; unchecked `per_column` metadata names. Regression tests fail on
+      the previous code.
 
 ## Explicitly not planned
 

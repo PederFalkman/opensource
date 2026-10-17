@@ -18,6 +18,19 @@ versioning: [SemVer](https://semver.org/).
 - Command line: DST localization errors point to `--ambiguous infer` and
   `--nonexistent`, and `--format text` says how many gaps are not listed
   when `--max-listed` lists fewer than three.
+- Unit validation rejected nothing that Pint silently ignores: `"kW?"`,
+  `"kWh;"` or `"kW#x"` were accepted as kW/kWh, and `"(kW"` raised an
+  uncaught `TokenError`. Such units now raise `UnitError` (OSS-41).
+- `MeasurementMetadata(resolution=...)` accepted a `Timedelta`, which made
+  `report.to_json()` fail; it now raises `TypeError` asking for a string such
+  as `"15min"`.
+- `pandera_checks.no_missing_intervals_check` missed a gap at the start when
+  the series began off-grid with `origin`, although `assess_quality` counted
+  it; it is now reported on the last row before the gap.
+- `to_table_schema(..., include_flag=True)` wrote two fields named
+  `quality_flag` for a measurement of that name; it now raises `ValueError`.
+- `assess_frame` checks that metadata given through `per_column` is named
+  after its column, as it already did for `metadata=`.
 
 ## [0.1.0] - 2026-10-16
 
