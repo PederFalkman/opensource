@@ -32,6 +32,8 @@ def _require_aware(index: pd.DatetimeIndex) -> None:
         raise TypeError(f"expected a DatetimeIndex, got {type(index).__name__}")
     if index.tz is None:
         raise ValueError("timestamps must be timezone-aware; use normalize_timestamps() first")
+    if index.hasnans:
+        raise ValueError("timestamps must not contain NaT")
 
 
 def relabel_intervals(
@@ -142,7 +144,9 @@ def local_day_completeness(
 
     Returns a frame indexed by ``local_date`` (``datetime.date``) with columns
     ``expected``, ``present``, ``missing`` and ``completeness``. The first and
-    last day are included even if the data covers them only partly.
+    last day are included even if the data covers them only partly. A day
+    shorter than one step (e.g. a 23-hour DST day with ``freq="24h"``) expects
+    no intervals; its ``completeness`` is ``NaN``.
     """
     _require_aware(index)
     step = to_step(freq)
@@ -172,7 +176,9 @@ def local_day_completeness(
             "expected": expected,
             "present": present.astype(np.int64),
             "missing": (expected - present).astype(np.int64),
-            "completeness": np.round(present / expected, 6),
+            "completeness": np.round(
+                np.divide(present, expected, out=np.full(len(expected), np.nan), where=expected > 0), 6
+            ),
         },
         index=pd.Index([d.date() for d in days[:-1]], name="local_date"),
     )

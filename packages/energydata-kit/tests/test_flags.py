@@ -110,3 +110,10 @@ def test_flag_values_are_stable():
         "COUNTER_DECREASE": 256,
         "JUMP": 512,
     }
+
+
+def test_decode_flags_rejects_values_that_are_not_flags():
+    assert decode_flags(np.uint16(3)) == decode_flags(3.0) == ["MISSING_VALUE", "NON_FINITE"]
+    for value in (-1, 1024, 1.5):
+        with pytest.raises(ValueError, match="not a combination"):
+            decode_flags(value)

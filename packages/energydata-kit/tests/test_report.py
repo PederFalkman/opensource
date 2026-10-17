@@ -107,3 +107,30 @@ def test_no_grid_point_in_span_gives_no_completeness():
     s = pd.Series([1.0, 2.0], index=pd.DatetimeIndex(["2024-01-01 10:00", "2024-01-01 11:00"], tz="UTC"))
     r = assess_quality(s, freq="1D", origin=pd.Timestamp("2024-01-01", tz="UTC"))
     assert r.n_expected_intervals == 0 and r.completeness is None
+
+
+def test_numpy_scalar_options_give_json_parameters():
+    s = defective()
+    r = assess_quality(
+        s,
+        freq="15min",
+        bounds=(np.float64(0), np.int64(200)),
+        stale_min_run=np.int64(3),
+        stale_atol=np.float64(0.0),
+        jump_max_delta=np.float32(50),
+        max_listed=np.int64(5),
+    )
+    params = json.loads(r.to_json())["parameters"]
+    assert params["bounds"] == [0.0, 200] and params["stale_min_run"] == 3
+    assert params["jump_max_delta"] == 50.0 and params["max_listed"] == 5
+
+
+def test_max_listed_must_be_an_integer():
+    with pytest.raises(TypeError):
+        assess_quality(defective(), max_listed=1.5)
+
+
+def test_nat_in_index_is_rejected():
+    s = pd.Series([1.0, 2.0], index=pd.DatetimeIndex([pd.Timestamp("2024-01-01T00:00Z"), pd.NaT]))
+    with pytest.raises(ValueError, match="NaT"):
+        assess_quality(s, freq="15min")

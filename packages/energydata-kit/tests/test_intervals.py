@@ -78,3 +78,9 @@ def test_to_step():
     for bad in ("MS", "0min", "-1h", "not-a-freq"):  # "nonsense" warns on pandas 2.2/2.3
         with pytest.raises(ValueError):
             to_step(bad)
+
+
+def test_nat_in_index_is_rejected():
+    idx = pd.DatetimeIndex([pd.Timestamp("2024-01-01T00:00Z"), pd.NaT])
+    with pytest.raises(ValueError, match="NaT"):
+        off_grid_mask(idx, "15min")

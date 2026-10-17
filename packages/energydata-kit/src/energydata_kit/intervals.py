@@ -76,6 +76,8 @@ def _require_aware(index: pd.DatetimeIndex) -> None:
         raise TypeError(f"expected a DatetimeIndex, got {type(index).__name__}")
     if index.tz is None:
         raise ValueError("timestamps must be timezone-aware; use normalize_timestamps() first")
+    if index.hasnans:
+        raise ValueError("timestamps must not contain NaT")
 
 
 def _aware(ts: pd.Timestamp | str, what: str) -> pd.Timestamp:

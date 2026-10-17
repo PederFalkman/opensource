@@ -68,6 +68,8 @@ def _to_datetime_index(values: Iterable[object] | pd.Index | pd.Series) -> pd.Da
         np.asarray(values, dtype=object) if isinstance(values, pd.Series | pd.Index) else list(values),
         dtype=object,
     )
+    if items.empty:
+        return pd.DatetimeIndex([], dtype="datetime64[ns]")
     if items.isna().any():
         raise TimestampError(f"{int(items.isna().sum())} missing timestamp value(s)")
     if pd.api.types.infer_dtype(items, skipna=False) == "string":
@@ -123,7 +125,11 @@ def normalize_timestamps(
     Order and duplicates are preserved; this function never drops or
     reorders rows.
     """
+    if isinstance(values, str | bytes):
+        raise TypeError("values must be a collection of timestamps, not a single string")
     idx = _to_datetime_index(values)
+    if len(idx) == 0 and idx.tz is None:
+        return pd.DatetimeIndex([], dtype="datetime64[ns, UTC]")
     if idx.hasnans:
         raise TimestampError(f"{int(np.count_nonzero(idx.isna()))} missing timestamp value(s)")
 

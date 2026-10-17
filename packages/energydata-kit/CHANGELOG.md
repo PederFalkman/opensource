@@ -37,6 +37,23 @@ versioning: [SemVer](https://semver.org/).
   `quality_flag` for a measurement of that name; it now raises `ValueError`.
 - `assess_frame` checks that metadata given through `per_column` is named
   after its column, as it already did for `metadata=`.
+- A fixed step longer than a local day (e.g. `freq="2D"`, or `"24h"` across
+  a 23-hour DST day) divided by zero in the per-local-day section: the
+  report's JSON contained `NaN`, which is not valid JSON. Such days now have
+  `completeness` `NaN` in `local_day_completeness` and are left out of
+  `min_completeness`, which is `None` if no day expects an interval (OSS-44).
+- `assess_quality` and `assess_frame` accept numpy scalars as options (for
+  example bounds from `series.quantile()`) without breaking `to_json()`;
+  a non-integer `max_listed` raises `TypeError`.
+- A `NaT` in the index raises a `ValueError` in the flag, grid and interval
+  functions, instead of being silently ignored or failing inside pandas.
+- `normalize_timestamps([])` returns an empty UTC index, also with
+  `assume_tz`; a single string raises `TypeError` instead of being parsed
+  character by character.
+- `decode_flags` raises `ValueError` for a negative or fractional value or
+  one with bits no flag uses, instead of ignoring the unknown bits.
+- `MeasurementMetadata` raises `TypeError` for a non-string `name` or
+  `timezone`.
 
 ## [0.1.0] - 2026-10-16
 

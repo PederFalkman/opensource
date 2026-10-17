@@ -130,3 +130,26 @@ def test_report_sections():
 def test_report_without_step_has_no_local_days():
     data = assess_quality(make_synthetic_series()).to_dict()
     assert data["local_days"] is None and data["metadata_issues"] == []
+
+
+def test_day_shorter_than_step_has_no_completeness():
+    # 24-hour step: the 23-hour spring DST day expects no interval.
+    idx = pd.date_range("2024-03-30T23:00Z", periods=4, freq="24h")
+    days = local_day_completeness(idx, "24h", "Europe/Stockholm")
+    spring = days.loc[dt.date(2024, 3, 31)]
+    assert spring["expected"] == 0 and spring["missing"] == 0
+    assert pd.isna(spring["completeness"])
+    assert days["completeness"].drop(dt.date(2024, 3, 31)).notna().all()
+
+
+def test_report_with_step_longer_than_a_day_is_valid_json():
+    s = pd.Series(1.0, index=pd.date_range("2024-01-01", periods=5, freq="2D", tz="UTC"))
+    report = assess_quality(s, freq="2D")
+    assert report.local_days is not None and report.local_days["min_completeness"] is None
+    assert "NaN" not in report.to_json()
+
+
+def test_nat_in_index_is_rejected():
+    idx = pd.DatetimeIndex([pd.Timestamp("2024-01-01T00:00Z"), pd.NaT])
+    with pytest.raises(ValueError, match="NaT"):
+        local_day_completeness(idx, "15min", "UTC")
