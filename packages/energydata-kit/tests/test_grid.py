@@ -3,6 +3,7 @@
 import pandas as pd
 import pytest
 
+import energydata_kit as ek
 from energydata_kit import (
     FLAG_COLUMN,
     QualityFlag,
@@ -119,3 +120,24 @@ def test_report_with_origin():
     assert data["flag_counts"]["OFF_GRID_TIMESTAMP"] == 1
     assert data["n_gaps"] == 0
     assert data["parameters"]["origin"] == "2024-01-01T00:00:00+00:00"
+
+
+def test_calendar_grid_runs_back_from_a_later_origin():
+    # Like fixed steps, a local-calendar grid runs through origin in both directions.
+    tz = "Europe/Stockholm"
+    days = pd.date_range("2024-01-01", periods=10, freq="D", tz=tz).tz_convert("UTC")
+    origin = pd.Timestamp("2024-01-05", tz=tz)
+    assert ek.expected_grid(days, "D", tz=tz, origin=origin).equals(days.as_unit("ns"))
+    assert not ek.off_grid_mask(days, "D", tz=tz, origin=origin).any()
+    missing = ek.missing_timestamps(days.delete(1), "D", tz=tz, origin=origin)
+    assert list(missing) == [days[1]]
+    # An origin after the data still defines the grid.
+    later = pd.Timestamp("2024-02-01", tz=tz)
+    assert ek.expected_grid(days, "D", tz=tz, origin=later).equals(days.as_unit("ns"))
+
+
+def test_calendar_grid_on_a_dst_wall_time_raises_clearly():
+    tz = "Europe/Stockholm"
+    days = pd.date_range("2024-10-25", periods=4, freq="D", tz=tz).tz_convert("UTC")
+    with pytest.raises(ValueError, match="skips or repeats"):
+        ek.expected_grid(days, "D", tz=tz, origin=pd.Timestamp("2024-10-26 02:00", tz=tz))

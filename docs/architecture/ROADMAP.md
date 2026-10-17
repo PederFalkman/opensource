@@ -376,10 +376,20 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       prints one summary with the output of failed checks. `--quick` and
       `--build` options. A test keeps it in sync with `CONTRIBUTING.md`.
 
-### OSS-39: roadmap up to date — this change
+### OSS-39: roadmap up to date — merged in [#45](https://github.com/PederFalkman/opensource/pull/45)
 
 - [x] OSS-38 linked to #44. Engineering for 0.1.0 is complete; the release
       waits on decisions D1–D6 in `docs/governance/RELEASE_DECISIONS.md`.
+
+### OSS-40: pre-release bug hunt — this change
+
+- [x] Reviewed grids, flags, timestamps, reports and the CLI and fuzzed the
+      public API (unsorted, duplicate, off-grid, NaN/inf/text values, DST
+      days, `origin`, `tz`, all checks) on pandas 2.1 and 3.
+- [x] Fixed: calendar grids ignored points before a later `origin`;
+      `ZeroDivisionError` when no grid point falls in the span; raw DST
+      errors from calendar grids; two CLI messages. Each has a regression
+      test that fails on the previous code.
 
 ## Explicitly not planned
 

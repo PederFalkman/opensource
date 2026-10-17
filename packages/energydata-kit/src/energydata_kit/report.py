@@ -160,8 +160,9 @@ def assess_quality(
 
     ``completeness`` is the share of expected grid timestamps that are
     present, whatever their values: a row with a missing value still counts
-    and is flagged ``MISSING_VALUE`` instead. It is ``None`` without a step
-    or for an empty series.
+    and is flagged ``MISSING_VALUE`` instead. It is ``None`` without a step,
+    for an empty series, or when no grid point falls inside the data's time
+    span (possible with ``origin``).
 
     ``origin`` anchors the grid and ``tz`` makes ``freq`` a local-calendar
     step (see :func:`energydata_kit.expected_grid`); the per-local-day
@@ -215,7 +216,8 @@ def assess_quality(
         grid = expected_grid(index, grid_freq, origin=origin, tz=tz)
         n_expected = len(grid)
         present = int(on_index(grid, index).sum())
-        completeness = round(present / n_expected, 6)
+        # No grid point inside the data's time span (possible with origin=): undefined.
+        completeness = round(present / n_expected, 6) if n_expected else None
 
     local_days = None
     if step is not None and len(index):

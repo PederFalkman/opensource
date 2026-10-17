@@ -101,3 +101,9 @@ def test_single_row_and_all_missing_values():
     nan = assess_quality(pd.Series([np.nan] * 4, index=idx), freq="15min")
     assert nan.completeness == 1.0
     assert nan.flag_counts["MISSING_VALUE"] == 4 and nan.n_flagged_rows == 4
+
+
+def test_no_grid_point_in_span_gives_no_completeness():
+    s = pd.Series([1.0, 2.0], index=pd.DatetimeIndex(["2024-01-01 10:00", "2024-01-01 11:00"], tz="UTC"))
+    r = assess_quality(s, freq="1D", origin=pd.Timestamp("2024-01-01", tz="UTC"))
+    assert r.n_expected_intervals == 0 and r.completeness is None

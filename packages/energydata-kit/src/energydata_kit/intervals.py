@@ -19,6 +19,7 @@ timestamp does not shift the whole grid.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -119,6 +120,24 @@ def off_grid_mask(
     return np.asarray(offsets % step != 0, dtype=bool)
 
 
+_DST_WORDS = ("dst", "ambiguous", "nonexistent", "non-existent")
+
+
+def _local_range(freq: str | pd.Timedelta, **bounds: Any) -> pd.DatetimeIndex:
+    """``pd.date_range`` in local time, with a clear error for DST wall-time clashes."""
+    try:
+        return pd.date_range(freq=freq, **bounds)
+    except Exception as exc:  # pandas < 3 raises pytz errors, which are not ValueErrors
+        text = f"{type(exc).__name__} {exc}".lower()  # pytz: AmbiguousTimeError, NonExistentTimeError
+        if not any(word in text for word in _DST_WORDS):
+            raise
+        raise ValueError(
+            f"the local-calendar grid ({freq!r}) hits a wall-clock time that a DST change skips "
+            f"or repeats ({exc}); anchor it at a time of day that occurs once on every day, "
+            "e.g. origin= at midnight"
+        ) from exc
+
+
 def expected_grid(
     index: pd.DatetimeIndex,
     freq: str | pd.Timedelta,
@@ -145,10 +164,19 @@ def expected_grid(
     if tz is not None:
         local_lo, local_hi = lo.tz_convert(tz), hi.tz_convert(tz)
         first = local_lo if anchor is None else anchor.tz_convert(tz)
-        if first > local_hi:
+        grid = _local_range(start=first, end=local_hi, freq=freq) if first <= local_hi else None
+        if first > local_lo:
+            # The grid also runs back from the origin: extend it until it covers local_lo.
+            periods = 2
+            back = _local_range(end=first, periods=periods, freq=freq)
+            while back[0] > local_lo:
+                periods *= 2
+                back = _local_range(end=first, periods=periods, freq=freq)
+            grid = back if grid is None else back.union(grid)
+        if grid is None:
             return pd.DatetimeIndex([], tz="UTC").as_unit("ns")
-        grid = pd.date_range(first, local_hi, freq=freq)
-        return grid[grid >= local_lo].tz_convert("UTC").as_unit("ns")
+        grid = grid[(grid >= local_lo) & (grid <= local_hi)]
+        return grid.tz_convert("UTC").as_unit("ns")
 
     step = to_step(freq)
     if anchor is not None:

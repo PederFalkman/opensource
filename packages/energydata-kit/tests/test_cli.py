@@ -383,6 +383,26 @@ def test_schema_errors(tmp_path):
         assert code == 2 and message in err, (argv, err)
 
 
+def test_dst_localization_errors_name_the_cli_option(tmp_path):
+    fall = write(tmp_path, "t,kwh\n2024-10-27 02:00,1\n2024-10-27 02:15,1\n2024-10-27 02:00,2\n", "fall.csv")
+    spring = write(tmp_path, "t,kwh\n2024-03-31 01:45,1\n2024-03-31 02:15,1\n", "spring.csv")
+    base = ("--timestamp-col", "t", "--assume-tz", "Europe/Stockholm")
+    code, _, err = run("report", str(fall), *base)
+    assert code == 2 and "try --ambiguous infer" in err
+    code, _, err = run("report", str(spring), *base)
+    assert code == 2 and "see --nonexistent" in err
+    assert run("report", str(fall), *base, "--ambiguous", "infer")[0] == 0
+
+
+def test_text_summary_says_when_gaps_are_not_listed(tmp_path):
+    rows = ["timestamp,kwh"] + [f"2026-01-01T{h:02d}:00:00Z,1" for h in (0, 2, 4, 6)]  # three 1-hour gaps
+    path = write(tmp_path, "\n".join(rows) + "\n")
+    out = run("report", str(path), "--freq", "1h", "--max-listed", "1", "--format", "text")[1]
+    lines = out.splitlines()
+    assert sum(line.startswith("  gap: ") for line in lines) == 1
+    assert "  ... 2 more gap(s); see the JSON report" in lines
+
+
 def test_missing_file(tmp_path):
     code, _, err = run("report", str(tmp_path / "absent.csv"))
     assert code == 2 and "file not found" in err

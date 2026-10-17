@@ -133,7 +133,9 @@ def normalize_timestamps(
         try:
             idx = idx.tz_localize(assume_tz, ambiguous=ambiguous, nonexistent=nonexistent)
         except Exception as exc:  # pandas < 3 raises pytz errors, which are not ValueErrors
-            raise TimestampError(f"could not localize to {assume_tz}: {exc}") from exc
+            # Name pytz's error types (e.g. NonExistentTimeError), whose messages are just a time.
+            kind = "" if isinstance(exc, ValueError) else f"{type(exc).__name__}: "
+            raise TimestampError(f"could not localize to {assume_tz}: {kind}{exc}") from exc
     elif assume_tz is not None:
         raise TimestampError("assume_tz was given but timestamps are already timezone-aware")
 
