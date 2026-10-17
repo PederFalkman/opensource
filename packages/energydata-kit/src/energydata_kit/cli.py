@@ -3,7 +3,7 @@
 Reads one timestamp column and one value column from a CSV file (comma-separated
 by default; see ``--delimiter`` and ``--decimal``), runs
 :func:`energydata_kit.assess_quality` and prints the deterministic JSON report
-(or, with ``--format text``, a short summary for reading).
+(or, with ``--format text`` or ``markdown``, a short summary for reading).
 Optionally writes the non-destructive flagged table from
 :func:`energydata_kit.flag_series`. With several ``--value-col`` options it
 runs :func:`energydata_kit.assess_frame` and prints one report with a section
@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -160,9 +161,10 @@ def build_parser() -> argparse.ArgumentParser:
     out.add_argument("-o", "--output", help="write the report here instead of standard output")
     out.add_argument(
         "--format",
-        choices=["json", "text"],
+        choices=["json", "text", "markdown"],
         default="json",
-        help="json: the deterministic report (default); text: a short summary for reading",
+        help="json: the deterministic report (default); text: a short summary for reading; "
+        "markdown: the same summary as Markdown, e.g. for an issue or pull request",
     )
     out.add_argument(
         "--flags-csv",
@@ -187,9 +189,10 @@ def build_parser() -> argparse.ArgumentParser:
     cmp.add_argument("-o", "--output", help="write the comparison here instead of standard output")
     cmp.add_argument(
         "--format",
-        choices=["json", "text"],
+        choices=["json", "text", "markdown"],
         default="json",
-        help="json: the deterministic comparison (default); text: a short summary for reading",
+        help="json: the deterministic comparison (default); text: a short summary for reading; "
+        "markdown: the same summary as Markdown, e.g. for an issue or pull request",
     )
     cmp.add_argument(
         "--fail-if-worse",
@@ -386,53 +389,88 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
 def _write_report(
     args: argparse.Namespace, report: QualityReport | FrameQualityReport, stdout: TextIO
 ) -> None:
-    text = report.to_json() + "\n" if args.format == "json" else _summary(report.to_dict())
+    if args.format == "json":
+        text = report.to_json() + "\n"
+    else:
+        text = _summary(report.to_dict(), markdown=args.format == "markdown")
     if args.output:
         Path(args.output).write_text(text, encoding="utf-8", newline="\n")  # same bytes on Windows
     else:
         stdout.write(text)
 
 
-def _series_summary(name: str, data: dict[str, Any], indent: str = "") -> list[str]:
-    """Summary lines for one single-series report dict."""
-    lines = [f"{indent}{name}: {data['n_rows']} rows"]
+_Facts = list[tuple[str | None, str]]  # (label or None, text), shared by --format text and markdown
+
+
+def _series_facts(data: dict[str, Any]) -> tuple[str, _Facts]:
+    """Headline and labelled facts for one single-series report dict."""
+    head = f"{data['n_rows']} rows"
     if data["n_rows"]:
-        lines[0] += f", {data['first_timestamp']} to {data['last_timestamp']}"
-    pad = indent + "  "
+        head += f", {data['first_timestamp']} to {data['last_timestamp']}"
+    facts: _Facts = []
     if data["completeness"] is None:
-        lines.append(f"{pad}completeness: not checked (no --freq or --resolution)")
+        facts.append(("completeness", "not checked (no --freq or --resolution)"))
     else:
         present = round(data["completeness"] * data["n_expected_intervals"])
-        lines.append(
-            f"{pad}completeness: {data['completeness']:.2%} ({present} of {data['n_expected_intervals']} "
-            f"expected); {data['n_missing_intervals']} missing in {data['n_gaps']} gap(s)"
+        facts.append(
+            (
+                "completeness",
+                f"{data['completeness']:.2%} ({present} of {data['n_expected_intervals']} expected); "
+                f"{data['n_missing_intervals']} missing in {data['n_gaps']} gap(s)",
+            )
         )
     flags = {k: v for k, v in data["flag_counts"].items() if v and k != "ANY"}
     detail = ", ".join(f"{k} {v}" for k, v in flags.items())
-    lines.append(f"{pad}flagged rows: {data['flag_counts']['ANY']}" + (f" ({detail})" if detail else ""))
+    facts.append(("flagged rows", f"{data['flag_counts']['ANY']}" + (f" ({detail})" if detail else "")))
     if data["n_duplicate_timestamps"]:
-        lines.append(f"{pad}duplicate timestamps: {data['n_duplicate_timestamps']}")
+        facts.append(("duplicate timestamps", str(data["n_duplicate_timestamps"])))
     gaps = data["gaps"]
     shown = gaps[:3]
     for gap in shown:
-        lines.append(f"{pad}gap: {gap['start']} to {gap['end']} ({gap['missing_count']} missing)")
+        facts.append(("gap", f"{gap['start']} to {gap['end']} ({gap['missing_count']} missing)"))
     if data["n_gaps"] > len(shown):  # also when --max-listed listed fewer than three
-        lines.append(f"{pad}... {data['n_gaps'] - len(shown)} more gap(s); see the JSON report")
+        facts.append((None, f"... {data['n_gaps'] - len(shown)} more gap(s); see the JSON report"))
     if data["metadata_issues"]:
-        codes = ", ".join(issue["code"] for issue in data["metadata_issues"])
-        lines.append(f"{pad}metadata issues: {codes}")
-    return lines
+        facts.append(("metadata issues", ", ".join(issue["code"] for issue in data["metadata_issues"])))
+    return head, facts
 
 
-def _summary(data: dict[str, Any]) -> str:
-    """A short human-readable summary of a report dict (``--format text``)."""
-    if "columns" not in data:
-        lines = _series_summary(data["series_name"] or "series", data)
-    else:
-        lines = [f"{len(data['column_order'])} column(s)"]
-        for name in data["column_order"]:
-            lines += _series_summary(name, data["columns"][name], indent="  ")
-    lines.append(f"fingerprint: {data['fingerprint'][:16]} (energydata-kit {data['package_version']})")
+_MARKDOWN_SPECIAL = re.compile(r"([\\`*_\[\]<>#|])")
+
+
+def _md(text: str) -> str:
+    """Escape user-supplied text (column names) for Markdown."""
+    return _MARKDOWN_SPECIAL.sub(r"\\\1", text)
+
+
+def _md_facts(facts: _Facts) -> list[str]:
+    return [f"- **{label}:** {text}" if label else f"- {text}" for label, text in facts]
+
+
+def _summary(data: dict[str, Any], markdown: bool = False) -> str:
+    """A short human-readable summary of a report dict (``--format text`` or ``markdown``)."""
+    single = "columns" not in data
+    series = (
+        [(data["series_name"] or "series", data)]
+        if single
+        else [(name, data["columns"][name]) for name in data["column_order"]]
+    )
+    footer = f"{data['fingerprint'][:16]} (energydata-kit {data['package_version']})"
+    if markdown:
+        title = _md(series[0][0]) if single else f"{len(series)} column(s)"
+        lines = [f"# Quality report: {title}"]
+        for name, part in series:
+            head, facts = _series_facts(part)
+            lines += [""] + ([] if single else [f"## {_md(name)}", ""]) + [head, ""] + _md_facts(facts)
+        lines += ["", f"Fingerprint `{data['fingerprint'][:16]}` (energydata-kit {data['package_version']})"]
+        return "\n".join(lines) + "\n"
+    indent = "" if single else "  "
+    lines = [] if single else [f"{len(series)} column(s)"]
+    for name, part in series:
+        head, facts = _series_facts(part)
+        lines.append(f"{indent}{name}: {head}")
+        lines += [f"{indent}  {label}: {text}" if label else f"{indent}  {text}" for label, text in facts]
+    lines.append(f"fingerprint: {footer}")
     return "\n".join(lines) + "\n"
 
 
@@ -506,58 +544,80 @@ def _change(label: str, entry: dict[str, Any], percent: bool = False) -> str:
     return text
 
 
-def _comparison_summary(data: dict[str, Any]) -> str:
-    """A short human-readable summary of a comparison dict (``compare --format text``)."""
-    verdict = "same data" if data["same_data"] else "data changed"
-    if data["worse"]:
-        verdict += "; worse: more rows flagged, more intervals missing or lower completeness"
-    else:
-        verdict += "; not worse"
-    lines = [verdict]
+def _changes_facts(changes: dict[str, Any]) -> list[str]:
+    """One line per kind of change for one series of a comparison dict."""
     counts_order = (
         ("n_rows", "rows"),
         ("n_missing_intervals", "missing intervals"),
         ("n_gaps", "gaps"),
         ("n_duplicate_timestamps", "duplicate timestamps"),
     )
+    lines = []
+    counts = changes.get("counts", {})
+    parts = [_change(text, counts[key]) for key, text in counts_order if key in counts]
+    if "completeness" in counts:
+        parts.append(_change("completeness", counts["completeness"], percent=True))
+    if parts:
+        lines.append("; ".join(parts))
+    flags = changes.get("flag_counts", {})
+    if flags:
+        detail = ", ".join(_change(k, v) for k, v in flags.items() if k != "ANY")
+        head = _change("flagged rows", flags["ANY"]) if "ANY" in flags else "flags"
+        lines.append(head + (f": {detail}" if detail else ""))
+    if "gaps" in changes:
+        gaps = changes["gaps"]
+        note = " (lists truncated; see the JSON reports)" if gaps["lists_truncated"] else ""
+        lines.append(f"gaps resolved: {len(gaps['resolved'])}, new: {len(gaps['new'])}{note}")
+    if "metadata_issues" in changes:
+        issues = changes["metadata_issues"]
+        resolved, new = ", ".join(issues["resolved"]) or "none", ", ".join(issues["new"]) or "none"
+        lines.append(f"metadata issues resolved: {resolved}; new: {new}")
+    for key in ("parameters", "metadata"):
+        if key in changes:
+            lines.append(f"{key} changed: {', '.join(changes[key])}")
+    return lines
+
+
+def _comparison_summary(data: dict[str, Any], markdown: bool = False) -> str:
+    """A short human-readable summary of a comparison dict (``compare --format text`` or ``markdown``)."""
+    verdict = "same data" if data["same_data"] else "data changed"
+    if data["worse"]:
+        verdict += "; worse: more rows flagged, more intervals missing or lower completeness"
+    else:
+        verdict += "; not worse"
+    added, removed = ", ".join(data["columns_added"]), ", ".join(data["columns_removed"])
+    if markdown:
+        lines = ["# Report comparison", "", f"**{verdict}**"]
+        for name, changes in data["changes"].items():
+            lines += ["", f"## {_md(name or 'series')}", ""]
+            facts = _changes_facts(changes)
+            lines += [f"- {line}" for line in facts] if facts else ["No changes."]
+        if added:
+            lines += ["", f"Columns added: {_md(added)}"]
+        if removed:
+            lines += ["", f"Columns removed: {_md(removed)}"]
+        return "\n".join(lines) + "\n"
+    lines = [verdict]
     for name, changes in data["changes"].items():
         label = name or "series"
         if not changes:
             lines.append(f"{label}: no changes")
             continue
         lines.append(f"{label}:")
-        counts = changes.get("counts", {})
-        parts = [_change(text, counts[key]) for key, text in counts_order if key in counts]
-        if "completeness" in counts:
-            parts.append(_change("completeness", counts["completeness"], percent=True))
-        if parts:
-            lines.append("  " + "; ".join(parts))
-        flags = changes.get("flag_counts", {})
-        if flags:
-            detail = ", ".join(_change(k, v) for k, v in flags.items() if k != "ANY")
-            head = _change("flagged rows", flags["ANY"]) if "ANY" in flags else "flags"
-            lines.append(f"  {head}" + (f": {detail}" if detail else ""))
-        if "gaps" in changes:
-            gaps = changes["gaps"]
-            note = " (lists truncated; see the JSON reports)" if gaps["lists_truncated"] else ""
-            lines.append(f"  gaps resolved: {len(gaps['resolved'])}, new: {len(gaps['new'])}{note}")
-        if "metadata_issues" in changes:
-            issues = changes["metadata_issues"]
-            resolved, new = ", ".join(issues["resolved"]) or "none", ", ".join(issues["new"]) or "none"
-            lines.append(f"  metadata issues resolved: {resolved}; new: {new}")
-        for key in ("parameters", "metadata"):
-            if key in changes:
-                lines.append(f"  {key} changed: {', '.join(changes[key])}")
-    if data["columns_added"]:
-        lines.append(f"columns added: {', '.join(data['columns_added'])}")
-    if data["columns_removed"]:
-        lines.append(f"columns removed: {', '.join(data['columns_removed'])}")
+        lines += [f"  {line}" for line in _changes_facts(changes)]
+    if added:
+        lines.append(f"columns added: {added}")
+    if removed:
+        lines.append(f"columns removed: {removed}")
     return "\n".join(lines) + "\n"
 
 
 def _run_compare(args: argparse.Namespace, stdout: TextIO) -> int:
     comparison = compare_reports(_load_report(args.before), _load_report(args.after))
-    text = comparison.to_json() + "\n" if args.format == "json" else _comparison_summary(comparison.to_dict())
+    if args.format == "json":
+        text = comparison.to_json() + "\n"
+    else:
+        text = _comparison_summary(comparison.to_dict(), markdown=args.format == "markdown")
     if args.output:
         Path(args.output).write_text(text, encoding="utf-8", newline="\n")  # same bytes on Windows
     else:

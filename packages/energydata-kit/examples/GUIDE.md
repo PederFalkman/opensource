@@ -386,6 +386,19 @@ assert changes_text[0] == "data changed; not worse"
 assert "missing intervals 2 -> 0 (-2)" in changes_text[2]
 ```
 
+`--format markdown` gives the same summary as Markdown, ready to paste into
+an issue or a pull request:
+
+```bash
+energydata-kit compare report.json fixed.json --format markdown -o changes.md
+```
+
+```python
+changes_md = Path("changes.md").read_text().splitlines()
+assert changes_md[:3] == ["# Report comparison", "", "**data changed; not worse**"]
+assert any(line.startswith("- rows 94 -> 96 (+2); missing intervals 2 -> 0 (-2)") for line in changes_md)
+```
+
 Files exported with semicolons and decimal commas, as many European meter
 portals do, are read with `--delimiter` and `--decimal`. The report is the
 same as for the comma-separated file, and `--flags-csv` is written in the

@@ -101,7 +101,9 @@ energydata-kit report meter.csv \
 Prints the deterministic JSON report to standard output (`-o` writes a file;
 `-` reads the CSV from standard input). `--format text` prints a short summary
 for reading instead: rows, completeness, flag counts, the first gaps and
-metadata issues per column; use the JSON report for anything automated. Files separated by `;`, tab or `|` are
+metadata issues per column; `--format markdown` gives the same summary as
+Markdown, to paste into an issue or pull request. Use the JSON report for
+anything automated. Files separated by `;`, tab or `|` are
 read with `--delimiter ';'` (or `--delimiter tab`); `--decimal ,` reads
 decimal commas such as `1,5`. `--flags-csv` writes the original rows, in the
 same delimiter and decimal format as the input, with a `quality_flag` column, plus inserted rows with `--insert-missing`.
@@ -114,7 +116,7 @@ other metadata per column from a Table Schema written by `to_table_schema`;
 its columns become the default `--value-col`, and their resolution is the
 step when `--freq` is not given.
 `energydata-kit compare before.json after.json` prints what changed between
-two saved reports (`--format text` for a short summary per column); with `--fail-if-worse` it exits `1` if more rows are
+two saved reports (`--format text` or `markdown` for a short summary per column); with `--fail-if-worse` it exits `1` if more rows are
 flagged, more intervals are missing or completeness fell.
 Exit status: `0` OK, `1` issues found with `--fail-on-issues` or
 `--fail-if-worse`, `2` usage, input or file error (for example a directory
