@@ -1,5 +1,6 @@
 import io
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -440,6 +441,20 @@ def test_schema_with_name_inside_namespace_exits_2(tmp_path):
     path = write(tmp_path, json.dumps(schema), "schema.json")
     code, out, err = run("report", str(write(tmp_path, CLEAN)), "--freq", "15min", "--schema", str(path))
     assert (code, out) == (2, "") and "belong on the field" in err
+
+
+def test_output_files_use_lf_on_every_platform(tmp_path, monkeypatch):
+    # Windows: pandas ends CSV lines with os.linesep, and Path.write_text
+    # translates "\n" to "\r\n", so files would differ from Linux and macOS.
+    monkeypatch.setattr(os, "linesep", "\r\n")  # what pandas sees on Windows
+    data = write(tmp_path, CLEAN)
+    report, flags = tmp_path / "r.json", tmp_path / "f.csv"
+    code, _, err = run("report", str(data), "--freq", "15min", "-o", str(report), "--flags-csv", str(flags))
+    assert (code, err) == (0, "")
+    run("compare", str(report), str(report), "-o", str(tmp_path / "c.txt"), "--format", "text")
+    for path in (report, flags, tmp_path / "c.txt"):
+        raw = path.read_bytes()
+        assert b"\r" not in raw and raw.endswith(b"\n"), path.name
 
 
 def test_usage_errors_and_version(capsys):

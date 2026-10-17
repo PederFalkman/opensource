@@ -11,6 +11,10 @@ versioning: [SemVer](https://semver.org/).
   (OSS-51).
 
 ### Fixed
+- Command line on Windows: `-o` files and `--flags-csv` were written with
+  `\r\n` line endings, so reports were not byte-identical to those made on
+  Linux or macOS. Both now end lines in `\n` on every platform; the tests
+  run on Windows and macOS in CI (OSS-52).
 - `from_table_schema` (and `energydata-kit report --schema`) let a `name`
   inside the `energydata_kit` property override the field's own name, so
   the report for one column carried metadata named after another. Such a

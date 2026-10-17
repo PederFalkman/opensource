@@ -80,6 +80,33 @@ jobs:
       - name: Pytest
         run: python -m pytest
 
+  energydata-kit-os:
+    # Lint and types do not depend on the OS, so only the tests run here.
+    # They include the golden reports, which must be byte-identical on every
+    # platform.
+    name: energydata-kit (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    defaults:
+      run:
+        working-directory: packages/energydata-kit
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - name: Install
+        run: |
+          python -m pip install --upgrade "pip>=25.1"
+          python -m pip install -e . --group dev
+      - name: Pytest
+        run: python -m pytest
+
   energydata-kit-package:
     name: energydata-kit packaging
     runs-on: ubuntu-latest

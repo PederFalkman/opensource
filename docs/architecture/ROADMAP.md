@@ -485,12 +485,20 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       OSS-49: no regression, peak memory unchanged. `PERFORMANCE.md`
       updated; `compare_reports` with its new input check takes ~0.4 ms.
 
-### OSS-51: Python 3.14 — this change
+### OSS-51: Python 3.14 — merged in [#57](https://github.com/PederFalkman/opensource/pull/57)
 
 - [x] Ran the full suite (warnings as errors, golden reports included),
       ruff and mypy on Python 3.14.6 with pandas 3.0.6, numpy 2.5.4 and
       Pint 0.26.1: all pass with no code change.
 - [x] Added 3.14 to the CI test matrix and the package classifiers.
+
+### OSS-52: Windows and macOS — this change
+
+- [x] Reviewed every file write for Windows: `-o` files (`Path.write_text`)
+      and `--flags-csv` (pandas' `os.linesep`) got `\r\n` line endings,
+      so reports were not byte-identical across platforms. Both now write
+      `\n` everywhere; a regression test fails on the previous code.
+- [x] CI runs the tests, golden reports included, on Windows and macOS.
 
 ## Explicitly not planned
 
