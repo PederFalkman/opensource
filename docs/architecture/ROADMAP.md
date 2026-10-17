@@ -47,6 +47,31 @@ Admission gates:
 
 **Ordering:** Existing OSS release gates first; P-1 assessment second; no implementation before separate approval. MICA REL-01/REL-02/VER-01 engineering priorities are unaffected.
 
+### P-2 to P-6: candidates after 0.1.0 (OSS-53)
+
+*Prepared by the assistant in OSS-53 for the owner to approve or reject one
+by one. Same rules as P-1: nothing here is authorized, and none of it starts
+before the 0.1.0 release gates pass.* Each item is generic data-quality
+tooling as defined in `IP_BOUNDARY.md` ("What *is* in scope"); none touches
+the out-of-scope list (no forecasting, grid calculations, ratings,
+connection planning, optimization or decision support).
+
+| ID | Candidate | Why | Effort | Risk and cost |
+|---|---|---|---|---|
+| P-2 | **Expected-outage windows.** Callers pass known periods (maintenance, a meter swap); gaps inside them are reported separately from unexplained gaps, and completeness can exclude them. | The most common false alarm in gap reports is a gap everyone already knew about. | M | New report fields, so report schema 2 or an optional section; `compare_reports` must handle both. No new dependency. |
+| P-3 | **JSON Schema for the report format.** Publish schema "1" as a JSON Schema file in the package; a test validates every golden report against it. | Lets non-Python consumers (pipelines, dashboards) validate reports without reading our code. | S | Small; the schema file becomes a public contract to maintain. Test-only dependency (`jsonschema`, MIT) or a hand-written check. |
+| P-4 | **Markdown output** (`report --format markdown`, `compare --format markdown`). | Pasting a readable summary into an issue or PR is a frequent use of `--format text`. | S | Low; formatting only, no new dependency. Must not become a second report format that drifts from JSON. |
+| P-5 | **Parquet input for the command line** (optional `[parquet]` extra). | Large meter exports increasingly come as Parquet; the library already accepts any pandas Series. | S–M | New optional dependency (pyarrow, Apache-2.0): allowlist, licence table and CI matrix entry. Read-only; no writing of Parquet. |
+| P-6 | **Shared timestamp section in frame reports.** `assess_frame` repeats gaps, duplicates and off-grid per column (a known limitation); report them once at frame level. | Smaller, clearer multi-column reports. | M | Breaking report change (schema 2) and a `compare_reports` migration path; worth doing only together with another schema change such as P-2. |
+
+Considered and not proposed: Polars or other DataFrame inputs (a second
+data model to maintain for little gain; pandas conversion is one call),
+resampling or gap filling (changes data, against the non-destructive rule),
+and anything that downloads data.
+
+**Suggested order if approved:** P-3 and P-4 first (small, no schema change),
+then P-2 with P-6 as one schema-2 change, then P-5 if users ask for it.
+
 ## Done
 
 ### OSS-01: foundation — merged in [#1](https://github.com/PederFalkman/opensource/pull/1)
@@ -492,13 +517,21 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       Pint 0.26.1: all pass with no code change.
 - [x] Added 3.14 to the CI test matrix and the package classifiers.
 
-### OSS-52: Windows and macOS — this change
+### OSS-52: Windows and macOS — merged in [#58](https://github.com/PederFalkman/opensource/pull/58)
 
 - [x] Reviewed every file write for Windows: `-o` files (`Path.write_text`)
       and `--flags-csv` (pandas' `os.linesep`) got `\r\n` line endings,
       so reports were not byte-identical across platforms. Both now write
       `\n` everywhere; a regression test fails on the previous code.
 - [x] CI runs the tests, golden reports included, on Windows and macOS.
+
+### OSS-53: post-0.1.0 proposals — this change
+
+- [x] Added candidates P-2 to P-6 (expected-outage windows, a JSON Schema
+      for reports, Markdown output, Parquet input, a shared timestamp
+      section in frame reports) to "Proposed — gated", each with effort,
+      risk and dependency cost, for the owner to approve or reject. None
+      is authorized; no code changed.
 
 ## Explicitly not planned
 
