@@ -43,6 +43,7 @@ pandera = ["pandera>=0.24"]
 dev = [
     "build>=1.2",
     "hypothesis>=6.100",
+    "jsonschema>=4.18",
     "mypy>=1.10",
     "pandas-stubs>=2.1",
     "pandera>=0.24",

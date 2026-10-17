@@ -1,0 +1,724 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "energydata-kit/report-schema-1.json",
+  "title": "energydata-kit report, schema version 1",
+  "description": "JSON written by QualityReport.to_json (assess_quality), FrameQualityReport.to_json (assess_frame) and ReportComparison.to_json (compare_reports), and by the energydata-kit command line. Any change to this file is a change to report schema 1.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/quality_report"
+    },
+    {
+      "$ref": "#/$defs/frame_report"
+    },
+    {
+      "$ref": "#/$defs/comparison"
+    }
+  ],
+  "$defs": {
+    "gap": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "string"
+        },
+        "end": {
+          "type": "string"
+        },
+        "missing_count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "end",
+        "missing_count",
+        "start"
+      ],
+      "additionalProperties": false
+    },
+    "flag_counts": {
+      "type": "object",
+      "properties": {
+        "MISSING_VALUE": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "NON_FINITE": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "NON_NUMERIC": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "DUPLICATE_TIMESTAMP": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "OFF_GRID_TIMESTAMP": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "OUT_OF_BOUNDS": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "STALE_VALUE": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "COUNTER_DECREASE": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "JUMP": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ANY": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "ANY",
+        "COUNTER_DECREASE",
+        "DUPLICATE_TIMESTAMP",
+        "JUMP",
+        "MISSING_VALUE",
+        "NON_FINITE",
+        "NON_NUMERIC",
+        "OFF_GRID_TIMESTAMP",
+        "OUT_OF_BOUNDS",
+        "STALE_VALUE"
+      ],
+      "additionalProperties": false
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "quantity": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resolution": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "aggregation": {
+          "enum": [
+            "instantaneous",
+            "mean",
+            "sum",
+            "min",
+            "max"
+          ]
+        },
+        "interval_label": {
+          "enum": [
+            "start",
+            "end"
+          ]
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "aggregation",
+        "description",
+        "interval_label",
+        "name",
+        "quantity",
+        "resolution",
+        "timezone",
+        "unit"
+      ],
+      "additionalProperties": false
+    },
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "freq": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "origin": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tz": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "bounds": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
+        "max_listed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "stale_min_run": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "stale_atol": {
+          "type": "number"
+        },
+        "stale_exclude": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "cumulative": {
+          "type": "boolean"
+        },
+        "counter_tolerance": {
+          "type": "number"
+        },
+        "jump_max_delta": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "bounds",
+        "counter_tolerance",
+        "cumulative",
+        "freq",
+        "jump_max_delta",
+        "max_listed",
+        "origin",
+        "stale_atol",
+        "stale_exclude",
+        "stale_min_run",
+        "tz"
+      ],
+      "additionalProperties": false
+    },
+    "local_days": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "timezone": {
+              "type": "string"
+            },
+            "n_days": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "n_complete_days": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "n_incomplete_days": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "min_completeness": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "incomplete_days": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string"
+                  },
+                  "expected": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "present": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "date",
+                  "expected",
+                  "present"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "incomplete_days",
+            "min_completeness",
+            "n_complete_days",
+            "n_days",
+            "n_incomplete_days",
+            "timezone"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "quality_report": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1"
+        },
+        "package_version": {
+          "type": "string"
+        },
+        "series_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "metadata": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/metadata"
+            }
+          ]
+        },
+        "parameters": {
+          "$ref": "#/$defs/parameters"
+        },
+        "n_rows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "first_timestamp": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "last_timestamp": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expected_resolution": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "inferred_resolution": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "n_expected_intervals": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "completeness": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "flag_counts": {
+          "$ref": "#/$defs/flag_counts"
+        },
+        "gaps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/gap"
+          }
+        },
+        "n_gaps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "n_missing_intervals": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duplicate_timestamps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "n_duplicate_timestamps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "truncated": {
+          "type": "object",
+          "properties": {
+            "gaps": {
+              "type": "boolean"
+            },
+            "duplicate_timestamps": {
+              "type": "boolean"
+            },
+            "incomplete_local_days": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "duplicate_timestamps",
+            "gaps",
+            "incomplete_local_days"
+          ],
+          "additionalProperties": false
+        },
+        "metadata_issues": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "enum": [
+                  "SUM_OF_POWER",
+                  "AVERAGED_ENERGY",
+                  "MISSING_RESOLUTION",
+                  "LABEL_ON_INSTANTANEOUS"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "local_days": {
+          "$ref": "#/$defs/local_days"
+        }
+      },
+      "required": [
+        "completeness",
+        "duplicate_timestamps",
+        "expected_resolution",
+        "fingerprint",
+        "first_timestamp",
+        "flag_counts",
+        "gaps",
+        "inferred_resolution",
+        "last_timestamp",
+        "local_days",
+        "metadata",
+        "metadata_issues",
+        "n_duplicate_timestamps",
+        "n_expected_intervals",
+        "n_gaps",
+        "n_missing_intervals",
+        "n_rows",
+        "package_version",
+        "parameters",
+        "schema_version",
+        "series_name",
+        "truncated"
+      ],
+      "additionalProperties": false
+    },
+    "frame_report": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1"
+        },
+        "package_version": {
+          "type": "string"
+        },
+        "fingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "column_order": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "summary": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "n_flagged_rows": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "completeness": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 1
+              },
+              "n_missing_intervals": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "n_metadata_issues": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "completeness",
+              "n_flagged_rows",
+              "n_metadata_issues",
+              "n_missing_intervals"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "columns": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/quality_report"
+          }
+        }
+      },
+      "required": [
+        "column_order",
+        "columns",
+        "fingerprint",
+        "package_version",
+        "schema_version",
+        "summary"
+      ],
+      "additionalProperties": false
+    },
+    "series_changes": {
+      "type": "object",
+      "properties": {
+        "fingerprint": {
+          "$ref": "#/$defs/pair"
+        },
+        "first_timestamp": {
+          "$ref": "#/$defs/pair"
+        },
+        "last_timestamp": {
+          "$ref": "#/$defs/pair"
+        },
+        "counts": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/pair"
+          }
+        },
+        "flag_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/pair"
+          }
+        },
+        "gaps": {
+          "type": "object",
+          "properties": {
+            "resolved": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/gap"
+              }
+            },
+            "new": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/gap"
+              }
+            },
+            "lists_truncated": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "lists_truncated",
+            "new",
+            "resolved"
+          ],
+          "additionalProperties": false
+        },
+        "metadata_issues": {
+          "type": "object",
+          "properties": {
+            "resolved": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "new": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "new",
+            "resolved"
+          ],
+          "additionalProperties": false
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "before": {},
+              "after": {}
+            },
+            "required": [
+              "after",
+              "before"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "before": {},
+              "after": {}
+            },
+            "required": [
+              "after",
+              "before"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "pair": {
+      "type": "object",
+      "properties": {
+        "before": {},
+        "after": {},
+        "delta": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "before",
+        "after"
+      ],
+      "additionalProperties": false
+    },
+    "comparison": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1"
+        },
+        "package_version": {
+          "type": "string"
+        },
+        "same_data": {
+          "type": "boolean"
+        },
+        "worse": {
+          "type": "boolean"
+        },
+        "columns_added": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "columns_removed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "changes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/series_changes"
+          }
+        }
+      },
+      "required": [
+        "changes",
+        "columns_added",
+        "columns_removed",
+        "package_version",
+        "same_data",
+        "schema_version",
+        "worse"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

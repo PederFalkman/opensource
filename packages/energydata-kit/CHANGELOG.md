@@ -6,6 +6,10 @@ versioning: [SemVer](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- `report_schema.json`: a JSON Schema (draft 2020-12) for report schema 1,
+  covering single-series reports, frame reports and comparisons. It ships in
+  the package; the tests validate every golden report and a set of generated
+  ones against it (OSS-54).
 - Python 3.14 is tested in CI and declared in the package classifiers; the
   test suite, including the byte-for-byte golden reports, passes unchanged
   (OSS-51).

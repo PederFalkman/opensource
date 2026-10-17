@@ -59,7 +59,7 @@ connection planning, optimization or decision support).
 | ID | Candidate | Why | Effort | Risk and cost |
 |---|---|---|---|---|
 | P-2 | **Expected-outage windows.** Callers pass known periods (maintenance, a meter swap); gaps inside them are reported separately from unexplained gaps, and completeness can exclude them. | The most common false alarm in gap reports is a gap everyone already knew about. | M | New report fields, so report schema 2 or an optional section; `compare_reports` must handle both. No new dependency. |
-| P-3 | **JSON Schema for the report format.** Publish schema "1" as a JSON Schema file in the package; a test validates every golden report against it. | Lets non-Python consumers (pipelines, dashboards) validate reports without reading our code. | S | Small; the schema file becomes a public contract to maintain. Test-only dependency (`jsonschema`, MIT) or a hand-written check. |
+| P-3 | *Approved by the owner on 2026-10-17 ahead of the release gates; done in OSS-54.* **JSON Schema for the report format.** Publish schema "1" as a JSON Schema file in the package; a test validates every golden report against it. | Lets non-Python consumers (pipelines, dashboards) validate reports without reading our code. | S | Small; the schema file becomes a public contract to maintain. Test-only dependency (`jsonschema`, MIT) or a hand-written check. |
 | P-4 | **Markdown output** (`report --format markdown`, `compare --format markdown`). | Pasting a readable summary into an issue or PR is a frequent use of `--format text`. | S | Low; formatting only, no new dependency. Must not become a second report format that drifts from JSON. |
 | P-5 | **Parquet input for the command line** (optional `[parquet]` extra). | Large meter exports increasingly come as Parquet; the library already accepts any pandas Series. | S–M | New optional dependency (pyarrow, Apache-2.0): allowlist, licence table and CI matrix entry. Read-only; no writing of Parquet. |
 | P-6 | **Shared timestamp section in frame reports.** `assess_frame` repeats gaps, duplicates and off-grid per column (a known limitation); report them once at frame level. | Smaller, clearer multi-column reports. | M | Breaking report change (schema 2) and a `compare_reports` migration path; worth doing only together with another schema change such as P-2. |
@@ -525,13 +525,24 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `\n` everywhere; a regression test fails on the previous code.
 - [x] CI runs the tests, golden reports included, on Windows and macOS.
 
-### OSS-53: post-0.1.0 proposals — this change
+### OSS-53: post-0.1.0 proposals — merged in [#59](https://github.com/PederFalkman/opensource/pull/59)
 
 - [x] Added candidates P-2 to P-6 (expected-outage windows, a JSON Schema
       for reports, Markdown output, Parquet input, a shared timestamp
       section in frame reports) to "Proposed — gated", each with effort,
       risk and dependency cost, for the owner to approve or reject. None
       is authorized; no code changed.
+
+### OSS-54: JSON Schema for reports (P-3) — this change
+
+- [x] `energydata_kit/report_schema.json` (draft 2020-12) describes report
+      schema 1: single-series reports, frame reports and comparisons, with
+      no unknown fields allowed. Shipped in the wheel (checked in CI).
+- [x] Tests validate the golden reports and ten generated ones (no step,
+      empty, metadata issues, every check, calendar grid, step longer than a
+      day, frames, comparisons) and reject seven kinds of broken report.
+- [x] `jsonschema` (MIT) added as a dev dependency only: allowlist and
+      licence table updated.
 
 ## Explicitly not planned
 

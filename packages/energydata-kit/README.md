@@ -22,7 +22,7 @@ cover for metered energy data:
 | Explicit start/end interval relabelling | `relabel_intervals`, `interval_bounds` |
 | Unit / aggregation consistency advice | `check_metadata_consistency`, `MetadataIssue` |
 | Completeness per local calendar day (DST-aware: 92/96/100 at 15 min) | `local_day_completeness` |
-| Reproducible JSON quality reports | `assess_quality`, `QualityReport`, `fingerprint_series` |
+| Reproducible JSON quality reports, with a JSON Schema for the format | `assess_quality`, `QualityReport`, `fingerprint_series`, `report_schema.json` |
 | One report for several columns sharing a timestamp index, with per-column options | `assess_frame`, `FrameQualityReport` |
 | Flags for several columns at once (`quality_flag_<column>` each) | `flag_frame`, `flag_column` |
 | What changed between two reports (e.g. before and after a fix, or two deliveries) | `compare_reports`, `ReportComparison` |
@@ -121,6 +121,23 @@ Exit status: `0` OK, `1` issues found with `--fail-on-issues` or
 given as the CSV, or `-o` in a folder that does not exist). `python -m energydata_kit` is equivalent. See
 `energydata-kit report --help` and `energydata-kit compare --help` for every
 option.
+
+## Report format
+
+Reports, frame reports and comparisons are JSON with `"schema_version": "1"`.
+The package ships a [JSON Schema](https://json-schema.org) (draft 2020-12)
+for all three, so tools in any language can validate them:
+
+```python
+import json
+from importlib import resources
+
+schema = json.loads(resources.files("energydata_kit").joinpath("report_schema.json").read_text())
+```
+
+The test suite validates every golden report against it, so the schema and
+the code cannot drift apart. Schema 1 does not change; a new field or a
+changed one means schema 2.
 
 ## Design rules
 

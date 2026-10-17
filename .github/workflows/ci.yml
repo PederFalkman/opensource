@@ -130,6 +130,7 @@ jobs:
           import glob, zipfile
           names = zipfile.ZipFile(glob.glob("dist/*.whl")[0]).namelist()
           assert "energydata_kit/py.typed" in names, names
+          assert "energydata_kit/report_schema.json" in names, names
           assert not any(n.startswith("tests/") for n in names), names
           print("\n".join(sorted(names)))
           PY
