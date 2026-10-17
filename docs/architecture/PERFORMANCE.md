@@ -1,6 +1,7 @@
 # Performance
 
-**Measured:** 2026-10-16 (OSS-18) on one x86_64 CI-class container.
+**Measured:** 2026-10-16 (OSS-18), re-measured 2026-10-17 (OSS-50) after
+the input checks added in OSS-40 to OSS-49, on one x86_64 CI-class container.
 Numbers are wall time (best of 3) and peak memory traced by Python's
 `tracemalloc` (includes NumPy and pandas buffers). They depend on the
 machine; use them for orders of magnitude and compare runs on the same
@@ -15,20 +16,28 @@ are NaN.
 
 | Case | Python 3.13, pandas 3.0.6 (s) | Python 3.11, pandas 2.1.4 (s) | Peak memory (MiB) |
 |---|---|---|---|
-| `normalize_timestamps`, 350k naive ISO strings | 0.95 | 1.2 | 20–22 |
+| `normalize_timestamps`, 350k naive ISO strings | 0.80 | 0.88 | 20–22 |
 | `flag_series`, 1 year at 1 min | 0.02 | 0.02 | 10–26 |
-| `flag_series`, 1 year at 1 min, every check + `insert_missing` | 0.22 | 0.2 | 37 |
-| `find_missing_intervals`, 1 year at 1 min | 0.10 | 0.06 | 17 |
-| `assess_quality`, 1 year at 1 min | 0.27 | 0.23 | 29–33 |
-| `assess_quality`, 10 years at 15 min, every opt-in check | 0.28 | 0.24 | 17–20 |
-| `local_day_completeness`, 10 years at 15 min, Europe/Stockholm | 0.06 | 0.09 | 11–14 |
-| `assess_frame`, 5 columns, 10 years at 15 min | 1.00 | 0.95 | 17–31 |
+| `flag_series`, 1 year at 1 min, every check + `insert_missing` | 0.14 | 0.11 | 37 |
+| `find_missing_intervals`, 1 year at 1 min | 0.11 | 0.05 | 17 |
+| `assess_quality`, 1 year at 1 min | 0.21 | 0.17 | 29–33 |
+| `assess_quality`, 10 years at 15 min, every opt-in check | 0.20 | 0.19 | 17–20 |
+| `local_day_completeness`, 10 years at 15 min, Europe/Stockholm | 0.06 | 0.12 | 11–14 |
+| `assess_frame`, 5 columns, 10 years at 15 min | 0.83 | 0.75 | 17–31 |
 
 Everything scales linearly with the number of rows (and, for
 `assess_frame`, with the number of columns). The coarse guard in
 `tests/test_performance.py` fails if `assess_quality` on a year of minute
 data takes more than 10 seconds, which only a real regression (for example
 an accidental quadratic step) would cause.
+
+The OSS-50 re-run found no regression, and peak memory was unchanged. Two
+cases read slightly slower than on 2026-10-16 (`local_day_completeness` on
+3.11, `find_missing_intervals` on 3.13); timed side by side on the same
+machine, the code before OSS-40 was no faster in either, so that is
+run-to-run noise. `compare_reports`, which validates
+its input since OSS-47, takes about 0.4 ms for two reports with 350 listed
+gaps each.
 
 ## Changes in OSS-18
 
