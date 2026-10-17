@@ -1,0 +1,51 @@
+{
+  "completeness": 1.0,
+  "duplicate_timestamps": [],
+  "expected_resolution": "D",
+  "fingerprint": "5ebcc4cc70920a53ee45cfebb60a68d60327f0f3c93b1ae22537f5f7d021c2aa",
+  "first_timestamp": "2024-10-25T22:00:00+00:00",
+  "flag_counts": {
+    "ANY": 69,
+    "COUNTER_DECREASE": 1,
+    "DUPLICATE_TIMESTAMP": 0,
+    "JUMP": 0,
+    "MISSING_VALUE": 0,
+    "NON_FINITE": 0,
+    "NON_NUMERIC": 0,
+    "OFF_GRID_TIMESTAMP": 69,
+    "OUT_OF_BOUNDS": 0,
+    "STALE_VALUE": 0
+  },
+  "gaps": [],
+  "inferred_resolution": "P0DT1H0M0S",
+  "last_timestamp": "2024-10-28T21:00:00+00:00",
+  "local_days": null,
+  "metadata": null,
+  "metadata_issues": [],
+  "n_duplicate_timestamps": 0,
+  "n_expected_intervals": 3,
+  "n_gaps": 0,
+  "n_missing_intervals": 0,
+  "n_rows": 72,
+  "package_version": "*",
+  "parameters": {
+    "bounds": null,
+    "counter_tolerance": 0.0,
+    "cumulative": true,
+    "freq": "D",
+    "jump_max_delta": null,
+    "max_listed": 100,
+    "origin": null,
+    "stale_atol": 0.0,
+    "stale_exclude": [],
+    "stale_min_run": null,
+    "tz": "Europe/Stockholm"
+  },
+  "schema_version": "1",
+  "series_name": "kwh",
+  "truncated": {
+    "duplicate_timestamps": false,
+    "gaps": false,
+    "incomplete_local_days": false
+  }
+}
