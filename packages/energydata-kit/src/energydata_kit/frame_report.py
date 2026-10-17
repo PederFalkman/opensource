@@ -25,6 +25,7 @@ from energydata_kit.report import REPORT_SCHEMA_VERSION, QualityReport, assess_q
 __all__ = [
     "COLUMN_OPTIONS",
     "FLAG_OPTIONS",
+    "TIMESTAMP_FIELDS",
     "FrameQualityReport",
     "assess_frame",
     "flag_column",
@@ -48,13 +49,22 @@ COLUMN_OPTIONS = frozenset(
 
 @dataclass(frozen=True)
 class FrameQualityReport:
-    """Per-column quality reports for a frame, plus a combined fingerprint."""
+    """Per-column quality reports for a frame, plus a combined fingerprint.
+
+    ``timestamps`` holds the facts that depend only on the shared timestamp
+    index (rows, range, step, completeness, gaps, duplicates; see
+    :data:`TIMESTAMP_FIELDS`) once for the whole frame. It is ``None`` when
+    the columns disagree on them, which happens when they take different
+    steps from their metadata. Each column's report still contains them,
+    exactly as :func:`energydata_kit.assess_quality` gives them.
+    """
 
     columns: dict[str, QualityReport]
     fingerprint: str
     package_version: str = __version__
     schema_version: str = REPORT_SCHEMA_VERSION
     summary: dict[str, dict[str, Any]] = field(default_factory=dict)
+    timestamps: dict[str, Any] | None = None
 
     @property
     def n_flagged_rows(self) -> int:
@@ -74,6 +84,7 @@ class FrameQualityReport:
             "fingerprint": self.fingerprint,
             "column_order": list(self.columns),
             "summary": self.summary,
+            "timestamps": self.timestamps,
             "columns": {name: report.to_dict() for name, report in self.columns.items()},
         }
 
@@ -201,7 +212,44 @@ def assess_frame(
         }
         for name, r in reports.items()
     }
-    return FrameQualityReport(columns=reports, fingerprint=digest.hexdigest(), summary=summary)
+    return FrameQualityReport(
+        columns=reports,
+        fingerprint=digest.hexdigest(),
+        summary=summary,
+        timestamps=_shared_timestamps(reports),
+    )
+
+
+#: Report fields that depend only on the timestamp index and the grid, not on
+#: the values; in a frame they are equal for every column sharing one step.
+TIMESTAMP_FIELDS = (
+    "n_rows",
+    "first_timestamp",
+    "last_timestamp",
+    "expected_resolution",
+    "n_expected_intervals",
+    "completeness",
+    "gaps",
+    "n_gaps",
+    "n_missing_intervals",
+    "n_missing_explained",
+    "completeness_excluding_outages",
+    "duplicate_timestamps",
+    "n_duplicate_timestamps",
+)
+
+
+def _shared_timestamps(reports: Mapping[str, QualityReport]) -> dict[str, Any] | None:
+    """The timestamp facts once, if every column reports the same ones."""
+    sections = []
+    for report in reports.values():
+        data = report.to_dict()
+        section = {key: data[key] for key in TIMESTAMP_FIELDS}
+        section["truncated"] = {k: data["truncated"][k] for k in ("gaps", "duplicate_timestamps")}
+        sections.append(section)
+    if not sections or any(section != sections[0] for section in sections[1:]):
+        return None
+    return sections[0]
 
 
 #: Options that may differ per column in :func:`flag_frame`.

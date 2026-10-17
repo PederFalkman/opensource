@@ -66,6 +66,13 @@ def _variants():
         ),
         "frame": ek.assess_frame(frame, freq="15min", per_column={"a": {"bounds": (0, 10)}}),
         "frame, no step": ek.assess_frame(frame),
+        "frame, steps differ": ek.assess_frame(
+            frame,
+            metadata={
+                "a": ek.MeasurementMetadata("a", "kW", resolution="15min"),
+                "b": ek.MeasurementMetadata("b", "kW", resolution="30min"),
+            },
+        ),
     }
     reports["comparison"] = ek.compare_reports(reports["no step"], reports["metadata"])
     reports["frame comparison"] = ek.compare_reports(

@@ -24,7 +24,7 @@ cover for metered energy data:
 | Completeness per local calendar day (DST-aware: 92/96/100 at 15 min) | `local_day_completeness` |
 | Known outage periods: missing intervals inside them counted as explained | `assess_quality(..., known_outages=...)`, `--known-outage` |
 | Reproducible JSON quality reports, with a JSON Schema for the format | `assess_quality`, `QualityReport`, `fingerprint_series`, `report_schema.json` |
-| One report for several columns sharing a timestamp index, with per-column options | `assess_frame`, `FrameQualityReport` |
+| One report for several columns sharing a timestamp index, with per-column options and the shared timestamp facts stated once | `assess_frame`, `FrameQualityReport` |
 | Flags for several columns at once (`quality_flag_<column>` each) | `flag_frame`, `flag_column` |
 | What changed between two reports (e.g. before and after a fix, or two deliveries) | `compare_reports`, `ReportComparison` |
 | Deterministic synthetic test series | `make_synthetic_series` |
@@ -215,9 +215,12 @@ use Pint or pint-pandas directly, e.g. `series.astype(f"pint[{meta.unit}]")`.
   day) expects no interval: its completeness is `NaN` and it is left out of
   the report's `min_completeness`. Use a calendar step (`tz=`) for daily
   data in local time.
-- `assess_frame` repeats the timestamp sections (gaps, duplicates, off-grid)
-  in every column's report, because each column's report is exactly what
-  `assess_quality` gives for it. On the command line, `--unit` works with a
+- `assess_frame` repeats the timestamp facts (gaps, duplicates) in every
+  column's report, because each column's report is exactly what
+  `assess_quality` gives for it. The frame-level `timestamps` section
+  states them once when all columns share one step; it is `null` when
+  columns take different steps from their metadata. `compare_reports`
+  compares frames column by column and does not read that section. On the command line, `--unit` works with a
   single `--value-col`; use `--schema` for metadata on several columns.
 - `compare_reports` matches gaps exactly (a gap that shrank appears as one
   resolved and one new gap) and only compares listed gaps; check

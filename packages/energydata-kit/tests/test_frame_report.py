@@ -15,7 +15,7 @@ from energydata_kit import (
     flag_series,
     make_synthetic_series,
 )
-from energydata_kit.frame_report import COLUMN_OPTIONS, FLAG_OPTIONS
+from energydata_kit.frame_report import COLUMN_OPTIONS, FLAG_OPTIONS, TIMESTAMP_FIELDS
 
 
 def meter_frame() -> pd.DataFrame:
@@ -141,3 +141,32 @@ def test_per_column_metadata_must_match_its_column():
     other = MeasurementMetadata("zzz", "kW")
     with pytest.raises(ValueError, match="per_column\\['a'\\] metadata is named 'zzz'"):
         assess_frame(frame, per_column={"a": {"metadata": other}})
+
+
+def test_shared_timestamp_section():
+    frame = meter_frame()
+    report = assess_frame(frame, freq="15min", per_column={"energy_kwh": {"cumulative": True}})
+    shared = report.timestamps
+    assert shared is not None and report.to_dict()["timestamps"] == shared
+    # The same facts every column reports: written once, columns unchanged.
+    for column in report.columns.values():
+        data = column.to_dict()
+        assert {key: data[key] for key in TIMESTAMP_FIELDS} == {key: shared[key] for key in TIMESTAMP_FIELDS}
+    assert shared["n_rows"] == 7 and shared["n_missing_intervals"] == 1
+    assert shared["gaps"] == [
+        {"start": "2024-01-01T00:45:00+00:00", "end": "2024-01-01T00:45:00+00:00", "missing_count": 1}
+    ]
+    assert shared["truncated"] == {"gaps": False, "duplicate_timestamps": False}
+
+
+def test_no_shared_timestamp_section_when_steps_differ():
+    # Without --freq each column takes its step from its metadata; 15 and 30 minutes disagree.
+    frame = meter_frame()
+    metadata = {
+        "power_kw": MeasurementMetadata("power_kw", "kW", resolution="15min"),
+        "energy_kwh": MeasurementMetadata("energy_kwh", "kWh", resolution="30min"),
+    }
+    report = assess_frame(frame, metadata=metadata)
+    assert report.timestamps is None and report.to_dict()["timestamps"] is None
+    # Without any step, the index facts still agree (no grid, same rows and duplicates).
+    assert assess_frame(frame).timestamps["expected_resolution"] is None

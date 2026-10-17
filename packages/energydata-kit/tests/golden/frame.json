@@ -190,5 +190,35 @@
       "n_metadata_issues": 0,
       "n_missing_intervals": 3
     }
+  },
+  "timestamps": {
+    "completeness": 0.980263,
+    "completeness_excluding_outages": null,
+    "duplicate_timestamps": [],
+    "expected_resolution": "P0DT0H15M0S",
+    "first_timestamp": "2024-03-30T00:00:00+00:00",
+    "gaps": [
+      {
+        "end": "2024-03-30T01:30:00+00:00",
+        "missing_count": 2,
+        "start": "2024-03-30T01:15:00+00:00"
+      },
+      {
+        "end": "2024-03-31T01:00:00+00:00",
+        "missing_count": 1,
+        "start": "2024-03-31T01:00:00+00:00"
+      }
+    ],
+    "last_timestamp": "2024-03-31T13:45:00+00:00",
+    "n_duplicate_timestamps": 0,
+    "n_expected_intervals": 152,
+    "n_gaps": 2,
+    "n_missing_explained": 0,
+    "n_missing_intervals": 3,
+    "n_rows": 149,
+    "truncated": {
+      "duplicate_timestamps": false,
+      "gaps": false
+    }
   }
 }
