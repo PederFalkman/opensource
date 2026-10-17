@@ -106,3 +106,14 @@ def test_summarize():
     assert s.is_timezone_aware and s.timezone == "UTC"
     assert not s.is_monotonic_increasing
     assert s.inferred_resolution == pd.Timedelta("1h")
+
+
+@pytest.mark.parametrize("assume_tz", [None, "Europe/Stockholm"])
+def test_empty_input(assume_tz):
+    idx = normalize_timestamps([], assume_tz=assume_tz)
+    assert len(idx) == 0 and str(idx.tz) == "UTC"
+
+
+def test_single_string_is_rejected():
+    with pytest.raises(TypeError, match="single string"):
+        normalize_timestamps("2024-01-01T00:00Z")

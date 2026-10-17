@@ -6,6 +6,8 @@ check in this module modifies, drops, fills or reorders input values.
 
 from __future__ import annotations
 
+import functools
+import operator
 from collections.abc import Collection
 from enum import IntFlag
 
@@ -49,9 +51,18 @@ class QualityFlag(IntFlag):
     JUMP = 512  # change from the previous finite value exceeds a limit (opt-in)
 
 
+_ALL_BITS = functools.reduce(operator.or_, (m.value for m in QualityFlag), 0)
+
+
 def decode_flags(value: int) -> list[str]:
-    """Names of the flags set in ``value``, in bit order; ``["OK"]`` for 0."""
-    flag = QualityFlag(int(value))
+    """Names of the flags set in ``value``, in bit order; ``["OK"]`` for 0.
+
+    Raises ``ValueError`` for a negative value or one with bits no flag uses.
+    """
+    number = int(value)
+    if number != value or number < 0 or number & ~_ALL_BITS:
+        raise ValueError(f"{value!r} is not a combination of QualityFlag values")
+    flag = QualityFlag(number)
     if flag == QualityFlag.OK:
         return ["OK"]
     return [m.name for m in QualityFlag if m.value and flag & m and m.name is not None]
@@ -250,6 +261,8 @@ def flag_series(
     index = series.index
     if not isinstance(index, pd.DatetimeIndex) or index.tz is None:
         raise ValueError("series must have a timezone-aware DatetimeIndex; use normalize_timestamps()")
+    if index.hasnans:
+        raise ValueError("series index must not contain NaT")
     if insert_missing and freq is None:
         raise ValueError("insert_missing requires freq")
     if insert_missing and not index.is_monotonic_increasing:

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import operator
 from collections.abc import Collection
 from dataclasses import dataclass, field
 from typing import Any
@@ -45,6 +46,11 @@ def _iso_duration(td: pd.Timedelta | None) -> str | None:
 def _freq_label(freq: str | pd.Timedelta | None) -> str | None:
     # Calendar steps have no ISO 8601 duration; report the pandas frequency.
     return None if freq is None else str(freq)
+
+
+def _plain(value: Any) -> Any:
+    """A numpy scalar (e.g. ``np.float64`` from ``series.quantile``) as a Python one, for JSON."""
+    return value.item() if isinstance(value, np.generic) else value
 
 
 def fingerprint_series(series: pd.Series) -> str:
@@ -175,6 +181,7 @@ def assess_quality(
 
     ``series`` must have a timezone-aware ``DatetimeIndex`` and is not modified.
     """
+    max_listed = operator.index(max_listed)  # TypeError for 1.5; accepts numpy integers
     if max_listed < 0:
         raise ValueError("max_listed must be >= 0")
     if freq is None and metadata is not None:
@@ -253,14 +260,14 @@ def assess_quality(
             "freq": _iso_duration(step) if tz is None else _freq_label(freq),
             "origin": None if origin is None else pd.Timestamp(origin).isoformat(),
             "tz": tz,
-            "bounds": None if bounds is None else list(bounds),
+            "bounds": None if bounds is None else [_plain(b) for b in bounds],
             "max_listed": max_listed,
-            "stale_min_run": stale_min_run,
-            "stale_atol": stale_atol,
+            "stale_min_run": _plain(stale_min_run),
+            "stale_atol": _plain(stale_atol),
             "stale_exclude": [float(x) for x in stale_exclude],
-            "cumulative": cumulative,
-            "counter_tolerance": counter_tolerance,
-            "jump_max_delta": jump_max_delta,
+            "cumulative": _plain(cumulative),
+            "counter_tolerance": _plain(counter_tolerance),
+            "jump_max_delta": _plain(jump_max_delta),
         },
         metadata=None if metadata is None else metadata.to_dict(),
         truncated=truncated,
@@ -276,7 +283,8 @@ def _summarize_local_days(days: pd.DataFrame, tz: str, max_listed: int) -> dict[
         "n_days": len(days),
         "n_complete_days": len(days) - len(incomplete),
         "n_incomplete_days": len(incomplete),
-        "min_completeness": float(days["completeness"].min()),
+        # Days shorter than one step expect nothing and have no completeness.
+        "min_completeness": None if days["completeness"].isna().all() else float(days["completeness"].min()),
         "incomplete_days": [
             {"date": str(d), "expected": int(e), "present": int(p)}
             for d, e, p in zip(

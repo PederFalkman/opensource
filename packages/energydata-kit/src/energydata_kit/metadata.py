@@ -120,6 +120,10 @@ class MeasurementMetadata:
     description: str = ""
 
     def __post_init__(self) -> None:
+        for field_name in ("name", "timezone"):
+            value: object = getattr(self, field_name)
+            if not isinstance(value, str):
+                raise TypeError(f"{field_name} must be a string, got {value!r}")
         if not self.name.strip():
             raise ValueError("name must be non-empty")
         validate_unit(self.unit)

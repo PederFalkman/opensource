@@ -86,3 +86,9 @@ def test_resolution_must_be_a_string():
     # A Timedelta would not survive JSON, and its string form differs between pandas versions.
     with pytest.raises(TypeError, match="resolution must be a string"):
         MeasurementMetadata("p", "kW", resolution=pd.Timedelta("15min"))
+
+
+@pytest.mark.parametrize("field", ["name", "timezone"])
+def test_non_string_name_or_timezone(field):
+    with pytest.raises(TypeError, match=f"{field} must be a string"):
+        MeasurementMetadata(**{"name": "p", "unit": "kW", field: 5})
