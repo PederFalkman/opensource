@@ -68,3 +68,21 @@ def test_fixed_and_calendar_resolutions_accepted(resolution):
 def test_resolution_timedelta_rejects_calendar_steps():
     with pytest.raises(ValueError, match="tz="):
         _ = MeasurementMetadata(name="p", unit="kWh", resolution="MS").resolution_timedelta
+
+
+@pytest.mark.parametrize("unit", ["kilowatts?", "kW!", "kWh;", "kW#comment", "(kW"])
+def test_units_with_stray_characters_are_rejected(unit):
+    # Pint drops some trailing characters ("kW?" parses as kW) or raises a TokenError.
+    with pytest.raises(UnitError):
+        validate_unit(unit)
+
+
+@pytest.mark.parametrize("unit", ["kW", "m^3/h", "W/m**2", "Wh/(m^2)", "°C", "%", "µs", "kW*h"])
+def test_unit_expressions_still_accepted(unit):
+    assert validate_unit(unit) == unit
+
+
+def test_resolution_must_be_a_string():
+    # A Timedelta would not survive JSON, and its string form differs between pandas versions.
+    with pytest.raises(TypeError, match="resolution must be a string"):
+        MeasurementMetadata("p", "kW", resolution=pd.Timedelta("15min"))

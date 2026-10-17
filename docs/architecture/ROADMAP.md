@@ -391,6 +391,17 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       errors from calendar grids; two CLI messages. Each has a regression
       test that fails on the previous code.
 
+### OSS-41: pre-release bug hunt, part 2 — this change
+
+- [x] Fuzzed the Pandera checks against `flag_series` / `assess_quality`
+      (1,500 random series, pandas 2.1 and 3) and probed metadata, Table
+      Schema, frame reports and comparisons.
+- [x] Fixed: units with stray characters accepted (Pint drops them);
+      `Timedelta` resolutions breaking JSON reports; a leading gap missed by
+      the Pandera gap check; duplicate `quality_flag` fields in a Table
+      Schema; unchecked `per_column` metadata names. Regression tests fail on
+      the previous code.
+
 ## Explicitly not planned
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection

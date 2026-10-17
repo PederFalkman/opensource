@@ -68,3 +68,10 @@ def test_invalid_metadata_in_schema_is_rejected():
     schema["fields"][1][NAMESPACE]["unit"] = "kilowombat"
     with pytest.raises(ValueError):
         from_table_schema(schema)
+
+
+def test_flag_column_name_clash_rejected():
+    meta = MeasurementMetadata("quality_flag", "kW")
+    assert len(to_table_schema(meta)["fields"]) == 2  # fine without the flag column
+    with pytest.raises(ValueError, match="no other field may be named 'quality_flag'"):
+        to_table_schema(meta, include_flag=True)

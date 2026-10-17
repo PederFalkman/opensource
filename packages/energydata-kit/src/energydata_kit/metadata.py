@@ -7,6 +7,7 @@ use Pint or pint-pandas directly.
 
 from __future__ import annotations
 
+import re
 import zoneinfo
 from dataclasses import KW_ONLY, asdict, dataclass
 from enum import StrEnum
@@ -60,13 +61,20 @@ def get_unit_registry() -> pint.UnitRegistry[Any]:
     return ureg
 
 
+# Characters a unit expression can contain. Pint silently drops some others
+# (e.g. "kW?" or "kWh;" parse as kW and kWh), so they are rejected up front.
+_UNIT_CHARS = re.compile(r"^[\w\s*/^().%°µΩ-]+$")
+
+
 def validate_unit(unit: str) -> str:
     """Return ``unit`` unchanged if Pint can parse it, else raise :class:`UnitError`."""
     if not isinstance(unit, str) or not unit.strip():
         raise UnitError("unit must be a non-empty string")
+    if not _UNIT_CHARS.match(unit):
+        raise UnitError(f"unknown unit {unit!r}: unexpected characters")
     try:
         get_unit_registry().Unit(unit)
-    except (pint.errors.UndefinedUnitError, pint.errors.DefinitionSyntaxError, ValueError) as exc:
+    except Exception as exc:  # Pint raises several types, including tokenize.TokenError
         raise UnitError(f"unknown unit {unit!r}: {exc}") from exc
     return unit
 
@@ -117,6 +125,11 @@ class MeasurementMetadata:
         validate_unit(self.unit)
         object.__setattr__(self, "aggregation", Aggregation(self.aggregation))
         object.__setattr__(self, "interval_label", IntervalLabel(self.interval_label))
+        resolution: object = self.resolution
+        if resolution is not None and not isinstance(resolution, str):
+            # A Timedelta would make the metadata and reports non-JSON; its string
+            # form also differs between pandas versions ("15min" vs "15T").
+            raise TypeError(f"resolution must be a string such as '15min' or 'D', got {resolution!r}")
         if self.resolution is not None:
             _validate_resolution(self.resolution)
         try:

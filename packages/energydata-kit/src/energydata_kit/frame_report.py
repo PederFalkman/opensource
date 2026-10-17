@@ -113,6 +113,9 @@ def _validate(
         bad = sorted(set(overrides) - allowed)
         if bad:
             raise ValueError(f"per_column[{name!r}]: unsupported options {bad}")
+        override_meta = overrides.get("metadata")
+        if override_meta is not None and override_meta.name != name:
+            raise ValueError(f"per_column[{name!r}] metadata is named {override_meta.name!r}")
     return names, metas, overrides_by_column
 
 

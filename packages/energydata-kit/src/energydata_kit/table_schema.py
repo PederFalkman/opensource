@@ -33,6 +33,8 @@ def to_table_schema(
     """
     if timestamp_field == metadata.name:
         raise ValueError("timestamp_field and the measurement name must differ")
+    if include_flag and FLAG_COLUMN in (metadata.name, timestamp_field):
+        raise ValueError(f"with include_flag, no other field may be named {FLAG_COLUMN!r}")
     extra = metadata.to_dict()
     name = extra.pop("name")
     description = extra.pop("description")

@@ -134,3 +134,10 @@ def test_flag_frame_leaves_input_alone_and_validates():
 
 def test_flag_options_are_the_column_options_without_metadata():
     assert COLUMN_OPTIONS - {"metadata"} == FLAG_OPTIONS
+
+
+def test_per_column_metadata_must_match_its_column():
+    frame = pd.DataFrame({"a": [1.0, 2.0]}, index=pd.date_range("2024-01-01", periods=2, freq="h", tz="UTC"))
+    other = MeasurementMetadata("zzz", "kW")
+    with pytest.raises(ValueError, match="per_column\\['a'\\] metadata is named 'zzz'"):
+        assess_frame(frame, per_column={"a": {"metadata": other}})

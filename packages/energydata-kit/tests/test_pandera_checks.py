@@ -148,3 +148,15 @@ def test_series_schema_tuning_options():
     assert failed_checks(pc.series_schema(freq="1h", cumulative=True, counter_tolerance=0.05), register) == []
     with pytest.raises(ValueError, match="require"):
         pc.series_schema(counter_tolerance=0.1)
+
+
+def test_leading_gap_after_off_grid_start_is_reported():
+    # The series starts off-grid, so no present grid point precedes the gap at 00:15;
+    # assess_quality counts that gap, and the schema must fail too.
+    index = pd.DatetimeIndex(["2024-06-01 00:07", "2024-06-01 00:30", "2024-06-01 00:45"], tz="UTC")
+    series = pd.Series([1.0, 2.0, 3.0], index=index)
+    origin = pd.Timestamp("2024-06-01", tz="UTC")
+    schema = pa.SeriesSchema(checks=[pc.no_missing_intervals_check("15min", origin=origin)])
+    with pytest.raises(pa.errors.SchemaErrors) as info:
+        schema.validate(series, lazy=True)
+    assert list(info.value.failure_cases["index"]) == [index[0]]
