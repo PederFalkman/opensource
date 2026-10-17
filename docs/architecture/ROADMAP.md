@@ -446,7 +446,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] `energydata-kit --help`, `report --help` and `compare --help` list
       the exit statuses (follow-up from OSS-45), pinned by a test.
 
-### OSS-47: comparison bug hunt — this change
+### OSS-47: comparison bug hunt — merged in [#53](https://github.com/PederFalkman/opensource/pull/53)
 
 - [x] Fuzzed `compare_reports` with 100 real single-series and frame
       reports (1,500 real pairs, 4,000 with keys deleted or values
@@ -456,6 +456,16 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       both read as "worse". Non-report input now raises `ValueError`
       naming the first bad field, and the command exits 2. Regression
       tests fail on the previous code.
+
+### OSS-48: release-readiness refresh — this change
+
+- [x] Folded the `[Unreleased]` changelog entries from OSS-40 to OSS-47
+      into the unreleased 0.1.0 notes as the behaviour users will see
+      (bug-by-bug detail stays here and in the git history).
+- [x] Refreshed the facts in `RELEASE_DECISIONS.md`: commit counts, the
+      PyPI name check (still free), the G6 review. The readiness check now
+      fails only on LICENSE, the licence declaration and the upload guard,
+      which wait on D2, D3 and D6.
 
 ## Explicitly not planned
 
