@@ -58,7 +58,7 @@ connection planning, optimization or decision support).
 
 | ID | Candidate | Why | Effort | Risk and cost |
 |---|---|---|---|---|
-| P-2 | **Expected-outage windows.** Callers pass known periods (maintenance, a meter swap); gaps inside them are reported separately from unexplained gaps, and completeness can exclude them. | The most common false alarm in gap reports is a gap everyone already knew about. | M | New report fields, so report schema 2 or an optional section; `compare_reports` must handle both. No new dependency. |
+| P-2 | *Approved by the owner on 2026-10-17 ahead of the release gates; done in OSS-56, as fields in report schema 1 because 0.1.0 is unreleased.* **Expected-outage windows.** Callers pass known periods (maintenance, a meter swap); gaps inside them are reported separately from unexplained gaps, and completeness can exclude them. | The most common false alarm in gap reports is a gap everyone already knew about. | M | New report fields, so report schema 2 or an optional section; `compare_reports` must handle both. No new dependency. |
 | P-3 | *Approved by the owner on 2026-10-17 ahead of the release gates; done in OSS-54.* **JSON Schema for the report format.** Publish schema "1" as a JSON Schema file in the package; a test validates every golden report against it. | Lets non-Python consumers (pipelines, dashboards) validate reports without reading our code. | S | Small; the schema file becomes a public contract to maintain. Test-only dependency (`jsonschema`, MIT) or a hand-written check. |
 | P-4 | *Approved by the owner on 2026-10-17 ahead of the release gates; done in OSS-55.* **Markdown output** (`report --format markdown`, `compare --format markdown`). | Pasting a readable summary into an issue or PR is a frequent use of `--format text`. | S | Low; formatting only, no new dependency. Must not become a second report format that drifts from JSON. |
 | P-5 | **Parquet input for the command line** (optional `[parquet]` extra). | Large meter exports increasingly come as Parquet; the library already accepts any pandas Series. | S–M | New optional dependency (pyarrow, Apache-2.0): allowlist, licence table and CI matrix entry. Read-only; no writing of Parquet. |
@@ -544,13 +544,25 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] `jsonschema` (MIT) added as a dev dependency only: allowlist and
       licence table updated.
 
-### OSS-55: Markdown output (P-4) — this change
+### OSS-55: Markdown output (P-4) — merged in [#61](https://github.com/PederFalkman/opensource/pull/61)
 
 - [x] `--format markdown` for `report` and `compare`: headings per column
       and bullet lists, column names escaped.
 - [x] Text and Markdown are rendered from the same facts; the text output
       was compared byte for byte with the previous code (unchanged), and a
       test checks every text fact appears in the Markdown.
+
+### OSS-56: known outages (P-2) — this change
+
+- [x] `known_outages` for `assess_quality` and `assess_frame` and
+      `--known-outage START END` for the command line: timezone-aware
+      periods, both ends included, validated.
+- [x] Reports add `n_missing_explained`, `completeness_excluding_outages`
+      and `parameters.known_outages`; gaps, totals, completeness, flags and
+      fingerprints are unchanged (golden diffs add only the new fields).
+      Added to schema 1 and its JSON Schema while 0.1.0 is unreleased.
+- [x] `compare_reports`, its input check and the text and Markdown
+      summaries handle the new figures.
 
 ## Explicitly not planned
 

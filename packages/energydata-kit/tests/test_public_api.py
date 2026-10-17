@@ -42,6 +42,7 @@ CORE = {
         "origin=",
         "tz=",
         "per_column=",
+        "known_outages=",
         "max_listed=",
     ),
     "assess_quality": (
@@ -58,6 +59,7 @@ CORE = {
         "jump_max_delta=",
         "origin=",
         "tz=",
+        "known_outages=",
         "max_listed=",
     ),
     "check_metadata_consistency": ("metadata",),

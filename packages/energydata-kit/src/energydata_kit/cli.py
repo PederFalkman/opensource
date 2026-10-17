@@ -157,6 +157,15 @@ def build_parser() -> argparse.ArgumentParser:
     meta.add_argument("--interval-label", choices=[lab.value for lab in IntervalLabel], default="start")
     meta.add_argument("--timezone", default=None, help="metadata time zone (default: --tz, else UTC)")
 
+    rep.add_argument(
+        "--known-outage",
+        nargs=2,
+        action="append",
+        default=[],
+        metavar=("START", "END"),
+        help="a period in which data is known to be missing, as timezone-aware ISO 8601 timestamps "
+        "(both included); repeatable. Missing intervals inside are counted as explained",
+    )
     out = rep.add_argument_group("output")
     out.add_argument("-o", "--output", help="write the report here instead of standard output")
     out.add_argument(
@@ -359,6 +368,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
         jump_max_delta=args.jump_max_delta,
         origin=origin,
         tz=args.tz,
+        known_outages=args.known_outage,
         max_listed=args.max_listed,
     )
     _write_report(args, report, stdout)
@@ -430,6 +440,16 @@ def _series_facts(data: dict[str, Any]) -> tuple[str, _Facts]:
         facts.append(("gap", f"{gap['start']} to {gap['end']} ({gap['missing_count']} missing)"))
     if data["n_gaps"] > len(shown):  # also when --max-listed listed fewer than three
         facts.append((None, f"... {data['n_gaps'] - len(shown)} more gap(s); see the JSON report"))
+    if data["parameters"].get("known_outages"):
+        rest = data["completeness_excluding_outages"]
+        facts.append(
+            (
+                "known outages",
+                f"{len(data['parameters']['known_outages'])} period(s); "
+                f"{data['n_missing_explained']} of the missing intervals inside; completeness without them "
+                + ("not defined" if rest is None else f"{rest:.2%}"),
+            )
+        )
     if data["metadata_issues"]:
         facts.append(("metadata issues", ", ".join(issue["code"] for issue in data["metadata_issues"])))
     return head, facts
@@ -500,6 +520,7 @@ def _run_frame_report(
         freq=args.freq,
         origin=origin,
         tz=args.tz,
+        known_outages=args.known_outage,
         max_listed=args.max_listed,
         **checks,
     )
@@ -549,6 +570,7 @@ def _changes_facts(changes: dict[str, Any]) -> list[str]:
     counts_order = (
         ("n_rows", "rows"),
         ("n_missing_intervals", "missing intervals"),
+        ("n_missing_explained", "missing in known outages"),
         ("n_gaps", "gaps"),
         ("n_duplicate_timestamps", "duplicate timestamps"),
     )
@@ -557,6 +579,12 @@ def _changes_facts(changes: dict[str, Any]) -> list[str]:
     parts = [_change(text, counts[key]) for key, text in counts_order if key in counts]
     if "completeness" in counts:
         parts.append(_change("completeness", counts["completeness"], percent=True))
+    if "completeness_excluding_outages" in counts:
+        parts.append(
+            _change(
+                "completeness without known outages", counts["completeness_excluding_outages"], percent=True
+            )
+        )
     if parts:
         lines.append("; ".join(parts))
     flags = changes.get("flag_counts", {})

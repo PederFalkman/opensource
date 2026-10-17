@@ -99,7 +99,7 @@ def test_column_options_match_assess_quality_parameters():
     import inspect
 
     params = set(inspect.signature(assess_quality).parameters)
-    assert params - {"series", "freq", "origin", "tz", "max_listed"} == COLUMN_OPTIONS
+    assert params - {"series", "freq", "origin", "tz", "known_outages", "max_listed"} == COLUMN_OPTIONS
 
 
 def test_flag_frame_columns_equal_flag_series():

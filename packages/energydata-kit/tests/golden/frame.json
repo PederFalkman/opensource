@@ -6,6 +6,7 @@
   "columns": {
     "a": {
       "completeness": 0.980263,
+      "completeness_excluding_outages": null,
       "duplicate_timestamps": [],
       "expected_resolution": "P0DT0H15M0S",
       "fingerprint": "483721ec54abc67bc2fd83b5b5d63d1c7eee077a6d6e1f2055fd525df853a8e7",
@@ -60,6 +61,7 @@
       "n_duplicate_timestamps": 0,
       "n_expected_intervals": 152,
       "n_gaps": 2,
+      "n_missing_explained": 0,
       "n_missing_intervals": 3,
       "n_rows": 149,
       "package_version": "*",
@@ -72,6 +74,7 @@
         "cumulative": false,
         "freq": "P0DT0H15M0S",
         "jump_max_delta": null,
+        "known_outages": [],
         "max_listed": 100,
         "origin": null,
         "stale_atol": 0.0,
@@ -89,6 +92,7 @@
     },
     "b": {
       "completeness": 0.980263,
+      "completeness_excluding_outages": null,
       "duplicate_timestamps": [],
       "expected_resolution": "P0DT0H15M0S",
       "fingerprint": "366c043b674c27ffbcfb5c88a1968b60e3d716bd2587043643900abfd28e28fa",
@@ -143,6 +147,7 @@
       "n_duplicate_timestamps": 0,
       "n_expected_intervals": 152,
       "n_gaps": 2,
+      "n_missing_explained": 0,
       "n_missing_intervals": 3,
       "n_rows": 149,
       "package_version": "*",
@@ -152,6 +157,7 @@
         "cumulative": false,
         "freq": "P0DT0H15M0S",
         "jump_max_delta": null,
+        "known_outages": [],
         "max_listed": 100,
         "origin": null,
         "stale_atol": 0.0,
