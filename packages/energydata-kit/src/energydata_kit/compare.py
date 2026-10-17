@@ -71,6 +71,85 @@ def _as_dict(report: ReportLike) -> dict[str, Any]:
     return report
 
 
+def _require(ok: bool, side: str, where: str, expected: str) -> None:
+    if not ok:
+        raise ValueError(f"{side} is not a quality report: {where} must be {expected}")
+
+
+def _is_count(value: Any) -> bool:
+    return value is None or (isinstance(value, int) and not isinstance(value, bool))
+
+
+def _check_series(data: Any, side: str, where: str) -> None:
+    """Reject a dict lacking the single-series report fields the comparison reads."""
+    _require(isinstance(data, dict), side, where or "the report", "an object")
+    prefix = f"{where}." if where else ""
+    _require(isinstance(data.get("fingerprint"), str), side, f"{prefix}fingerprint", "a string")
+    flags = data.get("flag_counts")
+    _require(
+        isinstance(flags, dict) and all(_is_count(v) and v is not None for v in flags.values()),
+        side,
+        f"{prefix}flag_counts",
+        "an object of counts",
+    )
+    for key in _COUNTS:
+        _require(_is_count(data.get(key)), side, f"{prefix}{key}", "a count or null")
+    completeness = data.get("completeness")
+    _require(
+        completeness is None
+        or (isinstance(completeness, int | float) and not isinstance(completeness, bool)),
+        side,
+        f"{prefix}completeness",
+        "a number or null",
+    )
+    gaps = data.get("gaps")
+    _require(
+        isinstance(gaps, list)
+        and all(
+            isinstance(g, dict)
+            and isinstance(g.get("start"), str)
+            and isinstance(g.get("end"), str)
+            and g.get("missing_count") is not None
+            and _is_count(g["missing_count"])
+            for g in gaps
+        ),
+        side,
+        f"{prefix}gaps",
+        "a list of gaps with start, end and missing_count",
+    )
+    issues = data.get("metadata_issues")
+    _require(
+        isinstance(issues, list)
+        and all(isinstance(i, dict) and isinstance(i.get("code"), str) for i in issues),
+        side,
+        f"{prefix}metadata_issues",
+        "a list of issues with a code",
+    )
+    for key in ("parameters", "metadata", "truncated"):
+        _require(
+            data.get(key) is None or isinstance(data[key], dict), side, f"{prefix}{key}", "an object or null"
+        )
+
+
+def _check_report(data: dict[str, Any], side: str) -> None:
+    """Reject input that is not a report (e.g. a saved comparison), naming the first bad field."""
+    if "columns" not in data:
+        _check_series(data, side, "")
+        return
+    columns = data["columns"]
+    _require(isinstance(columns, dict), side, "columns", "an object")
+    _require(isinstance(data.get("fingerprint"), str), side, "fingerprint", "a string")
+    order = data.get("column_order", list(columns))
+    _require(
+        isinstance(order, list) and sorted(map(str, order)) == sorted(columns),
+        side,
+        "column_order",
+        "the list of column names",
+    )
+    for name, column in columns.items():
+        _check_series(column, side, f"columns.{name}")
+
+
 def _pair(before: Any, after: Any) -> dict[str, Any]:
     entry: dict[str, Any] = {"before": before, "after": after}
     if isinstance(before, int | float) and isinstance(after, int | float):
@@ -172,6 +251,11 @@ def compare_reports(before: ReportLike, after: ReportLike) -> ReportComparison:
     flagged more often (``flag_counts["ANY"]``), more intervals are missing,
     or completeness fell. A removed column does not count as worse; check
     ``columns_removed``.
+
+    Raises ``ValueError`` for a different ``schema_version``, for a
+    single-series report against a frame report, and for input that lacks
+    the report fields the comparison reads (e.g. a saved comparison, or a
+    hand-edited report); the message names the first bad field.
     """
     b, a = _as_dict(before), _as_dict(after)
     for side, data in (("before", b), ("after", a)):
@@ -180,6 +264,7 @@ def compare_reports(before: ReportLike, after: ReportLike) -> ReportComparison:
                 f"{side} report has schema_version {data.get('schema_version')!r}; "
                 f"this package compares schema {REPORT_SCHEMA_VERSION}"
             )
+        _check_report(data, side)
     b_frame, a_frame = "columns" in b, "columns" in a
     if b_frame != a_frame:
         raise ValueError("cannot compare a single-series report with a multi-column report")

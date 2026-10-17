@@ -54,6 +54,12 @@ versioning: [SemVer](https://semver.org/).
   one with bits no flag uses, instead of ignoring the unknown bits.
 - `MeasurementMetadata` raises `TypeError` for a non-string `name` or
   `timezone`.
+- `compare_reports` (and `energydata-kit compare`) accepted a saved
+  comparison as a report, since both carry `schema_version` "1": with
+  `--fail-if-worse` the command exited 1 ("worse") or 0 without any error.
+  A hand-edited report crashed with a traceback and exit 1. Input lacking
+  the report fields the comparison reads now raises `ValueError` naming
+  the first bad field; the command exits 2 (OSS-47).
 
 ## [0.1.0] - 2026-10-16
 
