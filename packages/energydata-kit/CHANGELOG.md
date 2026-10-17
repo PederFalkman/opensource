@@ -6,6 +6,11 @@ versioning: [SemVer](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- `--format markdown` for `energydata-kit report` and `compare`: the same
+  summary as `--format text`, as Markdown headings and bullet lists to
+  paste into an issue or pull request. Column names are escaped. Built
+  from the same facts as the text summary, whose output is unchanged
+  (OSS-55).
 - `report_schema.json`: a JSON Schema (draft 2020-12) for report schema 1,
   covering single-series reports, frame reports and comparisons. It ships in
   the package; the tests validate every golden report and a set of generated

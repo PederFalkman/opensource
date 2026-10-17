@@ -457,6 +457,58 @@ def test_output_files_use_lf_on_every_platform(tmp_path, monkeypatch):
         assert b"\r" not in raw and raw.endswith(b"\n"), path.name
 
 
+def _facts(text_summary):
+    """(label, value) pairs from --format text, e.g. ("flagged rows", "2 (...)")."""
+    return [tuple(line.strip().split(": ", 1)) for line in text_summary.splitlines() if line.startswith("  ")]
+
+
+@pytest.mark.parametrize(
+    "columns", [["--value-col", "kwh"], ["--value-col", "kwh", "--value-col", "quality2"]]
+)
+def test_markdown_report_has_the_text_summary_facts(tmp_path, columns):
+    csv = DEFECTIVE.replace("quality\n", "quality,quality2\n").replace(",ok\n", ",ok,1\n")
+    path = str(write(tmp_path, csv))
+    common = ["report", path, "--timestamp-col", "time", "--assume-tz", "Europe/Stockholm", "--freq", "15min"]
+    _, text, _ = run(*common, *columns, "--format", "text")
+    code, md, err = run(*common, *columns, "--format", "markdown")
+    assert (code, err) == (0, "")
+    assert md.startswith("# Quality report: ") and "Fingerprint `" in md
+    for label, value in _facts(text):  # same facts, so the formats cannot drift apart
+        if label.startswith(("kwh", "quality2")):
+            continue  # per-column headline lines in text; headings in Markdown
+        assert f"- **{label}:** {value}" in md or f"- {label}: {value}" in md, (label, value)
+    if len(columns) > 2:
+        assert "\n## kwh\n" in md and "\n## quality2\n" in md
+
+
+def test_markdown_escapes_column_names(tmp_path):
+    path = write(tmp_path, CLEAN.replace("kwh", "a_b|c*"))
+    code, md, _ = run("report", str(path), "--freq", "15min", "--format", "markdown")
+    assert code == 0 and md.splitlines()[0] == r"# Quality report: a\_b\|c\*"
+
+
+def test_markdown_comparison(tmp_path):
+    before, after = tmp_path / "b.json", tmp_path / "a.json"
+    run("report", str(write(tmp_path, CLEAN)), "--freq", "15min", "-o", str(before))
+    run(
+        "report",
+        str(write(tmp_path, CLEAN.replace("2024-01-01T01:30:00Z,1.50\n", ""), "gap.csv")),
+        "--freq",
+        "15min",
+        "-o",
+        str(after),
+    )
+    code, md, _ = run("compare", str(before), str(after), "--format", "markdown")
+    _, text, _ = run("compare", str(before), str(after), "--format", "text")
+    assert code == 0
+    assert md.splitlines()[:3] == ["# Report comparison", "", f"**{text.splitlines()[0]}**"]
+    assert "\n## series\n" in md
+    for line in text.splitlines()[2:]:
+        assert f"- {line.strip()}" in md
+    _, same, _ = run("compare", str(before), str(before), "--format", "markdown")
+    assert same.rstrip().endswith("No changes.")
+
+
 def test_usage_errors_and_version(capsys):
     with pytest.raises(SystemExit) as exc:
         main(["report"])
