@@ -1,5 +1,6 @@
 {
   "completeness": 0.984375,
+  "completeness_excluding_outages": null,
   "duplicate_timestamps": [
     "2024-03-30T10:00:00+00:00"
   ],
@@ -70,6 +71,7 @@
   "n_duplicate_timestamps": 1,
   "n_expected_intervals": 192,
   "n_gaps": 2,
+  "n_missing_explained": 0,
   "n_missing_intervals": 3,
   "n_rows": 190,
   "package_version": "*",
@@ -82,6 +84,7 @@
     "cumulative": false,
     "freq": "P0DT0H15M0S",
     "jump_max_delta": 15,
+    "known_outages": [],
     "max_listed": 100,
     "origin": null,
     "stale_atol": 0.0,

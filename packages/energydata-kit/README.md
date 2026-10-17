@@ -22,6 +22,7 @@ cover for metered energy data:
 | Explicit start/end interval relabelling | `relabel_intervals`, `interval_bounds` |
 | Unit / aggregation consistency advice | `check_metadata_consistency`, `MetadataIssue` |
 | Completeness per local calendar day (DST-aware: 92/96/100 at 15 min) | `local_day_completeness` |
+| Known outage periods: missing intervals inside them counted as explained | `assess_quality(..., known_outages=...)`, `--known-outage` |
 | Reproducible JSON quality reports, with a JSON Schema for the format | `assess_quality`, `QualityReport`, `fingerprint_series`, `report_schema.json` |
 | One report for several columns sharing a timestamp index, with per-column options | `assess_frame`, `FrameQualityReport` |
 | Flags for several columns at once (`quality_flag_<column>` each) | `flag_frame`, `flag_column` |
@@ -138,8 +139,8 @@ schema = json.loads(resources.files("energydata_kit").joinpath("report_schema.js
 ```
 
 The test suite validates every golden report against it, so the schema and
-the code cannot drift apart. Schema 1 does not change; a new field or a
-changed one means schema 2.
+the code cannot drift apart. Schema 1 is fixed from the 0.1.0 release on;
+after that, a new field or a changed one means schema 2.
 
 ## Design rules
 

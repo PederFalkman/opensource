@@ -509,6 +509,27 @@ def test_markdown_comparison(tmp_path):
     assert same.rstrip().endswith("No changes.")
 
 
+def test_known_outage_option(tmp_path):
+    path = str(write(tmp_path, CLEAN.replace("2024-01-01T01:30:00Z,1.50\n", "")))
+    outage = ["--known-outage", "2024-01-01T01:15:00+00:00", "2024-01-01T01:45Z"]
+    code, out, err = run("report", path, "--freq", "15min", *outage)
+    data = json.loads(out)
+    assert (code, err) == (0, "")
+    assert data["n_missing_explained"] == 1 and data["completeness_excluding_outages"] == 1.0
+    assert data["parameters"]["known_outages"] == [["2024-01-01T01:15:00+00:00", "2024-01-01T01:45:00+00:00"]]
+    _, text, _ = run("report", path, "--freq", "15min", *outage, "--format", "text")
+    assert (
+        "  known outages: 1 period(s); 1 of the missing intervals inside; completeness without them 100.00%"
+        in text
+    )
+    _, md, _ = run("report", path, "--freq", "15min", *outage, "--format", "markdown")
+    assert "- **known outages:** 1 period(s);" in md
+    code, _, err = run(
+        "report", path, "--freq", "15min", "--known-outage", "2024-01-01T01:15", "2024-01-01T01:45Z"
+    )
+    assert code == 2 and "timezone-aware" in err
+
+
 def test_usage_errors_and_version(capsys):
     with pytest.raises(SystemExit) as exc:
         main(["report"])

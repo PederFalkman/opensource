@@ -23,6 +23,7 @@ _COUNTS = (
     "n_rows",
     "n_expected_intervals",
     "n_missing_intervals",
+    "n_missing_explained",
     "n_gaps",
     "n_duplicate_timestamps",
 )
@@ -94,14 +95,14 @@ def _check_series(data: Any, side: str, where: str) -> None:
     )
     for key in _COUNTS:
         _require(_is_count(data.get(key)), side, f"{prefix}{key}", "a count or null")
-    completeness = data.get("completeness")
-    _require(
-        completeness is None
-        or (isinstance(completeness, int | float) and not isinstance(completeness, bool)),
-        side,
-        f"{prefix}completeness",
-        "a number or null",
-    )
+    for key in ("completeness", "completeness_excluding_outages"):
+        share = data.get(key)
+        _require(
+            share is None or (isinstance(share, int | float) and not isinstance(share, bool)),
+            side,
+            f"{prefix}{key}",
+            "a number or null",
+        )
     gaps = data.get("gaps")
     _require(
         isinstance(gaps, list)
@@ -178,8 +179,9 @@ def _compare_series(before: dict[str, Any], after: dict[str, Any]) -> tuple[dict
         if before.get(key) != after.get(key):
             changes[key] = _pair(before.get(key), after.get(key))
     counts = {k: _pair(before.get(k), after.get(k)) for k in _COUNTS if before.get(k) != after.get(k)}
-    if before.get("completeness") != after.get("completeness"):
-        counts["completeness"] = _pair(before.get("completeness"), after.get("completeness"))
+    for key in ("completeness", "completeness_excluding_outages"):
+        if before.get(key) != after.get(key):
+            counts[key] = _pair(before.get(key), after.get(key))
     if counts:
         changes["counts"] = counts
 

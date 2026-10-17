@@ -114,3 +114,13 @@ def test_rejects_a_frame_report_with_inconsistent_columns():
     broken["columns"]["p"]["metadata_issues"] = [{"message": "no code"}]
     with pytest.raises(ValueError, match=r"columns\.p\.metadata_issues"):
         compare_reports(broken, frame)
+
+
+def test_known_outages_appear_in_the_comparison():
+    s = make_synthetic_series(periods=96, drop=[10, 11])
+    before = assess_quality(s, freq="15min")
+    after = assess_quality(s, freq="15min", known_outages=[("2024-01-01T02:30Z", "2024-01-01T02:45Z")])
+    counts = compare_reports(before, after).changes[""]["counts"]
+    assert counts["n_missing_explained"] == {"before": 0, "after": 2, "delta": 2}
+    assert counts["completeness_excluding_outages"] == {"before": None, "after": 1.0}
+    assert not compare_reports(before, after).worse

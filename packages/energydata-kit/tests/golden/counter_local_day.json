@@ -1,5 +1,6 @@
 {
   "completeness": 1.0,
+  "completeness_excluding_outages": null,
   "duplicate_timestamps": [],
   "expected_resolution": "D",
   "fingerprint": "5ebcc4cc70920a53ee45cfebb60a68d60327f0f3c93b1ae22537f5f7d021c2aa",
@@ -25,6 +26,7 @@
   "n_duplicate_timestamps": 0,
   "n_expected_intervals": 3,
   "n_gaps": 0,
+  "n_missing_explained": 0,
   "n_missing_intervals": 0,
   "n_rows": 72,
   "package_version": "*",
@@ -34,6 +36,7 @@
     "cumulative": true,
     "freq": "D",
     "jump_max_delta": null,
+    "known_outages": [],
     "max_listed": 100,
     "origin": null,
     "stale_atol": 0.0,

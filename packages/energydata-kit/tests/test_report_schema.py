@@ -61,6 +61,9 @@ def _variants():
         ),
         "calendar": ek.assess_quality(daily.tz_convert("UTC"), freq="D", tz="Europe/Stockholm"),
         "step longer than a day": ek.assess_quality(s, freq="2D"),
+        "known outages": ek.assess_quality(
+            s, freq="15min", known_outages=[("2024-01-01T01:00Z", "2024-01-01T02:00Z")]
+        ),
         "frame": ek.assess_frame(frame, freq="15min", per_column={"a": {"bounds": (0, 10)}}),
         "frame, no step": ek.assess_frame(frame),
     }

@@ -6,6 +6,15 @@ versioning: [SemVer](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Known outages: `assess_quality(..., known_outages=[(start, end), ...])`,
+  `assess_frame(..., known_outages=...)` and `energydata-kit report
+  --known-outage START END` take periods in which data is known to be
+  missing. Reports gain `n_missing_explained` (missing intervals inside
+  those periods), `completeness_excluding_outages` and
+  `parameters.known_outages`; gaps, totals, completeness and flags are
+  unchanged. `compare_reports` and the text and Markdown summaries show the
+  new figures. The fields are part of report schema 1, which is fixed from
+  the 0.1.0 release on (OSS-56).
 - `--format markdown` for `energydata-kit report` and `compare`: the same
   summary as `--format text`, as Markdown headings and bullet lists to
   paste into an issue or pull request. Column names are escaped. Built

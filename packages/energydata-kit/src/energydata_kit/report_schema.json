@@ -220,6 +220,17 @@
             "number",
             "null"
           ]
+        },
+        "known_outages": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          }
         }
       },
       "required": [
@@ -228,6 +239,7 @@
         "cumulative",
         "freq",
         "jump_max_delta",
+        "known_outages",
         "max_listed",
         "origin",
         "stale_atol",
@@ -454,10 +466,26 @@
         },
         "local_days": {
           "$ref": "#/$defs/local_days"
+        },
+        "n_missing_explained": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "completeness_excluding_outages": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
         }
       },
       "required": [
         "completeness",
+        "completeness_excluding_outages",
         "duplicate_timestamps",
         "expected_resolution",
         "fingerprint",
@@ -472,6 +500,7 @@
         "n_duplicate_timestamps",
         "n_expected_intervals",
         "n_gaps",
+        "n_missing_explained",
         "n_missing_intervals",
         "n_rows",
         "package_version",

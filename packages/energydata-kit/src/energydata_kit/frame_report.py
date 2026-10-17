@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Collection, Mapping, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -135,6 +135,7 @@ def assess_frame(
     origin: pd.Timestamp | None = None,
     tz: str | None = None,
     per_column: Mapping[str, Mapping[str, Any]] | None = None,
+    known_outages: Iterable[tuple[pd.Timestamp | str, pd.Timestamp | str]] = (),
     max_listed: int = 100,
 ) -> FrameQualityReport:
     """Run :func:`energydata_kit.assess_quality` on each column of ``frame``.
@@ -150,7 +151,7 @@ def assess_frame(
     metadata:
         ``MeasurementMetadata`` per column name; each entry's ``name`` must
         equal its key. Columns without an entry get no metadata.
-    freq, origin, tz, max_listed:
+    freq, origin, tz, known_outages, max_listed:
         Shared by all columns, as in :func:`energydata_kit.assess_quality`.
         Without ``freq``, each column uses its own ``metadata.resolution``.
     bounds, stale_min_run, stale_atol, stale_exclude, cumulative, counter_tolerance, jump_max_delta:
@@ -179,7 +180,13 @@ def assess_frame(
         options = {**shared, "metadata": metas.get(name), **overrides_by_column.get(name, {})}
         series = frame[name].rename(name)
         reports[name] = assess_quality(
-            series, freq=freq, origin=origin, tz=tz, max_listed=max_listed, **options
+            series,
+            freq=freq,
+            origin=origin,
+            tz=tz,
+            known_outages=known_outages,
+            max_listed=max_listed,
+            **options,
         )
 
     digest = hashlib.sha256()

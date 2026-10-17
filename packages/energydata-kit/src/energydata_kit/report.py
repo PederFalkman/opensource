@@ -10,7 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import operator
-from collections.abc import Collection
+from collections.abc import Collection, Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -21,6 +21,7 @@ from energydata_kit import __version__
 from energydata_kit.flags import FLAG_COLUMN, QualityFlag, flag_series
 from energydata_kit.intervals import (
     Gap,
+    _aware,
     expected_grid,
     find_duplicate_timestamps,
     find_missing_intervals,
@@ -46,6 +47,29 @@ def _iso_duration(td: pd.Timedelta | None) -> str | None:
 def _freq_label(freq: str | pd.Timedelta | None) -> str | None:
     # Calendar steps have no ISO 8601 duration; report the pandas frequency.
     return None if freq is None else str(freq)
+
+
+def _outages(
+    known_outages: Iterable[tuple[pd.Timestamp | str, pd.Timestamp | str]],
+) -> list[tuple[int, int]]:
+    """Validate ``known_outages`` as UTC nanosecond ``(start, end)`` pairs, both ends included."""
+    given: object = known_outages  # a single string would otherwise be split into characters
+    if isinstance(given, str | bytes):
+        raise TypeError("known_outages must be a list of (start, end) pairs")
+    result = []
+    for item in known_outages:
+        pair: object = item
+        if isinstance(pair, str | bytes) or len(item) != 2:
+            raise ValueError(f"each known outage must be a (start, end) pair, got {item!r}")
+        start, end = (_aware(ts, "known outage") for ts in item)
+        if start > end:
+            raise ValueError(f"known outage starts after it ends: {start.isoformat()} > {end.isoformat()}")
+        result.append((start.as_unit("ns").value, end.as_unit("ns").value))
+    return result
+
+
+def _iso_ns(value: int) -> str:
+    return pd.Timestamp(value, unit="ns", tz="UTC").isoformat()
 
 
 def _plain(value: Any) -> Any:
@@ -100,6 +124,8 @@ class QualityReport:
     truncated: dict[str, bool] = field(default_factory=dict)
     metadata_issues: list[MetadataIssue] = field(default_factory=list)
     local_days: dict[str, Any] | None = None
+    n_missing_explained: int | None = None
+    completeness_excluding_outages: float | None = None
 
     @property
     def n_flagged_rows(self) -> int:
@@ -129,6 +155,8 @@ class QualityReport:
             ],
             "n_gaps": self.n_gaps,
             "n_missing_intervals": self.n_missing_intervals,
+            "n_missing_explained": self.n_missing_explained,
+            "completeness_excluding_outages": self.completeness_excluding_outages,
             "duplicate_timestamps": self.duplicate_timestamps,
             "n_duplicate_timestamps": self.n_duplicate_timestamps,
             "truncated": self.truncated,
@@ -155,6 +183,7 @@ def assess_quality(
     jump_max_delta: float | None = None,
     origin: pd.Timestamp | None = None,
     tz: str | None = None,
+    known_outages: Iterable[tuple[pd.Timestamp | str, pd.Timestamp | str]] = (),
     max_listed: int = 100,
 ) -> QualityReport:
     """Run all checks on ``series`` and return a :class:`QualityReport`.
@@ -174,6 +203,15 @@ def assess_quality(
     step (see :func:`energydata_kit.expected_grid`); the per-local-day
     section is only produced for fixed steps.
 
+    ``known_outages`` lists periods in which data is known to be missing
+    (maintenance, a meter swap), as timezone-aware ``(start, end)`` pairs,
+    both ends included. Missing grid timestamps inside them are counted in
+    ``n_missing_explained``; ``completeness_excluding_outages`` leaves the
+    grid timestamps inside them out entirely (``None`` when no outages are
+    given, or when they cover the whole grid). Gaps, ``n_missing_intervals``,
+    ``completeness`` and flags are unchanged: an outage explains a gap, it
+    does not hide it.
+
     ``stale_min_run``, ``cumulative`` and ``jump_max_delta`` enable the opt-in
     stale-value, counter-decrease and jump checks; ``stale_atol``,
     ``stale_exclude`` and ``counter_tolerance`` tune them (see
@@ -186,6 +224,7 @@ def assess_quality(
     and is not modified.
     """
     max_listed = operator.index(max_listed)  # TypeError for 1.5; accepts numpy integers
+    outages = _outages(known_outages)
     if max_listed < 0:
         raise ValueError("max_listed must be >= 0")
     if freq is None and metadata is not None:
@@ -222,6 +261,8 @@ def assess_quality(
     gaps: list[Gap] = []
     n_expected = None
     completeness = None
+    n_missing_explained = None
+    completeness_excluding_outages = None
     if grid_freq is not None and len(index):
         gaps = find_missing_intervals(index, grid_freq, origin=origin, tz=tz)
         grid = expected_grid(index, grid_freq, origin=origin, tz=tz)
@@ -229,6 +270,18 @@ def assess_quality(
         present = int(on_index(grid, index).sum())
         # No grid point inside the data's time span (possible with origin=): undefined.
         completeness = round(present / n_expected, 6) if n_expected else None
+        n_missing_explained = 0
+        if outages:
+            grid_ns = utc_ns(grid)
+            inside = np.zeros(len(grid), dtype=bool)
+            for lo, hi in outages:
+                inside |= (grid_ns >= lo) & (grid_ns <= hi)
+            missing = ~on_index(grid, index)
+            n_missing_explained = int(np.count_nonzero(missing & inside))
+            outside = int(np.count_nonzero(~inside))
+            if outside:
+                present_outside = int(np.count_nonzero(~missing & ~inside))
+                completeness_excluding_outages = round(present_outside / outside, 6)
 
     local_days = None
     if step is not None and len(index):
@@ -272,11 +325,14 @@ def assess_quality(
             "cumulative": _plain(cumulative),
             "counter_tolerance": _plain(counter_tolerance),
             "jump_max_delta": _plain(jump_max_delta),
+            "known_outages": [[_iso_ns(lo), _iso_ns(hi)] for lo, hi in outages],
         },
         metadata=None if metadata is None else metadata.to_dict(),
         truncated=truncated,
         metadata_issues=[] if metadata is None else check_metadata_consistency(metadata),
         local_days=local_days,
+        n_missing_explained=n_missing_explained,
+        completeness_excluding_outages=completeness_excluding_outages,
     )
 
 

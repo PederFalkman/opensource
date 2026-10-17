@@ -276,6 +276,20 @@ assert list(flags.columns) == ["power_kw", "quality_flag_power_kw", "energy_kwh"
 assert ek.decode_flags(flags[ek.flag_column("energy_kwh")].iloc[3]) == ["COUNTER_DECREASE"]
 ```
 
+When a gap was expected, say during maintenance, pass the period as a
+known outage. The gap is still reported, but the report says how many
+missing intervals it explains and how complete the data is without it:
+
+```python
+maintenance = ("2024-01-01T02:30Z", "2024-01-01T02:45Z")  # both ends included
+explained = ek.assess_quality(series, metadata=meta, known_outages=[maintenance])
+assert explained.n_missing_intervals == 2 and explained.n_missing_explained == 2
+assert explained.completeness_excluding_outages == 1.0
+```
+
+The command line takes the same periods with `--known-outage START END`,
+repeated for several.
+
 ## 9. Exchanging metadata as a Table Schema
 
 Metadata can travel with a CSV file as a

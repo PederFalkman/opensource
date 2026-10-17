@@ -134,3 +134,40 @@ def test_nat_in_index_is_rejected():
     s = pd.Series([1.0, 2.0], index=pd.DatetimeIndex([pd.Timestamp("2024-01-01T00:00Z"), pd.NaT]))
     with pytest.raises(ValueError, match="NaT"):
         assess_quality(s, freq="15min")
+
+
+def test_known_outages_explain_missing_intervals():
+    s = make_synthetic_series(periods=96, drop=[10, 11, 12, 40, 41])  # gaps at 02:30-03:00 and 10:00-10:15
+    outage = ("2024-01-01T02:00Z", "2024-01-01T03:59Z")  # grid 02:00-03:45, 8 points, 3 of them missing
+    r = assess_quality(s, freq="15min", known_outages=[outage])
+    # Gaps, totals, completeness and flags are unchanged: an outage explains a gap, it does not hide it.
+    plain = assess_quality(s, freq="15min")
+    assert (r.n_gaps, r.n_missing_intervals, r.completeness) == (
+        plain.n_gaps,
+        plain.n_missing_intervals,
+        plain.completeness,
+    )
+    assert r.flag_counts == plain.flag_counts and r.fingerprint == plain.fingerprint
+    assert r.n_missing_explained == 3
+    assert r.completeness_excluding_outages == round(86 / 88, 6)
+    assert r.parameters["known_outages"] == [["2024-01-01T02:00:00+00:00", "2024-01-01T03:59:00+00:00"]]
+    # Without outages: nothing explained, nothing excluded; without a step: not computed.
+    assert (plain.n_missing_explained, plain.completeness_excluding_outages) == (0, None)
+    assert assess_quality(s, known_outages=[outage]).n_missing_explained is None
+    # An outage covering the whole grid leaves nothing to measure.
+    everything = assess_quality(s, freq="15min", known_outages=[("2023-01-01T00:00Z", "2025-01-01T00:00Z")])
+    assert everything.n_missing_explained == 5 and everything.completeness_excluding_outages is None
+
+
+@pytest.mark.parametrize(
+    ("outages", "error"),
+    [
+        ([("2024-01-01T02:00", "2024-01-01T03:00")], "timezone-aware"),
+        ([("2024-01-01T05:00Z", "2024-01-01T03:00Z")], "starts after it ends"),
+        ([("2024-01-01T05:00Z",)], r"\(start, end\) pair"),
+        ("2024-01-01T05:00Z", "list of"),
+    ],
+)
+def test_known_outages_are_validated(outages, error):
+    with pytest.raises((ValueError, TypeError), match=error):
+        assess_quality(defective(), freq="15min", known_outages=outages)
