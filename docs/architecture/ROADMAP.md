@@ -757,13 +757,21 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       with exit 2 before anything is written, instead of being flagged on
       another column's grid while its report has none.
 
-### OSS-73: one rule for the grid taken from metadata — this change
+### OSS-73: one rule for the grid taken from metadata — merged in [#77](https://github.com/PederFalkman/opensource/pull/77)
 
 - [x] From the second review's code-quality notes, with no behaviour
       change: the helper that picks the grid from metadata lives in
       `metadata.py`, and fixed vs calendar is decided by `to_step()`, the
       rule that validates resolutions, instead of a second check with a
       pandas 2/3 special case. A test pins the classification on both.
+
+### OSS-74: build the grid once in `assess_quality` — this change
+
+- [x] The last note from the second review: gaps, completeness and
+      known outages share one expected grid and one presence test
+      instead of building them two or three times. Reports are
+      byte-identical; `assess_quality` is 10–40 % faster on long series.
+      The measurements are in `PERFORMANCE.md`.
 
 ## Explicitly not planned
 

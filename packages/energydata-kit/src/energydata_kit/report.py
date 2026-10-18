@@ -21,9 +21,9 @@ from energydata_kit import __version__
 from energydata_kit.flags import FLAG_COLUMN, QualityFlag, flag_series
 from energydata_kit.intervals import (
     Gap,
+    _gaps,
     expected_grid,
     find_duplicate_timestamps,
-    find_missing_intervals,
     to_step,
 )
 from energydata_kit.metadata import IntervalLabel, MeasurementMetadata, _grid_from_metadata
@@ -288,10 +288,12 @@ def assess_quality(
     n_missing_explained = None
     completeness_excluding_outages = None
     if grid_freq is not None and len(index):
-        gaps = find_missing_intervals(index, grid_freq, origin=origin, tz=tz)
+        # One grid and one presence test serve gaps, completeness and known outages.
         grid = expected_grid(index, grid_freq, origin=origin, tz=tz)
+        on_grid = on_index(grid, index)
+        gaps = _gaps(grid, on_grid)
         n_expected = len(grid)
-        present = int(on_index(grid, index).sum())
+        present = int(np.count_nonzero(on_grid))
         # No grid point inside the data's time span (possible with origin=): undefined.
         completeness = round(present / n_expected, 6) if n_expected else None
         n_missing_explained = 0
@@ -300,7 +302,7 @@ def assess_quality(
             inside = np.zeros(len(grid), dtype=bool)
             for lo, hi in outages:
                 inside |= (grid_ns >= lo) & (grid_ns <= hi)
-            missing = ~on_index(grid, index)
+            missing = ~on_grid
             n_missing_explained = int(np.count_nonzero(missing & inside))
             outside = int(np.count_nonzero(~inside))
             if outside:

@@ -222,7 +222,12 @@ def find_missing_intervals(
     grid = expected_grid(index, freq, start=start, end=end, origin=origin, tz=tz)
     if len(grid) == 0:
         return []
-    missing_pos = np.flatnonzero(~on_index(grid, index))
+    return _gaps(grid, on_index(grid, index))
+
+
+def _gaps(grid: pd.DatetimeIndex, present: np.ndarray) -> list[Gap]:
+    """Runs of grid timestamps where ``present`` (aligned with ``grid``) is false."""
+    missing_pos = np.flatnonzero(~present)
     if missing_pos.size == 0:
         return []
     breaks = np.flatnonzero(np.diff(missing_pos) > 1) + 1
