@@ -833,7 +833,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       repository check and 403 tests on the lowest supported versions
       pass. The draft release-PR description has the new digests.
 
-### OSS-81: unintended release merge reverted — this change
+### OSS-81: unintended release merge reverted — merged in [#84](https://github.com/PederFalkman/opensource/pull/84)
 
 - [x] #82 merged the release rehearsal branch into `main` before the
       release decisions; by the owner's decision it is reverted here.
@@ -844,6 +844,22 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       (or re-applies the three release edits) instead of merging
       `claude/oss-76-release-refresh` again, which git would treat as
       already merged.
+
+### OSS-82: pause until the release decisions
+
+- [x] No new work by the owner's choice, after #84 restored the guard.
+
+### OSS-83: upload guard tied to the decision record — this change
+
+- [x] `check_release_readiness.py --guard`, run in CI and by
+      `check_all.py` on every change: removing `Private :: Do Not Upload`
+      fails unless `RELEASE_DECISIONS.md` has the owner's line
+      `**D6 approved:** YYYY-MM-DD ...`. #82 passed CI because it removed
+      the guard and inverted its test together; that no longer works.
+- [x] The strict readiness check (and so the tag build) also requires
+      the D6 line; the release dry run adds a placeholder one to its copy,
+      as it does for the licence. The checklist, gates and D6 say the
+      release PR carries the approval line with the guard removal.
 
 ## Explicitly not planned
 
