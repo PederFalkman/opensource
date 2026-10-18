@@ -832,6 +832,18 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       repository check and 403 tests on the lowest supported versions
       pass. The draft release-PR description has the new digests.
 
+### OSS-81: unintended release merge reverted — this change
+
+- [x] #82 merged the release rehearsal branch into `main` before the
+      release decisions; by the owner's decision it is reverted here.
+      The upload guard, the readiness test and the placeholder
+      changelog date are back as they were after #81; nothing was
+      tagged or published.
+- [x] Because a merge was reverted, the release PR reverts this revert
+      (or re-applies the three release edits) instead of merging
+      `claude/oss-76-release-refresh` again, which git would treat as
+      already merged.
+
 ## Explicitly not planned
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
