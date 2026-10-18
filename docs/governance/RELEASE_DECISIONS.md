@@ -1,33 +1,58 @@
 # Release decisions for energydata-kit 0.1.0
 
 **Status:** prepared 2026-10-16 (OSS-22), facts refreshed 2026-10-17
-(OSS-48) · **For:** management, legal counsel
+(OSS-48) and 2026-10-18 (OSS-60) · **For:** management, legal counsel
 and the technical lead who sign off the release gates in `RELEASE_GATES.md`.
 
 This page collects every decision that still blocks the first release, the
 evidence already in the repository for each, and the exact questions to
 answer. It does not make any of these decisions. Engineering work for 0.1.0
 is complete; nothing below needs more code before the decisions are made.
-Since the first version of this page, five correctness passes (OSS-40 to
-OSS-47) fixed the bugs they found, and the changelog's `[Unreleased]`
-section has been folded into the 0.1.0 notes, so the only failing
-readiness checks are the ones these decisions resolve (LICENSE, licence
-declaration, upload guard).
+Since the first version of this page, correctness passes (OSS-40 to OSS-49,
+OSS-59) fixed the bugs they found, and the five approved proposals P-2 to
+P-6 were added (OSS-54 to OSS-58; see "What changed since OSS-48" below).
+D3 is decided (Apache-2.0, #66), so the licence checks pass. The readiness
+check fails on two items: *upload guard removed*, which waits on D6, and
+*nothing left unreleased*, because the changelog entries for the work above
+are under `[Unreleased]`. Moving those entries
+into the 0.1.0 section is a changelog edit, made once no other pull request
+touches the changelog, or in the release PR at the latest.
+
+## What changed since OSS-48
+
+What reviewers of D2, D4 and D6 should know about the work added since the
+facts were last refreshed:
+
+- **New optional extra `[parquet]`** (OSS-58): the command line reads
+  Parquet files with `pyarrow>=14.0.1` (Apache-2.0; the minimum fixes
+  CVE-2023-47248). It is not installed by default, is listed in
+  `THIRD_PARTY_LICENSES.md` and the IP-boundary allowlist, and is checked
+  by pip-audit in CI.
+- **New data file in the package:** `report_schema.json` (OSS-54), a JSON
+  Schema for the report format, written for this project.
+- **Report schema 1 gained fields** before its first release (OSS-56,
+  OSS-57): `n_missing_explained`, `completeness_excluding_outages`,
+  `parameters.known_outages` and the frame-level `timestamps` section. The
+  changelog says schema 1 is fixed from the 0.1.0 release on.
+- **`--format markdown`** (OSS-55): a second rendering of the existing
+  summary, with no new facts.
+- **Platforms:** Python 3.14 (OSS-51) and Windows and macOS (OSS-52) are
+  tested in CI.
 
 ## Where things stand
 
 | Gate | State | Evidence in the repository |
 |---|---|---|
 | G1 Ownership | **Open: decision needed** | See D2 below |
-| G2 Licence | **Open: decision needed** | See D3 below |
+| G2 Licence | **Passed 2026-10-18**: Apache-2.0 | D3 below; `LICENSE` at the root and in the package (#66) |
 | G3 IP boundary review | **Open: review needed** | See D4 below |
 | G4 Third-party licences | Evidence ready; needs legal confirmation | `THIRD_PARTY_LICENSES.md`, kept in sync by `tools/check_third_party.py` in CI |
-| G5 CI green | Green on `main`; re-checked on the release commit | `.github/workflows/ci.yml`, `security.yml` |
-| G6 Documentation honest | Reviewed in OSS-20 and OSS-45; re-checked in the release PR | Package `README.md` (capabilities and known limitations), `CHANGELOG.md`, `examples/GUIDE.md` (executed by the tests) |
+| G5 CI green | Green on `main` (Python 3.11 to 3.14 on Linux, lowest supported dependencies, Windows and macOS); re-checked on the release commit | `.github/workflows/ci.yml`, `security.yml` |
+| G6 Documentation honest | Reviewed in OSS-20 and OSS-45; README and guide extended with each of P-2 to P-6; re-checked in the release PR | Package `README.md` (capabilities and known limitations), `CHANGELOG.md`, `examples/GUIDE.md` (executed by the tests) |
 | G7 Publication | **Open: decision needed** | See D6 below |
 
 The mechanical release steps are rehearsed on every change by the *Release
-dry run* CI job (`tools/release_dry_run.py`), with a placeholder licence. The
+dry run* CI job (`tools/release_dry_run.py`), now with the real licence. The
 real release PR will therefore only differ by the decisions recorded here.
 
 ## Decisions
@@ -35,8 +60,10 @@ real release PR will therefore only differ by the decisions recorded here.
 ### D1. Repository visibility (owner: management)
 
 The GitHub repository is **public** (observed 2026-10-15), so every pushed
-commit and branch is already visible. Without a LICENSE file the default is
-"all rights reserved": people may read the code but not reuse it.
+commit and branch is already visible. Since #66 (2026-10-18) it carries an
+Apache-2.0 `LICENSE`, so readers may reuse the code under those terms; G1
+(ownership) and G3 (IP review) are still open, and a licence does not
+replace either (see `RELEASE_GATES.md`).
 
 - **Question:** keep the repository public while G1–G3 are open, or make it
   private until they pass?
@@ -48,12 +75,13 @@ commit and branch is already visible. Without a LICENSE file the default is
 
 - **Question:** does the publishing legal entity own all code in the
   repository, so that it can license it?
-- **Facts for the answer** (from `git log` on `main` at `0b5be89`, after #53,
-  2026-10-17): 125 commits.
-  - 63 by an AI coding assistant (author "Claude", with a `Co-Authored-By`
-    trailer) in sessions run by the repository owner: 55 contain the code,
-    docs and roadmap updates, 8 merge `main` into a pull-request branch.
-  - 58 by the repository owner: 52 pull-request merges, 4 merges of `main`
+- **Facts for the answer** (from `git log` on `main` at `bb09342`, after #66,
+  2026-10-18): 157 commits.
+  - 82 by an AI coding assistant (author "Claude", with a `Co-Authored-By`
+    trailer) in sessions run by the repository owner: 72 contain the code,
+    docs, licence and roadmap updates, 10 merge `main` into a pull-request
+    branch.
+  - 71 by the repository owner: 65 pull-request merges, 4 merges of `main`
     into a pull-request branch, and 2 own commits (the initial commit and a
     roadmap note).
   - 4 Dependabot updates of pinned GitHub Actions.
@@ -92,7 +120,9 @@ and whether external contributions need a CLA or DCO. A licence grant is not
 an ownership opinion.
 
 Apache-2.0 is the preferred candidate. `THIRD_PARTY_LICENSES.md` assumes it
-and found no conflict: every shipped dependency is permissively licensed.
+and found no conflict: every shipped dependency is permissively licensed,
+and so are the two optional extras (`[pandera]`, MIT, with its own
+dependencies listed; `[parquet]`, pyarrow, Apache-2.0).
 
 - **Questions:**
   1. Apache-2.0, or another permissive licence (MIT, BSD-3-Clause)?
@@ -121,6 +151,11 @@ release contains no proprietary code, data, parameters or algorithms.
   - `docs/architecture/DUPLICATION_REGISTER.md`: no code copied from any
     project; similar public tools are named where behaviour overlaps.
   - Test data is synthetic (`energydata_kit.synthetic` and inline values).
+  - Known outages (OSS-56) are periods the caller lists; the package only
+    counts missing intervals inside them. It does not detect, predict,
+    estimate or recover outages, and it fills no data. A reviewer may want
+    to confirm this stays clear of the operational and recovery logic that
+    `IP_BOUNDARY.md` excludes.
 - **Questions for the reviewer:**
   1. Does any module reproduce private code, structure or algorithms?
   2. Do any defaults, thresholds, fixtures or examples come from customer
@@ -135,7 +170,8 @@ release contains no proprietary code, data, parameters or algorithms.
 Not a release gate, but it protects the release commit.
 
 - **Suggested settings:** require a pull request; require the CI checks
-  *IP boundary*, the *energydata-kit* test jobs, *energydata-kit packaging*,
+  *IP boundary*, the *energydata-kit* test jobs (Python 3.11 to 3.14, lowest
+  dependencies, `windows-latest`, `macos-latest`), *energydata-kit packaging*,
   *Release dry run*, *Secret scan (gitleaks)*, *Dependency audit
   (pip-audit)* and *Dependency review*; require code-owner review
   (`.github/CODEOWNERS`); block force pushes.
@@ -144,8 +180,8 @@ Not a release gate, but it protects the release commit.
 
 - **Questions:**
   1. Publish to PyPI, or keep releases as GitHub-only build artifacts?
-  2. Confirm the name `energydata-kit`. On 2026-10-16 (OSS-22, OSS-36) and
-     again on 2026-10-17 (OSS-48) the names `energydata-kit` and
+  2. Confirm the name `energydata-kit`. On 2026-10-16 (OSS-22, OSS-36),
+     2026-10-17 (OSS-48) and 2026-10-18 (OSS-60) the names `energydata-kit` and
      `energydata_kit` were not taken on PyPI or TestPyPI (HTTP 404 from
      their JSON APIs); availability can change until the first upload.
   3. Who owns the PyPI project and its trusted-publishing configuration?
@@ -156,15 +192,18 @@ Not a release gate, but it protects the release commit.
 ## Suggested order
 
 1. D1 visibility (it affects how the other steps are handled in public).
-2. D2 ownership, then D3 licence; they usually go to counsel together.
+2. D2 ownership (D3 licence is decided; counsel may still want to see
+   the two together).
 3. D4 IP review, on the commit intended for release.
 4. D5 branch protection, any time before the release PR.
 5. D6 publication approval.
 6. Release PR from `RELEASE_CHECKLIST.md`. `main` already has version
    `0.1.0` and a dated `## [0.1.0]` changelog section (OSS-24, #30; nothing
-   is released; `[Unreleased]` is empty since OSS-48). The release PR folds
-   in anything added there since, sets the section's date to the release day, adds LICENSE (root and
-   package) and the licence declaration, and removes the guard;
+   is released). `[Unreleased]` holds the P-2 to P-6 additions and later
+   fixes; they move into the 0.1.0 section in a changelog-only PR, or the
+   release PR folds them in. The release PR sets the section's date to
+   the release day and removes the guard (LICENSE and the licence
+   declaration are already on `main` since #66);
    then tag `energydata-kit-v0.1.0`. The *Release build* workflow re-runs the
    strict readiness check on the tag and records build provenance.
 
