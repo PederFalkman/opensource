@@ -26,7 +26,7 @@ from energydata_kit.intervals import (
     find_missing_intervals,
     to_step,
 )
-from energydata_kit.metadata import IntervalLabel, MeasurementMetadata
+from energydata_kit.metadata import IntervalLabel, MeasurementMetadata, _grid_from_metadata
 from energydata_kit.semantics import MetadataIssue, check_metadata_consistency, local_day_completeness
 from energydata_kit.timestamps import infer_resolution, on_index, utc_ns
 
@@ -84,28 +84,6 @@ def _outage_end(value: pd.Timestamp | str) -> pd.Timestamp:
             f"known outage {ts.isoformat()} is outside the timestamps pandas can hold "
             f"({pd.Timestamp.min.date()} to {pd.Timestamp.max.date()})"
         ) from None
-
-
-def _grid_from_metadata(
-    freq: str | pd.Timedelta | None, tz: str | None, metadata: MeasurementMetadata | None
-) -> tuple[str | pd.Timedelta | None, str | None]:
-    """The grid step and calendar time zone, taking both from ``metadata`` when not given.
-
-    A resolution with no fixed length (``"MS"``, ``"W-MON"``, ...) is a
-    local-calendar step in the metadata's own time zone, as ``tz=`` would make
-    it; without that it would be refused. ``"D"`` and every fixed resolution
-    (``"15min"``, ``"1h"``) stay fixed-length steps, as before: a daily step in
-    local days needs ``tz=`` (``--tz``) explicitly.
-    """
-    if freq is not None or metadata is None or metadata.resolution is None:
-        return freq, tz
-    freq = metadata.resolution
-    if tz is None:
-        offset = pd.tseries.frequencies.to_offset(freq)
-        # Day is a Tick before pandas 3 and not since; either way "D" is the 24-hour step.
-        if not isinstance(offset, pd.offsets.Tick | pd.offsets.Day):
-            tz = metadata.timezone
-    return freq, tz
 
 
 def _iso_ns(value: int) -> str:

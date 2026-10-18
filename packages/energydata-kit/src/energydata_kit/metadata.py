@@ -157,3 +157,26 @@ class MeasurementMetadata:
     def from_dict(cls, data: dict[str, Any]) -> MeasurementMetadata:
         """Inverse of :meth:`to_dict`; validates like the constructor."""
         return cls(**data)
+
+
+def _grid_from_metadata(
+    freq: str | pd.Timedelta | None, tz: str | None, metadata: MeasurementMetadata | None
+) -> tuple[str | pd.Timedelta | None, str | None]:
+    """The grid step and calendar time zone, taking both from ``metadata`` when not given.
+
+    A resolution with no fixed length (``"MS"``, ``"W-MON"``, ...) is a
+    local-calendar step in the metadata's own time zone, as ``tz=`` would make
+    it; without that it would be refused. ``"D"`` and every fixed resolution
+    (``"15min"``, ``"1h"``) stay fixed-length steps: a daily step in local days
+    needs ``tz=`` (``--tz``) explicitly. Used by the report, the Pandera schema
+    and the command line, so all three take the same grid.
+    """
+    if freq is not None or metadata is None or metadata.resolution is None:
+        return freq, tz
+    freq = metadata.resolution
+    if tz is None:
+        try:
+            to_step(freq)  # the same rule that validated the resolution
+        except ValueError:
+            tz = metadata.timezone
+    return freq, tz

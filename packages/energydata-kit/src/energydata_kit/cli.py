@@ -33,8 +33,8 @@ from energydata_kit.compare import compare_reports
 from energydata_kit.flags import VALUE_COLUMN, flag_series
 from energydata_kit.frame_report import FrameQualityReport, assess_frame, flag_frame
 from energydata_kit.intervals import to_step
-from energydata_kit.metadata import Aggregation, IntervalLabel, MeasurementMetadata
-from energydata_kit.report import QualityReport, _grid_from_metadata, assess_quality
+from energydata_kit.metadata import Aggregation, IntervalLabel, MeasurementMetadata, _grid_from_metadata
+from energydata_kit.report import QualityReport, assess_quality
 from energydata_kit.table_schema import NAMESPACE, from_table_schema
 from energydata_kit.timestamps import TimestampError, normalize_timestamps
 
