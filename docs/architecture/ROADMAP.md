@@ -615,7 +615,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] The readiness check fails only on the upload guard (G7, decision
       D6); `RELEASE_DECISIONS.md` says so.
 
-### OSS-62: Parquet bug hunt — this change
+### OSS-62: Parquet bug hunt — merged in [#69](https://github.com/PederFalkman/opensource/pull/69)
 
 - [x] Probed the Parquet reader against the CSV of the same data: text,
       timezone-aware (ns, us, non-UTC) and naive timestamps, float32,
@@ -627,6 +627,29 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       directory crashed with an `IndexError`; pyarrow's errors named a
       `'<Buffer>'` instead of the file; an unnamed timestamp index now
       says what to change.
+
+### OSS-63: decision brief — no repository change
+
+- [x] A one-page brief of the open decisions D1, D2, D4 and D6 for counsel
+      and management, shared outside the repository; it summarises
+      `RELEASE_DECISIONS.md`, which stays the record.
+
+### OSS-64: Pandera bug hunt — this change
+
+- [x] Compared every Pandera check with `flag_series` on 400 random
+      series (no disagreement on time-ordered data) and probed odd inputs
+      and options.
+- [x] Fixed: with the lowest supported Pandera (0.24) every timestamp
+      check in `pa.Index` raised `TypeError`, and the timezone check called
+      aware timestamps naive; the lowest-dependencies CI job now pins
+      Pandera 0.24. The stale, counter and jump checks compared rows of an
+      unsorted index in file order; they now refuse it, as `flag_series`
+      does. Invalid bounds and `stale_exclude` are rejected when a check is
+      built, not at every validation.
+- [x] Fixed in all checks: `stale_exclude` given as a numpy array of two or
+      more values crashed; a non-numeric `stale_exclude` went unnoticed on
+      empty data; NaN or infinite bounds, `stale_atol`, `stale_exclude` or
+      `counter_tolerance` were accepted and made the report invalid JSON.
 
 ## Explicitly not planned
 

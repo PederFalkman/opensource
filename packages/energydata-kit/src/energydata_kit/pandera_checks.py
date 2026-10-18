@@ -55,10 +55,20 @@ __all__ = [
 _PREFIX = "energydata_kit."
 
 
+def _timestamps(obj: Any) -> pd.Index:
+    # Pandera hands index checks the index as a Series. Recent versions use
+    # ``index.to_series()``, whose own index is the original DatetimeIndex;
+    # Pandera 0.24 passes the timestamps as values with a RangeIndex.
+    if isinstance(obj, pd.Index):
+        return obj
+    if not isinstance(obj.index, pd.DatetimeIndex) and pd.api.types.is_datetime64_any_dtype(obj.dtype):
+        return pd.DatetimeIndex(obj)
+    index: pd.Index = obj.index
+    return index
+
+
 def _index(obj: Any) -> pd.DatetimeIndex:
-    # Pandera hands index checks the index as a Series (``index.to_series()``),
-    # whose own index is the original DatetimeIndex.
-    index = obj if isinstance(obj, pd.Index) else obj.index
+    index = _timestamps(obj)
     if not isinstance(index, pd.DatetimeIndex):
         raise TypeError(f"expected a DatetimeIndex, got {type(index).__name__}")
     return index
@@ -72,8 +82,16 @@ def _rows(obj: Any, ok: Any) -> pd.Series:
     return pd.Series(ok, index=index, dtype=bool)
 
 
+def _in_time_order(s: pd.Series) -> pd.Series:
+    # Stale, counter and jump checks compare consecutive rows; on timestamps out of
+    # order that comparison is meaningless, so refuse it as flag_series does.
+    if isinstance(s.index, pd.DatetimeIndex) and not s.index.is_monotonic_increasing:
+        raise ValueError("stale, counter and jump checks compare consecutive rows and require a sorted index")
+    return s
+
+
 def _is_aware(obj: Any) -> pd.Series:
-    index = obj if isinstance(obj, pd.Index) else obj.index
+    index = _timestamps(obj)
     return _rows(obj, isinstance(index, pd.DatetimeIndex) and index.tz is not None)
 
 
@@ -152,6 +170,7 @@ def finite_check() -> pa.Check:
 
 def within_bounds_check(*, lower: float | None = None, upper: float | None = None) -> pa.Check:
     """Finite values lie within the inclusive ``[lower, upper]`` range."""
+    out_of_bounds_mask([], lower=lower, upper=upper)  # validate the bounds now
     return pa.Check(
         lambda s: pd.Series(~out_of_bounds_mask(s, lower=lower, upper=upper), index=s.index),
         name=_PREFIX + "within_bounds",
@@ -164,9 +183,11 @@ def stale_check(min_run: int, *, atol: float = 0.0, exclude: Collection[float] =
 
     Runs ``ignore_na=False`` so that missing values still break runs.
     """
-    stale_mask([], min_run, atol=atol)  # validate arguments now, not at validation time
+    stale_mask([], min_run, atol=atol, exclude=exclude)  # validate arguments now, not at validation time
     return pa.Check(
-        lambda s: pd.Series(~stale_mask(s, min_run, atol=atol, exclude=exclude), index=s.index),
+        lambda s: pd.Series(
+            ~stale_mask(_in_time_order(s), min_run, atol=atol, exclude=exclude), index=s.index
+        ),
         name=_PREFIX + "no_stale_values",
         error=f"runs of {min_run} or more repeated values",
         ignore_na=False,
@@ -177,7 +198,7 @@ def counter_check(*, tolerance: float = 0.0) -> pa.Check:
     """A cumulative counter never decreases (see :func:`energydata_kit.counter_decrease_mask`)."""
     counter_decrease_mask([], tolerance=tolerance)
     return pa.Check(
-        lambda s: pd.Series(~counter_decrease_mask(s, tolerance=tolerance), index=s.index),
+        lambda s: pd.Series(~counter_decrease_mask(_in_time_order(s), tolerance=tolerance), index=s.index),
         name=_PREFIX + "counter_not_decreasing",
         error="cumulative counter decreased",
         ignore_na=False,
@@ -192,7 +213,7 @@ def jump_check(max_delta: float) -> pa.Check:
     """
     jump_mask([], max_delta)
     return pa.Check(
-        lambda s: pd.Series(~jump_mask(s, max_delta), index=s.index),
+        lambda s: pd.Series(~jump_mask(_in_time_order(s), max_delta), index=s.index),
         name=_PREFIX + "no_jumps",
         error=f"changes larger than {max_delta} between consecutive values",
         ignore_na=False,

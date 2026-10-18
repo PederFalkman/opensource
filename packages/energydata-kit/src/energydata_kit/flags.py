@@ -102,6 +102,9 @@ def out_of_bounds_mask(
 
     Bounds are supplied by the caller; the package ships no domain limits.
     """
+    for name, bound in (("lower", lower), ("upper", upper)):
+        if bound is not None and not np.isfinite(bound):  # NaN or inf would make the report invalid JSON
+            raise ValueError(f"{name} bound must be a finite number or None, got {bound!r}")
     if lower is not None and upper is not None and lower > upper:
         raise ValueError(f"lower bound {lower} exceeds upper bound {upper}")
     v = _numeric(_as_series(values)).to_numpy()
@@ -131,8 +134,9 @@ def stale_mask(
     """
     if min_run < 2:
         raise ValueError("min_run must be >= 2")
-    if atol < 0:
-        raise ValueError("atol must be >= 0")
+    if not np.isfinite(atol) or atol < 0:
+        raise ValueError("atol must be a finite number >= 0")
+    excluded = _excluded_values(exclude)
     v = _numeric(_as_series(values)).to_numpy()
     if v.size == 0:
         return np.zeros(0, dtype=bool)
@@ -143,9 +147,24 @@ def stale_mask(
     run_start[1:] = ~same
     run_id = np.cumsum(run_start) - 1
     mask = (np.bincount(run_id)[run_id] >= min_run) & finite
-    if exclude:
-        mask &= ~np.isin(v, np.asarray(list(exclude), dtype="float64"))
+    if excluded.size:
+        mask &= ~np.isin(v, excluded)
     return np.asarray(mask, dtype=bool)
+
+
+def _excluded_values(exclude: Collection[float]) -> np.ndarray:
+    """``exclude`` as finite floats; checked before any data is read, so empty input checks it too."""
+    given: object = exclude
+    if isinstance(given, str | bytes):
+        raise TypeError("exclude must be a collection of numbers, not a string")
+    try:
+        excluded = np.asarray(list(exclude), dtype="float64")
+    except (TypeError, ValueError):
+        raise ValueError(f"exclude must contain only numbers, got {list(exclude)!r}") from None
+    if not np.isfinite(excluded).all():
+        # Non-finite values never form a run, and NaN or inf would make the report invalid JSON.
+        raise ValueError(f"exclude must contain finite numbers, got {excluded.tolist()!r}")
+    return excluded
 
 
 def counter_decrease_mask(
@@ -161,8 +180,8 @@ def counter_decrease_mask(
     both show up as decreases; this function does not guess which one it is.
     Drops of at most ``tolerance`` are ignored.
     """
-    if tolerance < 0:
-        raise ValueError("tolerance must be >= 0")
+    if not np.isfinite(tolerance) or tolerance < 0:
+        raise ValueError("tolerance must be a finite number >= 0")
     v = _numeric(_as_series(values))
     finite = pd.Series(np.isfinite(v.to_numpy()), index=v.index)
     previous = v.where(finite).ffill().shift(1)

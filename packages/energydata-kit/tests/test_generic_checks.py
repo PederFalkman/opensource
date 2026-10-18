@@ -127,6 +127,32 @@ def test_jump_invalid_limits():
             jump_mask([1.0, 2.0], bad)
 
 
+def test_non_finite_options_are_rejected():
+    # NaN or inf options were accepted and written into the report as NaN or
+    # Infinity, which is not valid JSON.
+    s = make_synthetic_series(periods=6)
+    for options in (
+        {"bounds": (np.nan, 5.0)},
+        {"bounds": (-np.inf, None)},
+        {"stale_min_run": 3, "stale_atol": np.nan},
+        {"stale_min_run": 3, "stale_exclude": [np.inf]},
+        {"cumulative": True, "counter_tolerance": np.inf},
+    ):
+        with pytest.raises(ValueError, match="finite"):
+            assess_quality(s, freq="15min", **options)
+
+
+def test_stale_exclude_accepts_arrays_and_is_checked_on_empty_input():
+    s = make_synthetic_series(periods=6)
+    # A numpy array of two or more values raised "truth value ... is ambiguous".
+    report = assess_quality(s, freq="15min", stale_min_run=3, stale_exclude=np.array([0.0, 1.0]))
+    assert report.parameters["stale_exclude"] == [0.0, 1.0]
+    with pytest.raises(ValueError, match="only numbers"):  # was accepted when there were no values
+        stale_mask([], 3, exclude=["x"])
+    with pytest.raises(TypeError, match="not a string"):
+        stale_mask([1.0], 3, exclude="0")
+
+
 def test_flag_series_jump_opt_in_and_report():
     s = make_synthetic_series(periods=6)
     s.iloc[3] = s.iloc[2] + 1000.0
