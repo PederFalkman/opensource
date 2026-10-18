@@ -553,6 +553,39 @@ def test_known_outage_option(tmp_path):
     assert code == 2 and "timezone-aware" in err
 
 
+def _parquet(tmp_path, frame, name="data.parquet"):
+    pytest.importorskip("pyarrow")  # optional [parquet] extra
+    path = tmp_path / name
+    frame.to_parquet(path)
+    return str(path)
+
+
+@pytest.mark.parametrize("timestamps_as", ["datetime", "string"])
+def test_parquet_input_gives_the_same_report_as_csv(tmp_path, timestamps_as):
+    csv = write(tmp_path, CLEAN.replace("2024-01-01T01:30:00Z,1.50\n", ""))
+    frame = pd.read_csv(csv, dtype={"timestamp": str})
+    if timestamps_as == "datetime":
+        frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True)
+    for suffix in (".parquet", ".PQ"):
+        path = _parquet(tmp_path, frame, "data" + suffix)
+        code, out, err = run("report", path, "--freq", "15min")
+        assert (code, err) == (0, "")
+        assert out == run("report", str(csv), "--freq", "15min")[1]  # same bytes, same fingerprint
+
+
+def test_parquet_rejects_csv_options_and_explains_a_missing_pyarrow(tmp_path, monkeypatch):
+    path = _parquet(tmp_path, pd.read_csv(io.StringIO(CLEAN)))
+    code, _, err = run("report", path, "--decimal", ",")
+    assert code == 2 and "apply to CSV files only" in err
+
+    def no_pyarrow(*args, **kwargs):
+        raise ImportError("Unable to find a usable engine; tried using: 'pyarrow'")
+
+    monkeypatch.setattr(pd, "read_parquet", no_pyarrow)
+    code, _, err = run("report", path, "--freq", "15min")
+    assert code == 2 and "python -m pip install 'energydata-kit[parquet]'" in err
+
+
 def test_usage_errors_and_version(capsys):
     with pytest.raises(SystemExit) as exc:
         main(["report"])

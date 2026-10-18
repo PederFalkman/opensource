@@ -38,6 +38,8 @@ energydata-kit = "energydata_kit.cli:console_main"
 [project.optional-dependencies]
 # Pandera checks in energydata_kit.pandera_checks. 0.24 introduced pandera.pandas.
 pandera = ["pandera>=0.24"]
+# Parquet input for the command line. 14.0.1 fixes CVE-2023-47248 (untrusted Parquet files).
+parquet = ["pyarrow>=14.0.1"]
 
 [dependency-groups]
 dev = [
@@ -47,6 +49,7 @@ dev = [
     "mypy>=1.10",
     "pandas-stubs>=2.1",
     "pandera>=0.24",
+    "pyarrow>=14.0.1",
     "pytest>=8",
     "ruff>=0.6",
 ]

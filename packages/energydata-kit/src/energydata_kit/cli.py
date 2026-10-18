@@ -1,7 +1,8 @@
 """Command-line interface: ``energydata-kit report data.csv ...``.
 
 Reads one timestamp column and one value column from a CSV file (comma-separated
-by default; see ``--delimiter`` and ``--decimal``), runs
+by default; see ``--delimiter`` and ``--decimal``) or a Parquet file (optional
+``[parquet]`` extra), runs
 :func:`energydata_kit.assess_quality` and prints the deterministic JSON report
 (or, with ``--format text`` or ``markdown``, a short summary for reading).
 Optionally writes the non-destructive flagged table from
@@ -84,7 +85,11 @@ def build_parser() -> argparse.ArgumentParser:
         description="Print a deterministic JSON quality report for value columns of a CSV file.",
         epilog=_EXIT_REPORT,
     )
-    rep.add_argument("csv", help="input CSV file, or '-' for standard input")
+    rep.add_argument(
+        "csv",
+        help="input CSV file, or '-' for standard input; a .parquet, .parq or .pq file is read as "
+        "Parquet (needs the [parquet] extra)",
+    )
 
     csv_fmt = rep.add_argument_group("CSV format")
     csv_fmt.add_argument(
@@ -222,17 +227,38 @@ def _delimiter(args: argparse.Namespace) -> str:
     return sep
 
 
-def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
-    source = stdin if args.csv == "-" else args.csv
-    sep = _delimiter(args)
+_PARQUET_SUFFIXES = (".parquet", ".parq", ".pq")
+
+
+def _read_parquet(args: argparse.Namespace) -> pd.DataFrame:
+    """Read a Parquet input file (optional [parquet] extra: pyarrow)."""
+    if args.delimiter != "," or args.decimal != ".":
+        raise CliError("--delimiter and --decimal apply to CSV files only, not Parquet")
     try:
-        frame = pd.read_csv(
-            source, sep=sep, decimal=args.decimal, dtype={args.timestamp_col: str}, keep_default_na=True
-        )
+        return pd.read_parquet(args.csv)
     except FileNotFoundError as exc:
         raise CliError(f"file not found: {args.csv}") from exc
-    except (pd.errors.ParserError, pd.errors.EmptyDataError, UnicodeDecodeError) as exc:
-        raise CliError(f"could not read CSV: {exc}") from exc
+    except ImportError as exc:  # pyarrow missing, or installed but unusable (e.g. NumPy too old)
+        raise CliError(
+            f"reading Parquet needs pyarrow: python -m pip install 'energydata-kit[parquet]' ({exc})"
+        ) from exc
+
+
+def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
+    if args.csv != "-" and args.csv.lower().endswith(_PARQUET_SUFFIXES):
+        frame = _read_parquet(args)
+        sep = ","  # only used for the CSV hints below
+    else:
+        sep = _delimiter(args)
+        source = stdin if args.csv == "-" else args.csv
+        try:
+            frame = pd.read_csv(
+                source, sep=sep, decimal=args.decimal, dtype={args.timestamp_col: str}, keep_default_na=True
+            )
+        except FileNotFoundError as exc:
+            raise CliError(f"file not found: {args.csv}") from exc
+        except (pd.errors.ParserError, pd.errors.EmptyDataError, UnicodeDecodeError) as exc:
+            raise CliError(f"could not read CSV: {exc}") from exc
 
     if args.timestamp_col not in frame.columns:
         hint = ""
