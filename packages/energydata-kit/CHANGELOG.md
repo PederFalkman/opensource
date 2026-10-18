@@ -5,7 +5,7 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-10-16
+## [0.1.0] - 2026-10-18
 
 First release: quality checks for metered energy time series, on top of
 pandas and Pint. Input data is never modified; checks return masks, flags and
