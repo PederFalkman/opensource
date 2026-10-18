@@ -749,13 +749,21 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       edge cases went to OSS-72; code-quality notes left as possible
       follow-ups.
 
-### OSS-72: `--flags-csv` grid across `--schema` columns — this change
+### OSS-72: `--flags-csv` grid across `--schema` columns — merged in [#76](https://github.com/PederFalkman/opensource/pull/76)
 
 - [x] Equal fixed steps spelled differently (`"60min"`, `"1h"`) are one
       grid, not "different resolutions".
 - [x] A column without a resolution, next to columns with one, is refused
       with exit 2 before anything is written, instead of being flagged on
       another column's grid while its report has none.
+
+### OSS-73: one rule for the grid taken from metadata — this change
+
+- [x] From the second review's code-quality notes, with no behaviour
+      change: the helper that picks the grid from metadata lives in
+      `metadata.py`, and fixed vs calendar is decided by `to_step()`, the
+      rule that validates resolutions, instead of a second check with a
+      pandas 2/3 special case. A test pins the classification on both.
 
 ## Explicitly not planned
 
