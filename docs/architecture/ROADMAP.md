@@ -694,11 +694,27 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       many values to unpack". Each now raises `ValueError` or `TypeError`
       naming the option; numpy numbers stay accepted.
 
-### OSS-66: roadmap tidy — this change
+### OSS-66: roadmap tidy — merged in [#72](https://github.com/PederFalkman/opensource/pull/72)
 
 - [x] Open decisions listed as D1 to D6, with D3 (licence) done; a
       one-table summary of the pre-release hardening for the release
       reviewers. No code changes.
+
+### OSS-67: fresh-eyes review — this change
+
+- [x] A high-effort review read every module end to end; all nine
+      findings were reproduced before fixing.
+- [x] Fixed: date-only timestamps read as UTC (the "-02" of
+      "2024-01-02" taken as an offset); `local_days` ignoring `origin=`;
+      `compare_reports` crashing on `"truncated": null`; `stale_exclude`
+      generators used up or recorded as `[]`; `stale_exclude` with
+      `stale_atol` flagging every other row of a near-zero run; CLI
+      metadata options silently ignored without `--unit`; a report written
+      before a `--flags-csv` error.
+- [ ] Open for the owner: whether a calendar resolution in metadata (for
+      example `"D"` with `timezone="Europe/Stockholm"`) should use the
+      metadata time zone without `tz=`; today it is a fixed 24-hour UTC
+      step.
 
 ## Explicitly not planned
 
