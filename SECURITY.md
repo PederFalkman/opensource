@@ -63,8 +63,8 @@ particular version.
 ## How the package limits exposure
 
 - The package code makes no network requests, does not unpickle data and does
-  not execute code from input files. The command line reads the CSV or JSON
-  files it is given and writes only the outputs named with `-o` and
+  not execute code from input files. The command line reads the CSV, Parquet or
+  JSON files it is given and writes only the outputs named with `-o` and
   `--flags-csv`.
 - Runtime dependencies are limited to an allowlist (`tools/ip_boundary.toml`),
   checked in CI with their licences (`tools/check_third_party.py`).

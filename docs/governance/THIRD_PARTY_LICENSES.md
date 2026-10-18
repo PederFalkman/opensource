@@ -15,7 +15,7 @@ register).
 Every dependency declared in `packages/energydata-kit/pyproject.toml` must
 have exactly one row here, with matching scopes. `tools/check_third_party.py`
 enforces this in CI. Scopes: `runtime` (installed with the package),
-`extra:pandera` (optional extra), `dev` (dependency group for contributors),
+`extra:pandera` and `extra:parquet` (optional extras), `dev` (dependency group for contributors),
 `build` (build backend).
 
 | Package | Scopes | Licence (SPDX) | Shipped to users | Source of licence information |
@@ -24,6 +24,7 @@ enforces this in CI. Scopes: `runtime` (installed with the package),
 | `pandas` | runtime | BSD-3-Clause | Installed as a dependency | `License` metadata and classifier |
 | `pint` | runtime | BSD-3-Clause | Installed as a dependency | LICENSE file (three-clause BSD text); metadata says only "BSD" |
 | `pandera` | extra:pandera, dev | MIT | Only with the `[pandera]` extra | `License` metadata and classifier |
+| `pyarrow` | extra:parquet, dev | Apache-2.0 | Only with the `[parquet]` extra | `License-Expression` metadata (26.0); no runtime dependencies of its own |
 | `hatchling` | build | MIT | No (build backend only) | `License-Expression` on PyPI |
 | `build` | dev | MIT | No | `License-Expression` metadata |
 | `hypothesis` | dev | MPL-2.0 | No | `License-Expression` metadata |

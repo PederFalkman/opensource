@@ -61,7 +61,7 @@ connection planning, optimization or decision support).
 | P-2 | *Approved by the owner on 2026-10-17 ahead of the release gates; done in OSS-56, as fields in report schema 1 because 0.1.0 is unreleased.* **Expected-outage windows.** Callers pass known periods (maintenance, a meter swap); gaps inside them are reported separately from unexplained gaps, and completeness can exclude them. | The most common false alarm in gap reports is a gap everyone already knew about. | M | New report fields, so report schema 2 or an optional section; `compare_reports` must handle both. No new dependency. |
 | P-3 | *Approved by the owner on 2026-10-17 ahead of the release gates; done in OSS-54.* **JSON Schema for the report format.** Publish schema "1" as a JSON Schema file in the package; a test validates every golden report against it. | Lets non-Python consumers (pipelines, dashboards) validate reports without reading our code. | S | Small; the schema file becomes a public contract to maintain. Test-only dependency (`jsonschema`, MIT) or a hand-written check. |
 | P-4 | *Approved by the owner on 2026-10-17 ahead of the release gates; done in OSS-55.* **Markdown output** (`report --format markdown`, `compare --format markdown`). | Pasting a readable summary into an issue or PR is a frequent use of `--format text`. | S | Low; formatting only, no new dependency. Must not become a second report format that drifts from JSON. |
-| P-5 | **Parquet input for the command line** (optional `[parquet]` extra). | Large meter exports increasingly come as Parquet; the library already accepts any pandas Series. | S–M | New optional dependency (pyarrow, Apache-2.0): allowlist, licence table and CI matrix entry. Read-only; no writing of Parquet. |
+| P-5 | *Approved by the owner on 2026-10-18 ahead of the release gates; done in OSS-58.* **Parquet input for the command line** (optional `[parquet]` extra). | Large meter exports increasingly come as Parquet; the library already accepts any pandas Series. | S–M | New optional dependency (pyarrow, Apache-2.0): allowlist, licence table and CI matrix entry. Read-only; no writing of Parquet. |
 | P-6 | *Approved by the owner on 2026-10-17 as an additive section (columns unchanged); done in OSS-57.* **Shared timestamp section in frame reports.** `assess_frame` repeats gaps, duplicates and off-grid per column (a known limitation); report them once at frame level. | Smaller, clearer multi-column reports. | M | Breaking report change (schema 2) and a `compare_reports` migration path; worth doing only together with another schema change such as P-2. |
 
 Considered and not proposed: Polars or other DataFrame inputs (a second
@@ -564,7 +564,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] `compare_reports`, its input check and the text and Markdown
       summaries handle the new figures.
 
-### OSS-57: shared timestamp section in frame reports (P-6) — this change
+### OSS-57: shared timestamp section in frame reports (P-6) — merged in [#63](https://github.com/PederFalkman/opensource/pull/63)
 
 - [x] Owner's choice among three designs: an additive frame-level
       `timestamps` section. Column reports are unchanged and still equal
@@ -575,6 +575,16 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       columns take different steps from their metadata.
 - [x] JSON Schema, golden frame report (only the new section added) and
       tests updated.
+
+### OSS-58: Parquet input (P-5) — this change
+
+- [x] `energydata-kit report` reads `.parquet`/`.parq`/`.pq` files with
+      the new optional extra `[parquet]` (pyarrow, Apache-2.0,
+      `>=14.0.1` for CVE-2023-47248); same report as the CSV of the same
+      data, byte for byte. Read only; nothing writes Parquet.
+- [x] Allowlist, licence table and CI updated. The lowest-dependencies job
+      pins pyarrow 14.0.2: current pyarrow needs NumPy 2, and the CLI
+      turns an unusable pyarrow into a clear exit 2.
 
 ## Explicitly not planned
 

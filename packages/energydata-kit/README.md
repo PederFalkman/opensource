@@ -28,7 +28,7 @@ cover for metered energy data:
 | Flags for several columns at once (`quality_flag_<column>` each) | `flag_frame`, `flag_column` |
 | What changed between two reports (e.g. before and after a fix, or two deliveries) | `compare_reports`, `ReportComparison` |
 | Deterministic synthetic test series | `make_synthetic_series` |
-| Command line: JSON report for one or more CSV columns, flagged CSV, report comparison | `energydata-kit report`, `energydata-kit compare` |
+| Command line: JSON report for one or more CSV or Parquet columns, flagged CSV, report comparison | `energydata-kit report`, `energydata-kit compare` |
 | Supporting types and constants | `Aggregation`, `IntervalLabel`, `TimestampSummary`, `FLAG_COLUMN` / `VALUE_COLUMN` (column names in `flag_series` output); errors `TimestampError`, `UnitError` (both `ValueError`s) |
 | Export/import metadata as a Frictionless Table Schema (no extra dependency) | `to_table_schema`, `from_table_schema` |
 | The same checks as Pandera checks and a ready `SeriesSchema` (optional extra) | `energydata_kit.pandera_checks.series_schema` and check factories |
@@ -42,6 +42,7 @@ pytest
 ```
 
 Optional Pandera integration: `python -m pip install -e ".[pandera]"`.
+Optional Parquet input for the command line: `python -m pip install -e ".[parquet]"`.
 
 ## Example
 
@@ -100,7 +101,9 @@ energydata-kit report meter.csv \
 ```
 
 Prints the deterministic JSON report to standard output (`-o` writes a file;
-`-` reads the CSV from standard input). `--format text` prints a short summary
+`-` reads the CSV from standard input). A file ending in `.parquet`, `.parq`
+or `.pq` is read as Parquet instead (with the `[parquet]` extra), with the
+same column options; timestamps may be stored as text or as timestamps. `--format text` prints a short summary
 for reading instead: rows, completeness, flag counts, the first gaps and
 metadata issues per column; `--format markdown` gives the same summary as
 Markdown, to paste into an issue or pull request. Use the JSON report for

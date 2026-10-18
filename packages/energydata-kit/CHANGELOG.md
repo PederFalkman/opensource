@@ -6,6 +6,12 @@ versioning: [SemVer](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Parquet input for `energydata-kit report`: a file ending in `.parquet`,
+  `.parq` or `.pq` is read with pandas and pyarrow, with the same column
+  options and the same report as the CSV of the same data. pyarrow comes
+  with the new optional extra `[parquet]` (`pyarrow>=14.0.1`, which fixes
+  CVE-2023-47248); without it the command says what to install and exits
+  2. `--delimiter` and `--decimal` are refused for Parquet (OSS-58).
 - Frame reports have a `timestamps` section: the facts that depend only on
   the shared timestamp index (rows, range, step, completeness, gaps,
   duplicates, known-outage figures), stated once when every column reports
