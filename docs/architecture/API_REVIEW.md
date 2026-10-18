@@ -46,6 +46,9 @@ first release.
   days are. The names differ because the meanings differ.
 - **Errors.** `TimestampError` and `UnitError` subclass `ValueError`; other
   invalid arguments raise plain `ValueError`. Callers can catch `ValueError`.
+  *Updated in OSS-75:* since OSS-65, an option of the wrong type (a boolean
+  or text where a number is expected, a non-boolean `cumulative`) raises
+  `TypeError`; invalid values still raise `ValueError`.
 - **`QualityFlag` values** stay as they are (0–512) and are never renumbered.
 - **Report durations** (`expected_resolution`, `inferred_resolution`) use
   pandas' ISO 8601 form, e.g. `P0DT0H15M0S`. It is verbose but valid and

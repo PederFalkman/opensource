@@ -309,7 +309,22 @@ def test_text_summary_columns_and_no_step(tmp_path):
     assert "  kwh: 4 rows, 2026-01-01T00:00:00+00:00 to 2026-01-01T01:15:00+00:00" in lines
     assert "    flagged rows: 0" in lines  # pv
     out = run("report", path, "--value-col", "kwh", "--format", "text")[1]
-    assert "  completeness: not checked (no --freq or --resolution)" in out.splitlines()
+    assert (
+        "  completeness: not checked (no step: pass --freq, or a resolution with --unit or --schema)"
+        in out.splitlines()
+    )
+
+
+def test_text_summary_says_why_completeness_is_missing(tmp_path):
+    # Not only a missing step leaves completeness empty (OSS-75).
+    empty = str(write(tmp_path, "timestamp,kwh\n", "empty.csv"))
+    out = run("report", empty, "--freq", "15min", "--format", "text")[1]
+    assert "  completeness: not checked (no rows)" in out.splitlines()
+    mid_month = str(
+        write(tmp_path, "timestamp,kwh\n2026-01-05T00:00:00Z,1\n2026-01-20T00:00:00Z,2\n", "mid.csv")
+    )
+    out = run("report", mid_month, "--freq", "MS", "--tz", "UTC", "--format", "text")[1]
+    assert "  completeness: undefined (no expected interval within the data's time span)" in out.splitlines()
 
 
 def test_compare_text_summary(tmp_path):

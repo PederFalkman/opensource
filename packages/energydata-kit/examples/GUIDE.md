@@ -170,7 +170,21 @@ assert [g.start.isoformat() for g in gaps] == ["2024-03-31T22:00:00+00:00"]  # 1
 ```
 
 Grid and gap timestamps are always reported in UTC. Monthly data works the
-same way with `"MS"`.
+same way with `"MS"`. A metadata resolution with no fixed length, such as
+`"MS"` or `"W-MON"`, is laid out in the metadata's time zone when no `freq`
+or `tz` is given. `"D"` in metadata stays a 24-hour step, so pass `tz=` for
+local days, as above.
+
+```python
+month_starts = pd.date_range("2024-01-01", periods=6, freq="MS", tz="Europe/Stockholm")
+monthly = pd.Series(np.arange(5.0), index=month_starts.tz_convert("UTC").delete([2]), name="kwh")
+monthly_meta = ek.MeasurementMetadata(
+    name="kwh", unit="kWh", resolution="MS", aggregation="sum", timezone="Europe/Stockholm"
+)
+monthly_report = ek.assess_quality(monthly, metadata=monthly_meta)
+assert [g.start.isoformat() for g in monthly_report.gaps] == ["2024-02-29T23:00:00+00:00"]  # 1 March, local
+assert monthly_report.parameters["tz"] == "Europe/Stockholm"
+```
 
 ## 7. Opt-in checks: stale values, counters and jumps
 
@@ -431,6 +445,26 @@ energydata-kit report meter_eu.csv --delimiter ";" --decimal , \
 ```python
 assert json.loads(Path("report_eu.json").read_text()) == report
 assert Path("flagged_eu.csv").read_text().splitlines()[0] == "timestamp;kw;quality_flag"
+```
+
+With the optional extra (`pip install "energydata-kit[parquet]"`), a file
+ending in `.parquet`, `.parq` or `.pq` is read as Parquet, with the same
+options and the same report. Timestamps can be a column or the named index
+pandas writes:
+
+<!-- requires: pyarrow -->
+```python
+pd.read_csv("meter.csv", index_col="timestamp").to_parquet("meter.parquet")
+```
+
+<!-- requires: pyarrow -->
+```bash
+energydata-kit report meter.parquet --freq 15min --unit kW --aggregation mean -o report_pq.json
+```
+
+<!-- requires: pyarrow -->
+```python
+assert json.loads(Path("report_pq.json").read_text()) == report
 ```
 
 Metadata for one or more columns can come from a Table Schema (section 9)
