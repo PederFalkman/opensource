@@ -86,6 +86,28 @@ def _outage_end(value: pd.Timestamp | str) -> pd.Timestamp:
         ) from None
 
 
+def _grid_from_metadata(
+    freq: str | pd.Timedelta | None, tz: str | None, metadata: MeasurementMetadata | None
+) -> tuple[str | pd.Timedelta | None, str | None]:
+    """The grid step and calendar time zone, taking both from ``metadata`` when not given.
+
+    A resolution with no fixed length (``"MS"``, ``"W-MON"``, ...) is a
+    local-calendar step in the metadata's own time zone, as ``tz=`` would make
+    it; without that it would be refused. ``"D"`` and every fixed resolution
+    (``"15min"``, ``"1h"``) stay fixed-length steps, as before: a daily step in
+    local days needs ``tz=`` (``--tz``) explicitly.
+    """
+    if freq is not None or metadata is None or metadata.resolution is None:
+        return freq, tz
+    freq = metadata.resolution
+    if tz is None:
+        offset = pd.tseries.frequencies.to_offset(freq)
+        # Day is a Tick before pandas 3 and not since; either way "D" is the 24-hour step.
+        if not isinstance(offset, pd.offsets.Tick | pd.offsets.Day):
+            tz = metadata.timezone
+    return freq, tz
+
+
 def _iso_ns(value: int) -> str:
     return pd.Timestamp(value, unit="ns", tz="UTC").isoformat()
 
@@ -209,7 +231,10 @@ def assess_quality(
     The expected step is taken from ``freq``, else ``metadata.resolution``.
     If neither is given, grid-based checks (gaps, off-grid, completeness) are
     skipped and only the inferred resolution is reported; the step is never
-    guessed silently.
+    guessed silently. A metadata resolution with no fixed length (``"MS"``,
+    ``"W-MON"``) is a local-calendar step in ``metadata.timezone``, as if
+    ``tz`` were given; ``"D"`` stays the 24-hour step (pass ``tz`` for local
+    days, which are 23 or 25 hours long across DST).
 
     ``completeness`` is the share of expected grid timestamps that are
     present, whatever their values: a row with a missing value still counts
@@ -249,8 +274,7 @@ def assess_quality(
         stale_exclude = tuple(stale_exclude)  # read once: applied and recorded alike
     if max_listed < 0:
         raise ValueError("max_listed must be >= 0")
-    if freq is None and metadata is not None:
-        freq = metadata.resolution
+    freq, tz = _grid_from_metadata(freq, tz, metadata)
     # Fixed steps are validated up front; calendar steps (tz given) stay as
     # pandas frequency strings.
     step = None if freq is None or tz is not None else to_step(freq)

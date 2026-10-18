@@ -588,6 +588,23 @@ def test_parquet_rejects_csv_options_and_explains_a_missing_pyarrow(tmp_path, mo
     assert code == 2 and "python -m pip install 'energydata-kit[parquet]'" in err
 
 
+def test_monthly_resolution_from_metadata_in_report_and_flags(tmp_path):
+    # Local month starts across the March DST change: complete, nothing flagged (was refused).
+    rows = [
+        "2024-01-01T00:00+01:00",
+        "2024-02-01T00:00+01:00",
+        "2024-03-01T00:00+01:00",
+        "2024-04-01T00:00+02:00",
+    ]
+    path = str(write(tmp_path, "timestamp,kwh\n" + "".join(f"{r},1\n" for r in rows)))
+    flags = tmp_path / "flags.csv"
+    meta = ["--unit", "kWh", "--aggregation", "sum", "--resolution", "MS", "--timezone", "Europe/Stockholm"]
+    code, out, err = run("report", path, *meta, "--flags-csv", str(flags))
+    assert (code, err) == (0, "")
+    assert json.loads(out)["completeness"] == 1.0
+    assert [line.rsplit(",", 1)[1] for line in flags.read_text().splitlines()[1:]] == ["0"] * 4
+
+
 def test_metadata_options_need_unit(tmp_path):
     # --resolution without --unit was ignored: gaps went unreported, with exit 0.
     path = str(write(tmp_path, CLEAN.replace("2024-01-01T01:30:00Z,1.50\n", "")))

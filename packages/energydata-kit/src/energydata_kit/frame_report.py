@@ -164,7 +164,8 @@ def assess_frame(
         equal its key. Columns without an entry get no metadata.
     freq, origin, tz, known_outages, max_listed:
         Shared by all columns, as in :func:`energydata_kit.assess_quality`.
-        Without ``freq``, each column uses its own ``metadata.resolution``.
+        Without ``freq``, each column uses its own ``metadata.resolution``
+        (one with no fixed length, such as ``"MS"``, in its own ``metadata.timezone``).
     bounds, stale_min_run, stale_atol, stale_exclude, cumulative, counter_tolerance, jump_max_delta:
         Check options applied to every column. Columns usually differ in
         unit and meaning, so set them per column with ``per_column`` unless

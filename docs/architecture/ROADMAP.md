@@ -700,7 +700,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       one-table summary of the pre-release hardening for the release
       reviewers. No code changes.
 
-### OSS-67: fresh-eyes review — this change
+### OSS-67: fresh-eyes review — merged in [#73](https://github.com/PederFalkman/opensource/pull/73)
 
 - [x] A high-effort review read every module end to end; all nine
       findings were reproduced before fixing.
@@ -711,10 +711,22 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `stale_atol` flagging every other row of a near-zero run; CLI
       metadata options silently ignored without `--unit`; a report written
       before a `--flags-csv` error.
-- [ ] Open for the owner: whether a calendar resolution in metadata (for
+- [x] Open for the owner: whether a calendar resolution in metadata (for
       example `"D"` with `timezone="Europe/Stockholm"`) should use the
-      metadata time zone without `tz=`; today it is a fixed 24-hour UTC
-      step.
+      metadata time zone without `tz=`. Decided in OSS-68, narrowed after a
+      second review to steps with no fixed length (see below).
+
+### OSS-68: calendar resolutions in metadata — this change
+
+- [x] A metadata resolution with no fixed length (`"MS"`, `"W-MON"`) is a
+      local-calendar step in `metadata.timezone` when no `tz=` is given;
+      before, it was refused. The report, frame reports, the Pandera schema
+      and both `--flags-csv` paths use the same rule.
+- [x] `"D"` stays the 24-hour step, as before, by the owner's decision after
+      a second review: as a local-calendar step it crashed in zones where
+      DST skips midnight (São Paulo, Santiago, Cairo) and moved daily data
+      stamped at UTC midnight off the grid. Local days need `tz=` (`--tz`),
+      now documented.
 
 ## Explicitly not planned
 
