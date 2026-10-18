@@ -713,16 +713,20 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       before a `--flags-csv` error.
 - [x] Open for the owner: whether a calendar resolution in metadata (for
       example `"D"` with `timezone="Europe/Stockholm"`) should use the
-      metadata time zone without `tz=`. Decided yes; done in OSS-68.
+      metadata time zone without `tz=`. Decided in OSS-68, narrowed after a
+      second review to steps with no fixed length (see below).
 
 ### OSS-68: calendar resolutions in metadata — this change
 
-- [x] A calendar resolution taken from metadata (`"D"`, `"W-MON"`, `"MS"`)
-      is a local-calendar step in `metadata.timezone` when no `tz=` is
-      given: complete daily data across a DST change read 75 % before, and
-      `"MS"` was refused. `"D"` in UTC, fixed resolutions and an explicit
-      `freq=` are unchanged. The report, frame reports, the Pandera schema
+- [x] A metadata resolution with no fixed length (`"MS"`, `"W-MON"`) is a
+      local-calendar step in `metadata.timezone` when no `tz=` is given;
+      before, it was refused. The report, frame reports, the Pandera schema
       and both `--flags-csv` paths use the same rule.
+- [x] `"D"` stays the 24-hour step, as before, by the owner's decision after
+      a second review: as a local-calendar step it crashed in zones where
+      DST skips midnight (São Paulo, Santiago, Cairo) and moved daily data
+      stamped at UTC midnight off the grid. Local days need `tz=` (`--tz`),
+      now documented.
 
 ## Explicitly not planned
 

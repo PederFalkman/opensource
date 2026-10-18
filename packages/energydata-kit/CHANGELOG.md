@@ -52,8 +52,9 @@ reports. Licensed Apache-2.0; the licence ships in the wheel and the sdist.
 - `assess_quality` → `QualityReport`: deterministic JSON (report schema 1)
   with a SHA-256 data fingerprint, the parameters used, metadata issues and
   per-local-day completeness. Without `freq`, the step is the metadata
-  resolution; a calendar one (`"D"`, `"MS"`) counts in the metadata's time
-  zone, so local days are 23 or 25 hours long across DST.
+  resolution; one with no fixed length (`"MS"`, `"W-MON"`) counts in the
+  metadata's time zone. `"D"` is a 24-hour step; for local days, which are
+  23 or 25 hours long across DST, pass `tz` (`--tz`).
 - `assess_frame` → `FrameQualityReport`: one report for several columns that
   share a timestamp index, with per-column options; each column's section
   equals `assess_quality` on that column. A `timestamps` section states the

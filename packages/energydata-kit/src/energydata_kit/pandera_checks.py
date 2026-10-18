@@ -239,8 +239,8 @@ def series_schema(
 ) -> pa.SeriesSchema:
     """A ``SeriesSchema`` running the same checks as :func:`energydata_kit.assess_quality`.
 
-    The step comes from ``freq``, else ``metadata.resolution`` (a calendar
-    resolution in ``metadata.timezone``, as in ``assess_quality``); without one,
+    The step comes from ``freq``, else ``metadata.resolution`` (one with no
+    fixed length in ``metadata.timezone``, as in ``assess_quality``); without one,
     grid checks are left out. The schema name is ``metadata.name`` if given.
     """
     _check_options(stale_min_run, stale_atol, stale_exclude, cumulative, counter_tolerance)

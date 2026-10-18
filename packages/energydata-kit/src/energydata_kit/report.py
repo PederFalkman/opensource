@@ -91,19 +91,19 @@ def _grid_from_metadata(
 ) -> tuple[str | pd.Timedelta | None, str | None]:
     """The grid step and calendar time zone, taking both from ``metadata`` when not given.
 
-    A calendar resolution in metadata (``"D"``, ``"W-MON"``, ``"MS"``, ...) is a
-    step in the metadata's own time zone, as ``tz=`` would make it: local days
-    are 23 or 25 hours long across DST. ``"D"`` in UTC stays the fixed 24-hour
-    step it equals. Fixed resolutions such as ``"15min"`` are unaffected.
+    A resolution with no fixed length (``"MS"``, ``"W-MON"``, ...) is a
+    local-calendar step in the metadata's own time zone, as ``tz=`` would make
+    it; without that it would be refused. ``"D"`` and every fixed resolution
+    (``"15min"``, ``"1h"``) stay fixed-length steps, as before: a daily step in
+    local days needs ``tz=`` (``--tz``) explicitly.
     """
     if freq is not None or metadata is None or metadata.resolution is None:
         return freq, tz
     freq = metadata.resolution
     if tz is None:
         offset = pd.tseries.frequencies.to_offset(freq)
-        is_day = isinstance(offset, pd.offsets.Day)  # a Tick before pandas 3, not since
-        calendar = is_day or not isinstance(offset, pd.offsets.Tick)
-        if calendar and not (is_day and metadata.timezone == "UTC"):
+        # Day is a Tick before pandas 3 and not since; either way "D" is the 24-hour step.
+        if not isinstance(offset, pd.offsets.Tick | pd.offsets.Day):
             tz = metadata.timezone
     return freq, tz
 
@@ -231,9 +231,10 @@ def assess_quality(
     The expected step is taken from ``freq``, else ``metadata.resolution``.
     If neither is given, grid-based checks (gaps, off-grid, completeness) are
     skipped and only the inferred resolution is reported; the step is never
-    guessed silently. A calendar resolution taken from metadata (``"D"``,
-    ``"W-MON"``, ``"MS"``) is a local-calendar step in ``metadata.timezone``,
-    as if ``tz`` were given; ``"D"`` in UTC stays the 24-hour step it equals.
+    guessed silently. A metadata resolution with no fixed length (``"MS"``,
+    ``"W-MON"``) is a local-calendar step in ``metadata.timezone``, as if
+    ``tz`` were given; ``"D"`` stays the 24-hour step (pass ``tz`` for local
+    days, which are 23 or 25 hours long across DST).
 
     ``completeness`` is the share of expected grid timestamps that are
     present, whatever their values: a row with a missing value still counts

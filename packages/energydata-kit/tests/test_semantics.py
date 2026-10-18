@@ -17,26 +17,36 @@ from energydata_kit import (
 IDX = pd.DatetimeIndex(["2024-01-01T00:15Z", "2024-01-01T00:30Z", "2024-01-01T00:30Z"])
 
 
-def test_calendar_resolution_in_metadata_uses_its_time_zone():
-    # resolution="D" in Europe/Stockholm was a fixed 24 h UTC step: complete daily
-    # data read 75 % complete across the March DST change, and "MS" was refused.
-    days = pd.date_range("2024-03-29", periods=5, freq="D", tz="Europe/Stockholm").tz_convert("UTC")
-    meta = MeasurementMetadata("d", "kWh", resolution="D", timezone="Europe/Stockholm", aggregation="sum")
-    report = assess_quality(pd.Series(1.0, index=days, name="d"), metadata=meta)
-    assert (report.completeness, report.n_missing_intervals) == (1.0, 0)
-    assert report.flag_counts["OFF_GRID_TIMESTAMP"] == 0 and report.parameters["tz"] == "Europe/Stockholm"
-    months = pd.date_range("2024-01-01", periods=4, freq="MS", tz="Europe/Stockholm")
+def test_resolution_without_fixed_length_in_metadata_uses_its_time_zone():
+    # resolution="MS" (or "W-MON") was refused without tz=; it is now a step in metadata.timezone.
+    months = pd.date_range("2024-01-01", periods=6, freq="MS", tz="Europe/Stockholm")
     monthly = MeasurementMetadata("m", "kWh", resolution="MS", timezone="Europe/Stockholm", aggregation="sum")
-    assert assess_quality(pd.Series(1.0, index=months, name="m"), metadata=monthly).completeness == 1.0
-    # Unchanged: "D" in UTC (a fixed 24 h step there), fixed resolutions, an explicit freq=.
-    utc = MeasurementMetadata("d", "kWh", resolution="D", aggregation="sum")
-    assert assess_quality(pd.Series(1.0, index=days, name="d"), metadata=utc).parameters["tz"] is None
+    report = assess_quality(pd.Series(1.0, index=months, name="m"), metadata=monthly)
+    assert (report.completeness, report.parameters["tz"]) == (1.0, "Europe/Stockholm")
+    assert report.flag_counts["OFF_GRID_TIMESTAMP"] == 0
+
+
+def test_daily_resolution_in_metadata_stays_24_hours():
+    # Kept as on main after a second review: as a local-calendar step, "D" crashed where
+    # DST skips midnight and moved data stamped at UTC midnight off the grid.
+    days = pd.date_range(
+        "2018-10-30", "2018-11-10", freq="D", tz="America/Sao_Paulo", nonexistent="shift_forward"
+    )
+    sao_paulo = MeasurementMetadata(
+        "d", "kWh", resolution="D", timezone="America/Sao_Paulo", aggregation="sum"
+    )
+    report = assess_quality(pd.Series(1.0, index=days.tz_convert("UTC"), name="d"), metadata=sao_paulo)
+    assert report.parameters["tz"] is None and report.expected_resolution == "P1DT0H0M0S"
+    utc_days = pd.date_range("2026-03-20", "2026-04-05", freq="D", tz="UTC")
+    for zone in ("Europe/Stockholm", "Etc/UTC", "UTC"):
+        meta = MeasurementMetadata("d", "kWh", resolution="D", timezone=zone, aggregation="sum")
+        daily = assess_quality(pd.Series(1.0, index=utc_days, name="d"), metadata=meta)
+        assert (daily.completeness, daily.parameters["tz"], daily.local_days is not None) == (1.0, None, True)
     quarter = MeasurementMetadata("p", "kW", resolution="15min", timezone="Europe/Stockholm")
     assert (
         assess_quality(make_synthetic_series(periods=4).rename("p"), metadata=quarter).parameters["tz"]
         is None
     )
-    assert assess_quality(pd.Series(1.0, index=days, name="d"), metadata=meta, freq="D").completeness == 0.75
 
 
 def test_local_days_follow_the_origin_grid():
