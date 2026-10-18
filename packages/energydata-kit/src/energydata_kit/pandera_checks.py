@@ -27,6 +27,7 @@ except ImportError as exc:  # pragma: no cover - exercised only without the extr
     ) from exc
 
 from energydata_kit.flags import (
+    _bounds,
     _check_options,
     counter_decrease_mask,
     jump_mask,
@@ -251,7 +252,8 @@ def series_schema(
         ]
     value_checks = [finite_check()]
     if bounds is not None:
-        value_checks.append(within_bounds_check(lower=bounds[0], upper=bounds[1]))
+        lower, upper = _bounds(bounds)  # rejects a third value instead of ignoring it
+        value_checks.append(within_bounds_check(lower=lower, upper=upper))
     if stale_min_run is not None:
         value_checks.append(stale_check(stale_min_run, atol=stale_atol, exclude=stale_exclude))
     if cumulative:

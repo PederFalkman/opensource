@@ -241,6 +241,8 @@ def assess_quality(
     ``series`` must have a timezone-aware ``DatetimeIndex`` without ``NaT``
     and is not modified.
     """
+    if isinstance(max_listed, bool | np.bool_):
+        raise TypeError(f"max_listed must be an integer, got {max_listed!r}")
     max_listed = operator.index(max_listed)  # TypeError for 1.5; accepts numpy integers
     outages = _outages(known_outages)
     if max_listed < 0:

@@ -634,7 +634,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       and management, shared outside the repository; it summarises
       `RELEASE_DECISIONS.md`, which stays the record.
 
-### OSS-64: Pandera bug hunt — this change
+### OSS-64: Pandera bug hunt — merged in [#70](https://github.com/PederFalkman/opensource/pull/70)
 
 - [x] Compared every Pandera check with `flag_series` on 400 random
       series (no disagreement on time-ordered data) and probed odd inputs
@@ -650,6 +650,20 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       more values crashed; a non-numeric `stale_exclude` went unnoticed on
       empty data; NaN or infinite bounds, `stale_atol`, `stale_exclude` or
       `counter_tolerance` were accepted and made the report invalid JSON.
+
+### OSS-65: options audit — this change
+
+- [x] Probed every option of `assess_quality` (and so `assess_frame`,
+      `flag_series`, the CLI and the Pandera schema) with wrong types,
+      booleans, text, numpy scalars and arrays, and empty data, and checked
+      each report against the JSON Schema.
+- [x] Fixed: an unknown `tz` raised a `KeyError` from zoneinfo, so
+      `--tz` ended in a traceback with exit status 1 ("issues found");
+      booleans as numbers and a non-boolean `cumulative` were recorded
+      as-is, making the report fail its JSON Schema; text in numeric
+      options failed inside numpy; `bounds` with three values said "too
+      many values to unpack". Each now raises `ValueError` or `TypeError`
+      naming the option; numpy numbers stay accepted.
 
 ## Explicitly not planned
 
