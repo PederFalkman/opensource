@@ -62,3 +62,4 @@ The questions and evidence for each open gate are in `RELEASE_DECISIONS.md`.
 | pandas | | |
 | pint | | |
 | pandera (optional extra) | | |
+| pyarrow (optional extra `[parquet]`) | | |
