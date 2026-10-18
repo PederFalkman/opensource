@@ -607,13 +607,26 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Moving the `[Unreleased]` changelog entries into the 0.1.0 section
       was left for a changelog-only change: OSS-61.
 
-### OSS-61: changelog fold — this change
+### OSS-61: changelog fold — merged in [#68](https://github.com/PederFalkman/opensource/pull/68)
 
 - [x] The `[Unreleased]` entries (P-2 to P-6, the licence, Python 3.14,
       Windows and macOS, pre-release fixes) folded into the 0.1.0 notes by
       theme; fixes to unreleased code described as the shipped behaviour.
 - [x] The readiness check fails only on the upload guard (G7, decision
       D6); `RELEASE_DECISIONS.md` says so.
+
+### OSS-62: Parquet bug hunt — this change
+
+- [x] Probed the Parquet reader against the CSV of the same data: text,
+      timezone-aware (ns, us, non-UTC) and naive timestamps, float32,
+      nullable, decimal, categorical, boolean and nested values, `NaT`,
+      empty, corrupt and truncated files. All gave the CSV's report or a
+      clear exit 2, except the fixed cases below.
+- [x] Fixed: a frame written by pandas with its timestamps as the named
+      index reported "timestamp column not found"; an empty `.parquet`
+      directory crashed with an `IndexError`; pyarrow's errors named a
+      `'<Buffer>'` instead of the file; an unnamed timestamp index now
+      says what to change.
 
 ## Explicitly not planned
 

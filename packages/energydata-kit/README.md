@@ -103,7 +103,8 @@ energydata-kit report meter.csv \
 Prints the deterministic JSON report to standard output (`-o` writes a file;
 `-` reads the CSV from standard input). A file ending in `.parquet`, `.parq`
 or `.pq` is read as Parquet instead (with the `[parquet]` extra), with the
-same column options; timestamps may be stored as text or as timestamps. `--format text` prints a short summary
+same column options; timestamps may be stored as text or as timestamps, in a
+column or as the named index pandas writes with `to_parquet`. `--format text` prints a short summary
 for reading instead: rows, completeness, flag counts, the first gaps and
 metadata issues per column; `--format markdown` gives the same summary as
 Markdown, to paste into an issue or pull request. Use the JSON report for

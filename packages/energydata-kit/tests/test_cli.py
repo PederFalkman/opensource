@@ -560,12 +560,14 @@ def _parquet(tmp_path, frame, name="data.parquet"):
     return str(path)
 
 
-@pytest.mark.parametrize("timestamps_as", ["datetime", "string"])
+@pytest.mark.parametrize("timestamps_as", ["datetime", "string", "index"])
 def test_parquet_input_gives_the_same_report_as_csv(tmp_path, timestamps_as):
     csv = write(tmp_path, CLEAN.replace("2024-01-01T01:30:00Z,1.50\n", ""))
     frame = pd.read_csv(csv, dtype={"timestamp": str})
-    if timestamps_as == "datetime":
+    if timestamps_as != "string":
         frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True)
+    if timestamps_as == "index":  # df.to_parquet() keeps a named index; was "column not found"
+        frame = frame.set_index("timestamp")
     for suffix in (".parquet", ".PQ"):
         path = _parquet(tmp_path, frame, "data" + suffix)
         code, out, err = run("report", path, "--freq", "15min")
@@ -584,6 +586,22 @@ def test_parquet_rejects_csv_options_and_explains_a_missing_pyarrow(tmp_path, mo
     monkeypatch.setattr(pd, "read_parquet", no_pyarrow)
     code, _, err = run("report", path, "--freq", "15min")
     assert code == 2 and "python -m pip install 'energydata-kit[parquet]'" in err
+
+
+def test_unreadable_parquet_input(tmp_path):
+    pytest.importorskip("pyarrow")
+    (tmp_path / "empty.parquet").write_bytes(b"")
+    (tmp_path / "text.parquet").write_text(CLEAN)
+    (tmp_path / "dir.parquet").mkdir()  # was an IndexError traceback
+    for name in ("empty.parquet", "text.parquet"):
+        code, out, err = run("report", str(tmp_path / name))
+        assert (code, out) == (2, "") and f"could not read Parquet file {tmp_path / name}" in err
+    code, _, err = run("report", str(tmp_path / "dir.parquet"))
+    assert code == 2 and "is a directory; pass a single Parquet file" in err
+    frame = pd.read_csv(io.StringIO(CLEAN), dtype={"timestamp": str})
+    frame.index = pd.to_datetime(frame.pop("timestamp"), utc=True).rename(None)
+    code, _, err = run("report", _parquet(tmp_path, frame, "unnamed.parquet"), "--freq", "15min")
+    assert code == 2 and "the file's timestamps are an unnamed index" in err
 
 
 def test_usage_errors_and_version(capsys):

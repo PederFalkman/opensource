@@ -79,7 +79,9 @@ found on request, 2 usage, input or file error (listed in `--help`).
   format.
 - Parquet input: a file ending in `.parquet`, `.parq` or `.pq` is read with
   the optional extra `[parquet]` (`pyarrow>=14.0.1`) and gives the same
-  report as the CSV of the same data.
+  report as the CSV of the same data. Timestamps may be a column or the
+  named index pandas writes with `to_parquet`; unreadable files and
+  directories are refused with exit status 2.
 - `compare`: what changed between two saved reports, with `--fail-if-worse`
   and `--format text` or `markdown`.
 
