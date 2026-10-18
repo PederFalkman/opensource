@@ -7,11 +7,20 @@ Merged items stay listed here as a record of what was agreed.
 ## Open decisions (owners required)
 
 Questions and evidence for each: `docs/governance/RELEASE_DECISIONS.md`.
+Engineering for 0.1.0 is complete; the release waits only on these.
 
-- [ ] **Repository visibility.** The repo is already public; decide whether to
-      make it private until release gates G1–G3 pass (see `RELEASE_GATES.md`).
-- [ ] **Ownership and license (G1/G2).** Apache-2.0 is the preferred candidate.
-- [ ] **Branch protection on `main`:** require CI + code-owner review.
+- [ ] **D1 Repository visibility.** The repo is public and, since #66,
+      Apache-2.0 licensed; decide whether it stays public while G1 and G3
+      are open.
+- [ ] **D2 Ownership (G1).** Counsel confirms the publishing entity owns the
+      code and can license it (and confirms the G4 licence table).
+- [x] **D3 Licence (G2).** Apache-2.0, granted 2026-10-18 (#66).
+- [ ] **D4 IP boundary review (G3).** A signed review on the release commit.
+- [ ] **D5 Branch protection on `main`** (not a gate): require CI and
+      code-owner review.
+- [ ] **D6 Publication (G7).** PyPI or GitHub-only, the name, the account
+      owner; approval removes the upload guard, the readiness check's only
+      remaining failure.
 - [x] **Pin GitHub Actions to commit SHAs.** Done in OSS-06.
 
 ## Deferred
@@ -73,6 +82,26 @@ and anything that downloads data.
 then P-2 with P-6 as one schema-2 change, then P-5 if users ask for it.
 
 ## Done
+
+### Pre-release hardening at a glance (OSS-40 to OSS-65)
+
+For the release reviewers: every part of the package was probed after the
+features were in, each with regression tests that fail on the code before
+the fix. Details are in the entries below and in the pull requests.
+
+| Area | Items | What was probed | Real bugs fixed |
+|---|---|---|---|
+| Core API, grids, timestamps | OSS-40, 41, 44 | Fuzzing on pandas 2.1 and 3; about 130 edge cases | Calendar grids and `origin`, DST errors, NaN in JSON, numpy options, `NaT` |
+| Determinism | OSS-42 | Reports on old and new Python, pandas, numpy | None; golden tests now pin the bytes |
+| Command line | OSS-43, 52 | 3,000 random CSVs; Windows and macOS | Tracebacks with exit 1; CRLF output on Windows |
+| Comparisons | OSS-47 | 5,500 real and mutated report pairs | Saved comparisons accepted as reports |
+| Table Schema | OSS-49 | 500 round trips, 3,000 mutated schemas | Silent column relabelling; raw `KeyError`s |
+| Newer features | OSS-59 | Known outages against a brute-force reference; Markdown; JSON Schema | Generator outages lost; wrong counts above 10**6 intervals |
+| Parquet | OSS-62 | Dtypes, timestamp forms, corrupt files | Timestamp index unreadable; directory crash |
+| Pandera | OSS-64 | 400 series against `flag_series`; Pandera 0.24 | Index checks broken on 0.24; unsorted input; invalid JSON options |
+| Options | OSS-65 | Every option with wrong types, booleans, text | Unknown `tz` traceback; reports failing their JSON Schema |
+
+Performance was re-checked after the input checks (OSS-50): no regression.
 
 ### OSS-01: foundation — merged in [#1](https://github.com/PederFalkman/opensource/pull/1)
 
@@ -651,7 +680,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       empty data; NaN or infinite bounds, `stale_atol`, `stale_exclude` or
       `counter_tolerance` were accepted and made the report invalid JSON.
 
-### OSS-65: options audit — this change
+### OSS-65: options audit — merged in [#71](https://github.com/PederFalkman/opensource/pull/71)
 
 - [x] Probed every option of `assess_quality` (and so `assess_frame`,
       `flag_series`, the CLI and the Pandera schema) with wrong types,
@@ -664,6 +693,12 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       options failed inside numpy; `bounds` with three values said "too
       many values to unpack". Each now raises `ValueError` or `TypeError`
       naming the option; numpy numbers stay accepted.
+
+### OSS-66: roadmap tidy — this change
+
+- [x] Open decisions listed as D1 to D6, with D3 (licence) done; a
+      one-table summary of the pre-release hardening for the release
+      reviewers. No code changes.
 
 ## Explicitly not planned
 
