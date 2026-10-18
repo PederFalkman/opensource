@@ -586,7 +586,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       pins pyarrow 14.0.2: current pyarrow needs NumPy 2, and the CLI
       turns an unusable pyarrow into a clear exit 2.
 
-### OSS-59: bug hunt in the newer features — this change
+### OSS-59: bug hunt in the newer features — merged in [#65](https://github.com/PederFalkman/opensource/pull/65)
 
 - [x] Probed known outages, the frame `timestamps` section, Markdown
       output and the report JSON Schema; the outage figures matched a
@@ -595,6 +595,18 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `assess_frame`; unclear errors for malformed outages; summary counts
       off above about 10**6 intervals; control characters in column names
       breaking summary lines and Markdown headings.
+
+### OSS-60: release-readiness refresh — this change
+
+- [x] `RELEASE_DECISIONS.md` facts refreshed after P-2 to P-6 and the
+      Apache-2.0 licence (#66): what changed since OSS-48, G2 passed,
+      commit counts, PyPI names re-checked, required checks for branch
+      protection, a note for the IP reviewer on known outages.
+- [x] pip-audit now also installs the `[parquet]` extra, so pyarrow is
+      audited; the licence checklist has a pyarrow row.
+- [ ] Moving the `[Unreleased]` changelog entries into the 0.1.0 section
+      (the readiness check's *nothing left unreleased*) is left for a
+      changelog-only change or the release PR.
 
 ## Explicitly not planned
 
