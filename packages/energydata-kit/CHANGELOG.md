@@ -5,82 +5,11 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
-### Changed
-- Licensed **Apache-2.0** (gate G2, granted 2026-10-18). `LICENSE` is at the
-  repository root with a byte-identical copy in this package directory, and the
-  package declares `license = "Apache-2.0"` with `license-files`, so the licence
-  ships in both the wheel and the sdist. The build-system floor moved to
-  `hatchling>=1.27`, the first release with PEP 639 support for that form.
-  **This does not publish anything:** the `Private :: Do Not Upload` classifier
-  stays until gate G7, and the G1 ownership questions remain open.
-
-### Added
-- Parquet input for `energydata-kit report`: a file ending in `.parquet`,
-  `.parq` or `.pq` is read with pandas and pyarrow, with the same column
-  options and the same report as the CSV of the same data. pyarrow comes
-  with the new optional extra `[parquet]` (`pyarrow>=14.0.1`, which fixes
-  CVE-2023-47248); without it the command says what to install and exits
-  2. `--delimiter` and `--decimal` are refused for Parquet (OSS-58).
-- Frame reports have a `timestamps` section: the facts that depend only on
-  the shared timestamp index (rows, range, step, completeness, gaps,
-  duplicates, known-outage figures), stated once when every column reports
-  the same ones, `null` when columns take different steps from their
-  metadata. Column reports are unchanged and still equal `assess_quality`
-  on each column. Part of report schema 1 and its JSON Schema (OSS-57).
-- Known outages: `assess_quality(..., known_outages=[(start, end), ...])`,
-  `assess_frame(..., known_outages=...)` and `energydata-kit report
-  --known-outage START END` take periods in which data is known to be
-  missing. Reports gain `n_missing_explained` (missing intervals inside
-  those periods), `completeness_excluding_outages` and
-  `parameters.known_outages`; gaps, totals, completeness and flags are
-  unchanged. `compare_reports` and the text and Markdown summaries show the
-  new figures. The fields are part of report schema 1, which is fixed from
-  the 0.1.0 release on (OSS-56).
-- `--format markdown` for `energydata-kit report` and `compare`: the same
-  summary as `--format text`, as Markdown headings and bullet lists to
-  paste into an issue or pull request. Column names are escaped. Built
-  from the same facts as the text summary, whose output is unchanged
-  (OSS-55).
-- `report_schema.json`: a JSON Schema (draft 2020-12) for report schema 1,
-  covering single-series reports, frame reports and comparisons. It ships in
-  the package; the tests validate every golden report and a set of generated
-  ones against it (OSS-54).
-- Python 3.14 is tested in CI and declared in the package classifiers; the
-  test suite, including the byte-for-byte golden reports, passes unchanged
-  (OSS-51).
-
-### Fixed
-- `assess_frame(..., known_outages=...)` given a generator used it up on the
-  first column, so the other columns had no known outages and the frame had
-  no `timestamps` section. The outages are now read once (OSS-59).
-- `known_outages` errors: a bare timestamp or number instead of a
-  `(start, end)` pair, `None`, `NaT`, unreadable text and dates beyond what
-  pandas can hold (after 2262) raised internal `TypeError`s or pandas
-  errors that did not mention the outage; each now raises `ValueError` or
-  `TypeError` naming the known outage and the problem (OSS-59).
-- `--format text` and `markdown`: above about a million expected intervals
-  the summary could read "3000001 of 3000001 expected; 1 missing", because
-  the present count was rebuilt from the rounded completeness. It is now
-  exact. A line break or other control character in a column name split
-  the heading or summary line; it is shown as a space, and Markdown output
-  also escapes `&`, `~` and `$` (OSS-59).
-- Command line on Windows: `-o` files and `--flags-csv` were written with
-  `\r\n` line endings, so reports were not byte-identical to those made on
-  Linux or macOS. Both now end lines in `\n` on every platform; the tests
-  run on Windows and macOS in CI (OSS-52).
-- `from_table_schema` (and `energydata-kit report --schema`) let a `name`
-  inside the `energydata_kit` property override the field's own name, so
-  the report for one column carried metadata named after another. Such a
-  schema is now rejected, and every malformed schema (not an object, a
-  field without a name, a non-object or incomplete `energydata_kit`
-  property) raises `ValueError` naming the problem instead of `KeyError`,
-  `AttributeError` or an internal `TypeError` (OSS-49).
-
 ## [0.1.0] - 2026-10-16
 
 First release: quality checks for metered energy time series, on top of
 pandas and Pint. Input data is never modified; checks return masks, flags and
-reports.
+reports. Licensed Apache-2.0; the licence ships in the wheel and the sdist.
 
 ### Timestamps and grids
 - `normalize_timestamps`: UTC normalization with explicit DST policies
@@ -111,7 +40,9 @@ reports.
   `SUM_OF_POWER`, `AVERAGED_ENERGY`, `MISSING_RESOLUTION` and
   `LABEL_ON_INSTANTANEOUS`.
 - `to_table_schema` / `from_table_schema`: Frictionless Table Schema export and
-  import, under a namespaced `"energydata_kit"` field property.
+  import, under a namespaced `"energydata_kit"` field property. A malformed
+  schema raises `ValueError` naming the problem; a `name` inside the
+  namespace, which would relabel the field, is rejected.
 
 ### Reports
 - `assess_quality` → `QualityReport`: deterministic JSON (report schema 1)
@@ -119,23 +50,38 @@ reports.
   per-local-day completeness.
 - `assess_frame` → `FrameQualityReport`: one report for several columns that
   share a timestamp index, with per-column options; each column's section
-  equals `assess_quality` on that column.
+  equals `assess_quality` on that column. A `timestamps` section states the
+  facts that depend only on the shared index (rows, range, step,
+  completeness, gaps, duplicates, known-outage figures) once, or is `null`
+  when columns take different steps from their metadata.
+- Known outages: `known_outages=[(start, end), ...]` lists periods in which
+  data is known to be missing. Reports count the missing intervals inside
+  them (`n_missing_explained`) and give `completeness_excluding_outages`;
+  gaps, totals, completeness and flags are unchanged.
 - `compare_reports` → `ReportComparison`: what changed between two reports
   (objects or saved JSON), with deltas, resolved and new gaps, and a `worse`
   verdict. Input that is not a report, such as a saved comparison, is
   rejected with the first bad field named.
+- `report_schema.json`: a JSON Schema (draft 2020-12) for report schema 1,
+  covering single-series reports, frame reports and comparisons; it ships in
+  the package. Schema 1 is fixed from this release on.
 
 ### Command line
 `energydata-kit` (also `python -m energydata_kit`); exit status 0 OK, 1 issues
 found on request, 2 usage, input or file error (listed in `--help`).
 - `report`: JSON report for one or more CSV columns, every check option,
-  `--flags-csv`, `--fail-on-issues` and `--format text` for a readable
-  summary. Metadata from `--unit` (one column) or `--schema` (a Table Schema,
+  `--known-outage START END`, `--flags-csv`, `--fail-on-issues`, and
+  `--format text` or `markdown` for a readable summary (Markdown to paste
+  into an issue or pull request; column names escaped and kept on one
+  line). Metadata from `--unit` (one column) or `--schema` (a Table Schema,
   any number of columns). `--delimiter` and `--decimal` read `;`-, tab- or
   `|`-separated files with decimal commas; the flags CSV follows the input's
   format.
+- Parquet input: a file ending in `.parquet`, `.parq` or `.pq` is read with
+  the optional extra `[parquet]` (`pyarrow>=14.0.1`) and gives the same
+  report as the CSV of the same data.
 - `compare`: what changed between two saved reports, with `--fail-if-worse`
-  and `--format text`.
+  and `--format text` or `markdown`.
 
 ### Integrations and documentation
 - Optional extra `[pandera]`: `energydata_kit.pandera_checks` with check
@@ -151,7 +97,9 @@ found on request, 2 usage, input or file error (listed in `--help`).
 - Invalid input raises `ValueError` or `TypeError` with the reason (for
   example a `NaT` timestamp or a flag value no flag uses), never a silent
   guess.
+- Python 3.11 to 3.14, tested on Linux, Windows and macOS.
 - Reports, flags CSVs and fingerprints are byte-identical on every
-  supported Python, pandas and numpy version, pinned by golden tests.
+  supported Python, pandas and numpy version and on every platform (files
+  end lines in `\n`), pinned by golden tests.
 - `assess_quality` on a year of one-minute data takes about a quarter of a
   second on the benchmark machine (`docs/architecture/PERFORMANCE.md`).
