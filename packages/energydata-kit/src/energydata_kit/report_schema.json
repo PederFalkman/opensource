@@ -571,6 +571,16 @@
           "additionalProperties": {
             "$ref": "#/$defs/quality_report"
           }
+        },
+        "timestamps": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/timestamps"
+            }
+          ]
         }
       },
       "required": [
@@ -579,7 +589,8 @@
         "fingerprint",
         "package_version",
         "schema_version",
-        "summary"
+        "summary",
+        "timestamps"
       ],
       "additionalProperties": false
     },
@@ -746,6 +757,120 @@
         "same_data",
         "schema_version",
         "worse"
+      ],
+      "additionalProperties": false
+    },
+    "timestamps": {
+      "type": "object",
+      "properties": {
+        "n_rows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "first_timestamp": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "last_timestamp": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expected_resolution": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "n_expected_intervals": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "completeness": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "gaps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/gap"
+          }
+        },
+        "n_gaps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "n_missing_intervals": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "n_missing_explained": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "completeness_excluding_outages": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "duplicate_timestamps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "n_duplicate_timestamps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "truncated": {
+          "type": "object",
+          "properties": {
+            "gaps": {
+              "type": "boolean"
+            },
+            "duplicate_timestamps": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "duplicate_timestamps",
+            "gaps"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "completeness",
+        "completeness_excluding_outages",
+        "duplicate_timestamps",
+        "expected_resolution",
+        "first_timestamp",
+        "gaps",
+        "last_timestamp",
+        "n_duplicate_timestamps",
+        "n_expected_intervals",
+        "n_gaps",
+        "n_missing_explained",
+        "n_missing_intervals",
+        "n_rows",
+        "truncated"
       ],
       "additionalProperties": false
     }

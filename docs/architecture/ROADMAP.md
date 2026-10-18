@@ -62,7 +62,7 @@ connection planning, optimization or decision support).
 | P-3 | *Approved by the owner on 2026-10-17 ahead of the release gates; done in OSS-54.* **JSON Schema for the report format.** Publish schema "1" as a JSON Schema file in the package; a test validates every golden report against it. | Lets non-Python consumers (pipelines, dashboards) validate reports without reading our code. | S | Small; the schema file becomes a public contract to maintain. Test-only dependency (`jsonschema`, MIT) or a hand-written check. |
 | P-4 | *Approved by the owner on 2026-10-17 ahead of the release gates; done in OSS-55.* **Markdown output** (`report --format markdown`, `compare --format markdown`). | Pasting a readable summary into an issue or PR is a frequent use of `--format text`. | S | Low; formatting only, no new dependency. Must not become a second report format that drifts from JSON. |
 | P-5 | **Parquet input for the command line** (optional `[parquet]` extra). | Large meter exports increasingly come as Parquet; the library already accepts any pandas Series. | S–M | New optional dependency (pyarrow, Apache-2.0): allowlist, licence table and CI matrix entry. Read-only; no writing of Parquet. |
-| P-6 | **Shared timestamp section in frame reports.** `assess_frame` repeats gaps, duplicates and off-grid per column (a known limitation); report them once at frame level. | Smaller, clearer multi-column reports. | M | Breaking report change (schema 2) and a `compare_reports` migration path; worth doing only together with another schema change such as P-2. |
+| P-6 | *Approved by the owner on 2026-10-17 as an additive section (columns unchanged); done in OSS-57.* **Shared timestamp section in frame reports.** `assess_frame` repeats gaps, duplicates and off-grid per column (a known limitation); report them once at frame level. | Smaller, clearer multi-column reports. | M | Breaking report change (schema 2) and a `compare_reports` migration path; worth doing only together with another schema change such as P-2. |
 
 Considered and not proposed: Polars or other DataFrame inputs (a second
 data model to maintain for little gain; pandas conversion is one call),
@@ -552,7 +552,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       was compared byte for byte with the previous code (unchanged), and a
       test checks every text fact appears in the Markdown.
 
-### OSS-56: known outages (P-2) — this change
+### OSS-56: known outages (P-2) — merged in [#62](https://github.com/PederFalkman/opensource/pull/62)
 
 - [x] `known_outages` for `assess_quality` and `assess_frame` and
       `--known-outage START END` for the command line: timezone-aware
@@ -563,6 +563,18 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       Added to schema 1 and its JSON Schema while 0.1.0 is unreleased.
 - [x] `compare_reports`, its input check and the text and Markdown
       summaries handle the new figures.
+
+### OSS-57: shared timestamp section in frame reports (P-6) — this change
+
+- [x] Owner's choice among three designs: an additive frame-level
+      `timestamps` section. Column reports are unchanged and still equal
+      `assess_quality` per column (the 0.1.0 promise), so reports do not
+      get smaller; they get one place to read the timestamp facts.
+- [x] The section is built only when every column reports identical
+      timestamp facts, so it is correct by construction; `null` when
+      columns take different steps from their metadata.
+- [x] JSON Schema, golden frame report (only the new section added) and
+      tests updated.
 
 ## Explicitly not planned
 

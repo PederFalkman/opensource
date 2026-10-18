@@ -6,6 +6,12 @@ versioning: [SemVer](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Frame reports have a `timestamps` section: the facts that depend only on
+  the shared timestamp index (rows, range, step, completeness, gaps,
+  duplicates, known-outage figures), stated once when every column reports
+  the same ones, `null` when columns take different steps from their
+  metadata. Column reports are unchanged and still equal `assess_quality`
+  on each column. Part of report schema 1 and its JSON Schema (OSS-57).
 - Known outages: `assess_quality(..., known_outages=[(start, end), ...])`,
   `assess_frame(..., known_outages=...)` and `energydata-kit report
   --known-outage START END` take periods in which data is known to be
