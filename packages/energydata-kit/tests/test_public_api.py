@@ -108,7 +108,7 @@ CORE = {
     "infer_resolution": ("index",),
     "interval_bounds": ("index", "freq", "label"),
     "jump_mask": ("values", "max_delta"),
-    "local_day_completeness": ("index", "freq", "tz", "*", "interval_label="),
+    "local_day_completeness": ("index", "freq", "tz", "*", "interval_label=", "origin="),
     "make_synthetic_series": (
         "*",
         "start=",

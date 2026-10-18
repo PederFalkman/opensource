@@ -206,7 +206,7 @@ def _compare_series(before: dict[str, Any], after: dict[str, Any]) -> tuple[dict
             ],
             # Only listed gaps are compared; truncated lists may hide some.
             "lists_truncated": bool(
-                before.get("truncated", {}).get("gaps") or after.get("truncated", {}).get("gaps")
+                (before.get("truncated") or {}).get("gaps") or (after.get("truncated") or {}).get("gaps")
             ),
         }
 

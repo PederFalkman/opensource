@@ -269,6 +269,8 @@ def assess_quality(
         raise TypeError(f"max_listed must be an integer, got {max_listed!r}")
     max_listed = operator.index(max_listed)  # TypeError for 1.5; accepts numpy integers
     outages = _outages(known_outages)
+    if not isinstance(stale_exclude, str | bytes):
+        stale_exclude = tuple(stale_exclude)  # read once: applied and recorded alike
     if max_listed < 0:
         raise ValueError("max_listed must be >= 0")
     freq, tz = _grid_from_metadata(freq, tz, metadata)
@@ -330,7 +332,7 @@ def assess_quality(
     if step is not None and len(index):
         day_tz = "UTC" if metadata is None else metadata.timezone
         label = IntervalLabel.START if metadata is None else metadata.interval_label
-        days = local_day_completeness(index, step, day_tz, interval_label=label)
+        days = local_day_completeness(index, step, day_tz, interval_label=label, origin=origin)
         local_days = _summarize_local_days(days, day_tz, max_listed)
 
     dups = find_duplicate_timestamps(index)

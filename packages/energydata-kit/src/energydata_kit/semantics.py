@@ -14,7 +14,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from energydata_kit.intervals import to_step
+from energydata_kit.intervals import _aware, to_step
 from energydata_kit.metadata import Aggregation, IntervalLabel, MeasurementMetadata, get_unit_registry
 from energydata_kit.timestamps import utc_ns
 
@@ -133,6 +133,7 @@ def local_day_completeness(
     tz: str,
     *,
     interval_label: IntervalLabel | str = IntervalLabel.START,
+    origin: pd.Timestamp | None = None,
 ) -> pd.DataFrame:
     """Expected vs. present intervals for each local calendar day.
 
@@ -140,7 +141,8 @@ def local_day_completeness(
     converting ``interval_label`` to start). The expected count follows the
     local day length, e.g. 92 / 96 / 100 intervals at 15 minutes on DST
     spring-forward / normal / fall-back days. Only unique timestamps aligned to
-    the grid from local midnight count as present.
+    the grid count as present: the grid from local midnight, or with
+    ``origin`` the grid through ``origin`` (as in :func:`energydata_kit.expected_grid`).
 
     Returns a frame indexed by ``local_date`` (``datetime.date``) with columns
     ``expected``, ``present``, ``missing`` and ``completeness``. The first and
@@ -166,9 +168,17 @@ def local_day_completeness(
     starts_ns = utc_ns(starts)
     step_ns = step.value
 
-    expected = (np.diff(bounds_ns) // step_ns).astype(np.int64)
     day_idx = np.searchsorted(bounds_ns, starts_ns, side="right") - 1
-    on_grid = (starts_ns - bounds_ns[day_idx]) % step_ns == 0
+    if origin is None:
+        expected = (np.diff(bounds_ns) // step_ns).astype(np.int64)
+        on_grid = (starts_ns - bounds_ns[day_idx]) % step_ns == 0
+    else:
+        # Grid points origin + k * step, counted per day as those in [day start, next day start).
+        # Labels and interval starts differ by one step, so either sits on the same grid.
+        anchor = _aware(origin, "origin").as_unit("ns").value
+        first_at_or_after = -((anchor - bounds_ns) // step_ns)  # ceil((bound - anchor) / step)
+        expected = np.diff(first_at_or_after).astype(np.int64)
+        on_grid = (starts_ns - anchor) % step_ns == 0
     present = np.minimum(np.bincount(day_idx[on_grid], minlength=len(expected)), expected)
 
     return pd.DataFrame(

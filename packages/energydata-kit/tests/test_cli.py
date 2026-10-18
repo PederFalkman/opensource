@@ -605,6 +605,28 @@ def test_calendar_resolution_from_metadata_in_report_and_flags(tmp_path):
     assert [line.rsplit(",", 1)[1] for line in flags.read_text().splitlines()[1:]] == ["0"] * 4
 
 
+def test_metadata_options_need_unit(tmp_path):
+    # --resolution without --unit was ignored: gaps went unreported, with exit 0.
+    path = str(write(tmp_path, CLEAN.replace("2024-01-01T01:30:00Z,1.50\n", "")))
+    code, out, err = run("report", path, "--resolution", "15min", "--fail-on-issues")
+    assert (code, out) == (2, "") and "pass --unit too" in err
+
+
+def test_flags_csv_step_is_checked_before_the_report_is_written(tmp_path):
+    csv = write(tmp_path, "timestamp,a,b\n2024-01-01T00:00Z,1,2\n")
+    fields = [
+        {"name": c, "energydata_kit": {"unit": "kW", "resolution": r}}
+        for c, r in (("a", "15min"), ("b", "1h"))
+    ]
+    schema = write(tmp_path, json.dumps({"fields": fields}), "schema.json")
+    report = tmp_path / "report.json"
+    code, _, err = run(
+        "report", str(csv), "--schema", str(schema), "--flags-csv", str(tmp_path / "f.csv"), "-o", str(report)
+    )
+    assert code == 2 and "different resolutions" in err
+    assert not report.exists()  # was written before the error
+
+
 def test_unknown_time_zone(tmp_path):
     # --tz Mars/Phobos ended in a zoneinfo traceback with exit status 1 ("issues found").
     path = str(write(tmp_path, CLEAN))
