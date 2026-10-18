@@ -765,7 +765,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       rule that validates resolutions, instead of a second check with a
       pandas 2/3 special case. A test pins the classification on both.
 
-### OSS-74: build the grid once in `assess_quality` — this change
+### OSS-74: build the grid once in `assess_quality` — merged in [#78](https://github.com/PederFalkman/opensource/pull/78)
 
 - [x] The last note from the second review: gaps, completeness and
       known outages share one expected grid and one presence test
