@@ -68,7 +68,8 @@ jobs:
           python -m pip install -e . --group dev
       - name: Pin lowest supported runtime dependencies
         if: matrix.lowest
-        run: python -m pip install "numpy==1.26.*" "pandas==2.1.*" "pint==0.24.*"
+        # pyarrow 14.0.2: the lowest allowed (CVE fix in 14.0.1) that still works with NumPy 1.26.
+        run: python -m pip install "numpy==1.26.*" "pandas==2.1.*" "pint==0.24.*" "pyarrow==14.0.2"
       - name: Ruff
         if: ${{ !matrix.lowest }}
         run: |

@@ -27,6 +27,8 @@ energydata-kit = [
     "pint",
     # optional extra [pandera]: Pandera checks (MIT, pydantic-based)
     "pandera",
+    # optional extra [parquet]: Parquet input for the command line (Apache-2.0)
+    "pyarrow",
     # dev group
     "build",
     # property-based tests only (MPL-2.0; dev dependency, never shipped or copied)
