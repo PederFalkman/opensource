@@ -14,7 +14,8 @@ reports. Licensed Apache-2.0; the licence ships in the wheel and the sdist.
 ### Timestamps and grids
 - `normalize_timestamps`: UTC normalization with explicit DST policies
   (`ambiguous`, `nonexistent`); naive or unparseable values are reported, not
-  guessed (unparseable ones by position).
+  guessed (unparseable ones by position). A date without a time of day is
+  naive and needs `assume_tz`.
 - `summarize_timestamps` and `infer_resolution`.
 - Fixed-step grids: `expected_grid`, `find_missing_intervals`,
   `missing_timestamps`, `find_duplicate_timestamps`, `duplicate_mask` and
@@ -22,12 +23,15 @@ reports. Licensed Apache-2.0; the licence ships in the wheel and the sdist.
 - Local-calendar steps via `tz=` (for example `"D"`, `"W-MON"` or `"MS"` in
   `"Europe/Stockholm"`), DST-aware.
 - Interval semantics: `relabel_intervals` and `interval_bounds` for start/end
-  labels; `local_day_completeness` per local calendar day.
+  labels; `local_day_completeness` per local calendar day, on the same grid
+  as the report (`origin=` included).
 
 ### Values and flags
 - Masks for missing, non-finite, non-numeric and out-of-bounds values, plus
   the opt-in `stale_mask`, `counter_decrease_mask` and `jump_mask`, tuned with
-  `stale_atol`, `stale_exclude`, `counter_tolerance` and `jump_max_delta`.
+  `stale_atol`, `stale_exclude`, `counter_tolerance` and `jump_max_delta`
+  (a run is excluded when all its values lie within `stale_atol` of an
+  excluded value).
 - `QualityFlag` bitmask (`MISSING_VALUE` = 1 up to `JUMP` = 512) and the
   non-destructive `flag_series`; `flag_frame` and `flag_column` for several
   columns at once.
@@ -73,8 +77,9 @@ found on request, 2 usage, input or file error (listed in `--help`).
   `--known-outage START END`, `--flags-csv`, `--fail-on-issues`, and
   `--format text` or `markdown` for a readable summary (Markdown to paste
   into an issue or pull request; column names escaped and kept on one
-  line). Metadata from `--unit` (one column) or `--schema` (a Table Schema,
-  any number of columns). `--delimiter` and `--decimal` read `;`-, tab- or
+  line). Metadata from `--unit` (one column, with `--resolution`,
+  `--aggregation`, `--interval-label` and `--timezone`) or `--schema` (a
+  Table Schema, any number of columns). `--delimiter` and `--decimal` read `;`-, tab- or
   `|`-separated files with decimal commas; the flags CSV follows the input's
   format.
 - Parquet input: a file ending in `.parquet`, `.parq` or `.pq` is read with

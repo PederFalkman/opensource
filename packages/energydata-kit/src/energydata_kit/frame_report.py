@@ -181,6 +181,8 @@ def assess_frame(
         for lo, hi in _outages(known_outages)
     ]
 
+    if not isinstance(stale_exclude, str | bytes):
+        stale_exclude = tuple(stale_exclude)  # a generator would otherwise reach only the first column
     shared: dict[str, Any] = {
         "metadata": None,
         "bounds": bounds,

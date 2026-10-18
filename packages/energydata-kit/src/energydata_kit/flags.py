@@ -151,8 +151,9 @@ def stale_mask(
 
     Values are compared in row order: a run continues while each finite value
     differs from the previous one by at most ``atol``. Missing or non-finite
-    values end a run and are never flagged. Runs whose values are in
-    ``exclude`` (e.g. ``0.0`` for generation at night) are not flagged. Time
+    values end a run and are never flagged. Runs whose values all lie within
+    ``atol`` of a value in ``exclude`` (e.g. ``0.0`` for generation at night)
+    are not flagged. Time
     gaps between rows are not considered; check gaps separately.
     """
     if isinstance(min_run, bool | np.bool_):
@@ -174,7 +175,12 @@ def stale_mask(
     run_id = np.cumsum(run_start) - 1
     mask = (np.bincount(run_id)[run_id] >= min_run) & finite
     if excluded.size:
-        mask &= ~np.isin(v, excluded)
+        # A run is left out when every value in it is within atol of an excluded value,
+        # so a near-zero run with atol > 0 is excluded whole, not row by row.
+        near = np.zeros(v.size, dtype=bool)
+        near[finite] = (np.abs(v[finite, None] - excluded[None, :]) <= atol).any(axis=1)
+        far_in_run = np.bincount(run_id, weights=(~near).astype(np.float64))
+        mask &= far_in_run[run_id] > 0
     return np.asarray(mask, dtype=bool)
 
 
