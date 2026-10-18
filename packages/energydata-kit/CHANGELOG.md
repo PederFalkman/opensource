@@ -88,7 +88,7 @@ found on request, 2 usage, input or file error (listed in `--help`).
 ### Integrations and documentation
 - Optional extra `[pandera]`: `energydata_kit.pandera_checks` with check
   factories and `series_schema(...)`, built on the same masks as
-  `flag_series`.
+  `flag_series`; Pandera 0.24 or later, tested on the lowest and the latest.
 - `make_synthetic_series` for deterministic test data.
 - `examples/GUIDE.md`: worked examples from raw local meter timestamps to
   reports and the command line, executed by the test suite.
@@ -97,8 +97,9 @@ found on request, 2 usage, input or file error (listed in `--help`).
 - Required inputs are positional and every optional argument is keyword-only;
   the public signatures are pinned by `tests/test_public_api.py`.
 - Invalid input raises `ValueError` or `TypeError` with the reason (for
-  example a `NaT` timestamp or a flag value no flag uses), never a silent
-  guess.
+  example a `NaT` timestamp, a flag value no flag uses or a non-finite
+  bound or tolerance), never a silent guess. Options are checked when they
+  are given, also for empty data and when a Pandera check is built.
 - Python 3.11 to 3.14, tested on Linux, Windows and macOS.
 - Reports, flags CSVs and fingerprints are byte-identical on every
   supported Python, pandas and numpy version and on every platform (files

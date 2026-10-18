@@ -86,6 +86,9 @@ def test_index_checks_work_on_pa_index():
         index=pa.Index(checks=[pc.no_duplicate_timestamps_check(), pc.on_grid_check("15min")])
     )
     assert failed_checks(schema, s) == ["duplicate timestamps"]
+    # On Pandera 0.24 every check in pa.Index raised TypeError (it passes the timestamps
+    # with a RangeIndex), and the timezone check reported aware timestamps as naive.
+    assert failed_checks(pa.SeriesSchema(index=pa.Index(checks=[pc.timezone_aware_check()])), s) == []
 
 
 def test_agrees_with_flag_series():
@@ -105,6 +108,26 @@ def test_invalid_arguments_fail_early():
         pc.counter_check(tolerance=-1)
     with pytest.raises(ValueError):
         pc.jump_check(0)
+    # These were accepted, and then every validation failed on the configuration.
+    with pytest.raises(ValueError, match="exceeds upper bound"):
+        pc.within_bounds_check(lower=5, upper=1)
+    with pytest.raises(ValueError, match="only numbers"):
+        pc.stale_check(3, exclude=["x"])
+    with pytest.raises(ValueError):
+        pc.series_schema(bounds=(5, 1))
+
+
+def test_consecutive_checks_refuse_unsorted_timestamps():
+    # In file order 5, 1, 2 looks like a counter decrease; in time order it is 1, 2, 5.
+    # flag_series refuses such input, and the Pandera checks now say so too.
+    index = pd.DatetimeIndex(["2024-01-01T00:30Z", "2024-01-01T00:00Z", "2024-01-01T00:15Z"])
+    series = pd.Series([5.0, 1.0, 2.0], index=index)
+    for check in (pc.counter_check(), pc.jump_check(3.0), pc.stale_check(2)):
+        with pytest.raises(pa.errors.SchemaErrors) as exc:
+            pa.SeriesSchema(checks=[check]).validate(series, lazy=True)
+        assert "require a sorted index" in str(exc.value.failure_cases["failure_case"].iloc[0])
+    # Without timestamps, the row order is the only order there is.
+    assert pa.SeriesSchema(checks=[pc.counter_check()]).validate(pd.Series([1.0, 2.0])).tolist() == [1.0, 2.0]
 
 
 def test_jump_check():
