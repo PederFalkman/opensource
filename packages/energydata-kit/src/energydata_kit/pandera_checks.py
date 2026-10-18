@@ -37,7 +37,7 @@ from energydata_kit.flags import (
     stale_mask,
 )
 from energydata_kit.intervals import duplicate_mask, expected_grid, off_grid_mask
-from energydata_kit.metadata import MeasurementMetadata
+from energydata_kit.metadata import MeasurementMetadata, _grid_from_metadata
 from energydata_kit.timestamps import on_index
 
 __all__ = [
@@ -238,12 +238,12 @@ def series_schema(
 ) -> pa.SeriesSchema:
     """A ``SeriesSchema`` running the same checks as :func:`energydata_kit.assess_quality`.
 
-    The step comes from ``freq``, else ``metadata.resolution``; without one,
+    The step comes from ``freq``, else ``metadata.resolution`` (one with no
+    fixed length in ``metadata.timezone``, as in ``assess_quality``); without one,
     grid checks are left out. The schema name is ``metadata.name`` if given.
     """
     _check_options(stale_min_run, stale_atol, stale_exclude, cumulative, counter_tolerance)
-    if freq is None and metadata is not None:
-        freq = metadata.resolution
+    freq, tz = _grid_from_metadata(freq, tz, metadata)
     index_checks = [timezone_aware_check(), no_duplicate_timestamps_check()]
     if freq is not None:
         index_checks += [

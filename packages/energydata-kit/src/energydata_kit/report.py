@@ -21,12 +21,12 @@ from energydata_kit import __version__
 from energydata_kit.flags import FLAG_COLUMN, QualityFlag, flag_series
 from energydata_kit.intervals import (
     Gap,
+    _gaps,
     expected_grid,
     find_duplicate_timestamps,
-    find_missing_intervals,
     to_step,
 )
-from energydata_kit.metadata import IntervalLabel, MeasurementMetadata
+from energydata_kit.metadata import IntervalLabel, MeasurementMetadata, _grid_from_metadata
 from energydata_kit.semantics import MetadataIssue, check_metadata_consistency, local_day_completeness
 from energydata_kit.timestamps import infer_resolution, on_index, utc_ns
 
@@ -209,7 +209,10 @@ def assess_quality(
     The expected step is taken from ``freq``, else ``metadata.resolution``.
     If neither is given, grid-based checks (gaps, off-grid, completeness) are
     skipped and only the inferred resolution is reported; the step is never
-    guessed silently.
+    guessed silently. A metadata resolution with no fixed length (``"MS"``,
+    ``"W-MON"``) is a local-calendar step in ``metadata.timezone``, as if
+    ``tz`` were given; ``"D"`` stays the 24-hour step (pass ``tz`` for local
+    days, which are 23 or 25 hours long across DST).
 
     ``completeness`` is the share of expected grid timestamps that are
     present, whatever their values: a row with a missing value still counts
@@ -249,8 +252,7 @@ def assess_quality(
         stale_exclude = tuple(stale_exclude)  # read once: applied and recorded alike
     if max_listed < 0:
         raise ValueError("max_listed must be >= 0")
-    if freq is None and metadata is not None:
-        freq = metadata.resolution
+    freq, tz = _grid_from_metadata(freq, tz, metadata)
     # Fixed steps are validated up front; calendar steps (tz given) stay as
     # pandas frequency strings.
     step = None if freq is None or tz is not None else to_step(freq)
@@ -286,10 +288,12 @@ def assess_quality(
     n_missing_explained = None
     completeness_excluding_outages = None
     if grid_freq is not None and len(index):
-        gaps = find_missing_intervals(index, grid_freq, origin=origin, tz=tz)
+        # One grid and one presence test serve gaps, completeness and known outages.
         grid = expected_grid(index, grid_freq, origin=origin, tz=tz)
+        on_grid = on_index(grid, index)
+        gaps = _gaps(grid, on_grid)
         n_expected = len(grid)
-        present = int(on_index(grid, index).sum())
+        present = int(np.count_nonzero(on_grid))
         # No grid point inside the data's time span (possible with origin=): undefined.
         completeness = round(present / n_expected, 6) if n_expected else None
         n_missing_explained = 0
@@ -298,7 +302,7 @@ def assess_quality(
             inside = np.zeros(len(grid), dtype=bool)
             for lo, hi in outages:
                 inside |= (grid_ns >= lo) & (grid_ns <= hi)
-            missing = ~on_index(grid, index)
+            missing = ~on_grid
             n_missing_explained = int(np.count_nonzero(missing & inside))
             outside = int(np.count_nonzero(~inside))
             if outside:

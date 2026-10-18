@@ -1,7 +1,7 @@
 # Release decisions for energydata-kit 0.1.0
 
 **Status:** prepared 2026-10-16 (OSS-22), facts refreshed 2026-10-17
-(OSS-48) and 2026-10-18 (OSS-60) · **For:** management, legal counsel
+(OSS-48) and 2026-10-18 (OSS-60, OSS-69) · **For:** management, legal counsel
 and the technical lead who sign off the release gates in `RELEASE_GATES.md`.
 
 This page collects every decision that still blocks the first release, the
@@ -9,8 +9,8 @@ evidence already in the repository for each, and the exact questions to
 answer. It does not make any of these decisions. Engineering work for 0.1.0
 is complete; nothing below needs more code before the decisions are made.
 Since the first version of this page, correctness passes (OSS-40 to OSS-49,
-OSS-59) fixed the bugs they found, and the five approved proposals P-2 to
-P-6 were added (OSS-54 to OSS-58; see "What changed since OSS-48" below).
+OSS-59, OSS-62, OSS-64, OSS-65 and the whole-package review OSS-67) fixed
+the bugs they found, and the five approved proposals P-2 to P-6 were added (OSS-54 to OSS-58; see "What changed since OSS-48" below).
 D3 is decided (Apache-2.0, #66), so the licence checks pass, and the
 changelog entries for the work above are part of the 0.1.0 notes (OSS-61).
 The readiness check fails on one item only: *upload guard removed*, which
@@ -35,7 +35,17 @@ facts were last refreshed:
 - **`--format markdown`** (OSS-55): a second rendering of the existing
   summary, with no new facts.
 - **Platforms:** Python 3.14 (OSS-51) and Windows and macOS (OSS-52) are
-  tested in CI.
+  tested in CI. The lowest-dependencies job also pins Pandera 0.24, the
+  lowest the `[pandera]` extra allows (OSS-64).
+- **Hardening after the features** (OSS-59 to OSS-67): each area was probed
+  again and the real bugs fixed with regression tests; the roadmap's
+  "Pre-release hardening at a glance" table lists them. Changes a user
+  notices: a date without a time of day is naive and needs `assume_tz`;
+  options are type-checked when given (no booleans or text for numbers,
+  `cumulative` is `True` or `False`); an unknown time zone is an error, not
+  a traceback; CLI metadata options need `--unit`.
+- **In review** (OSS-68, #74): a calendar resolution in metadata (`"D"`,
+  `"MS"`) will count in the metadata's time zone, decided by the owner.
 
 ## Where things stand
 
@@ -73,13 +83,13 @@ replace either (see `RELEASE_GATES.md`).
 
 - **Question:** does the publishing legal entity own all code in the
   repository, so that it can license it?
-- **Facts for the answer** (from `git log` on `main` at `bb09342`, after #66,
-  2026-10-18): 157 commits.
-  - 82 by an AI coding assistant (author "Claude", with a `Co-Authored-By`
-    trailer) in sessions run by the repository owner: 72 contain the code,
-    docs, licence and roadmap updates, 10 merge `main` into a pull-request
+- **Facts for the answer** (from `git log` on `main` at `572b335`, after #73,
+  2026-10-18): 177 commits.
+  - 95 by an AI coding assistant (author "Claude", with a `Co-Authored-By`
+    trailer) in sessions run by the repository owner: 82 contain the code,
+    docs, licence and roadmap updates, 13 merge `main` into a pull-request
     branch.
-  - 71 by the repository owner: 65 pull-request merges, 4 merges of `main`
+  - 78 by the repository owner: 72 pull-request merges, 4 merges of `main`
     into a pull-request branch, and 2 own commits (the initial commit and a
     roadmap note).
   - 4 Dependabot updates of pinned GitHub Actions.

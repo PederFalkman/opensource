@@ -32,7 +32,8 @@ from energydata_kit import __version__
 from energydata_kit.compare import compare_reports
 from energydata_kit.flags import VALUE_COLUMN, flag_series
 from energydata_kit.frame_report import FrameQualityReport, assess_frame, flag_frame
-from energydata_kit.metadata import Aggregation, IntervalLabel, MeasurementMetadata
+from energydata_kit.intervals import to_step
+from energydata_kit.metadata import Aggregation, IntervalLabel, MeasurementMetadata, _grid_from_metadata
 from energydata_kit.report import QualityReport, assess_quality
 from energydata_kit.table_schema import NAMESPACE, from_table_schema
 from energydata_kit.timestamps import TimestampError, normalize_timestamps
@@ -425,7 +426,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
     _write_report(args, report, stdout)
 
     if args.flags_csv:
-        freq = args.freq if args.freq else (metadata.resolution if metadata else None)
+        freq, tz = _grid_from_metadata(args.freq, args.tz, metadata)  # the report's grid
         flagged = flag_series(
             series,
             freq=freq,
@@ -438,7 +439,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
             counter_tolerance=args.counter_tolerance,
             jump_max_delta=args.jump_max_delta,
             origin=origin,
-            tz=args.tz,
+            tz=tz,
         )
         flagged = flagged.rename(columns={VALUE_COLUMN: series.name})
         flagged.index.name = args.timestamp_col
@@ -582,18 +583,34 @@ def _run_frame_report(
         max_listed=args.max_listed,
         **checks,
     )
-    freq = args.freq
+    freq, tz = args.freq, args.tz
     if args.flags_csv and freq is None:
-        # As in the report, the metadata resolution is the step; one table needs one step.
-        # Checked before anything is written, so a failed command leaves no report behind.
-        steps = {str(m.resolution) for m in metadata.values() if m.resolution is not None}
-        if len(steps) > 1:
-            raise CliError(f"--schema columns have different resolutions {sorted(steps)}; pass --freq")
-        freq = next((m.resolution for m in metadata.values() if m.resolution is not None), None)
+        # As in the report, the metadata resolution is the step (in the metadata's time zone for
+        # calendar steps); one table needs one grid. Checked before anything is written, so a
+        # failed command leaves no report behind.
+        grids: dict[tuple[object, str | None], tuple[str | pd.Timedelta | None, str | None]] = {}
+        for m in metadata.values():
+            if m.resolution is not None:
+                step, zone = _grid_from_metadata(None, None, m)
+                # Fixed steps compare by length, so "60min" and "1h" are one grid.
+                assert step is not None  # m.resolution is set
+                key = (to_step(step) if zone is None else str(step), zone)
+                grids.setdefault(key, (step, zone))
+        if len(grids) > 1:
+            steps = sorted({f"{f} ({z})" if z else str(f) for f, z in grids.values()})
+            raise CliError(f"--schema columns have different resolutions {steps}; pass --freq")
+        no_step = [c for c in frame.columns if c not in metadata or metadata[c].resolution is None]
+        if grids and no_step:
+            # Their reports have no grid; flagging them on another column's grid would disagree.
+            raise CliError(
+                f"columns {no_step} have no resolution in --schema while others do; "
+                "give each column a resolution, or pass --freq"
+            )
+        freq, tz = next(iter(grids.values()), (None, None))
     _write_report(args, report, stdout)
     if args.flags_csv:
         flagged = flag_frame(
-            frame, freq=freq, insert_missing=args.insert_missing, origin=origin, tz=args.tz, **checks
+            frame, freq=freq, insert_missing=args.insert_missing, origin=origin, tz=tz, **checks
         )
         flagged.index.name = args.timestamp_col
         _write_flags(args, flagged)

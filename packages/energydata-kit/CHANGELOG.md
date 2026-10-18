@@ -51,7 +51,10 @@ reports. Licensed Apache-2.0; the licence ships in the wheel and the sdist.
 ### Reports
 - `assess_quality` → `QualityReport`: deterministic JSON (report schema 1)
   with a SHA-256 data fingerprint, the parameters used, metadata issues and
-  per-local-day completeness.
+  per-local-day completeness. Without `freq`, the step is the metadata
+  resolution; one with no fixed length (`"MS"`, `"W-MON"`) counts in the
+  metadata's time zone. `"D"` is a 24-hour step; for local days, which are
+  23 or 25 hours long across DST, pass `tz` (`--tz`).
 - `assess_frame` → `FrameQualityReport`: one report for several columns that
   share a timestamp index, with per-column options; each column's section
   equals `assess_quality` on that column. A `timestamps` section states the
@@ -112,5 +115,5 @@ found on request, 2 usage, input or file error (listed in `--help`).
 - Reports, flags CSVs and fingerprints are byte-identical on every
   supported Python, pandas and numpy version and on every platform (files
   end lines in `\n`), pinned by golden tests.
-- `assess_quality` on a year of one-minute data takes about a quarter of a
+- `assess_quality` on a year of one-minute data takes under a quarter of a
   second on the benchmark machine (`docs/architecture/PERFORMANCE.md`).

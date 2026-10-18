@@ -588,6 +588,23 @@ def test_parquet_rejects_csv_options_and_explains_a_missing_pyarrow(tmp_path, mo
     assert code == 2 and "python -m pip install 'energydata-kit[parquet]'" in err
 
 
+def test_monthly_resolution_from_metadata_in_report_and_flags(tmp_path):
+    # Local month starts across the March DST change: complete, nothing flagged (was refused).
+    rows = [
+        "2024-01-01T00:00+01:00",
+        "2024-02-01T00:00+01:00",
+        "2024-03-01T00:00+01:00",
+        "2024-04-01T00:00+02:00",
+    ]
+    path = str(write(tmp_path, "timestamp,kwh\n" + "".join(f"{r},1\n" for r in rows)))
+    flags = tmp_path / "flags.csv"
+    meta = ["--unit", "kWh", "--aggregation", "sum", "--resolution", "MS", "--timezone", "Europe/Stockholm"]
+    code, out, err = run("report", path, *meta, "--flags-csv", str(flags))
+    assert (code, err) == (0, "")
+    assert json.loads(out)["completeness"] == 1.0
+    assert [line.rsplit(",", 1)[1] for line in flags.read_text().splitlines()[1:]] == ["0"] * 4
+
+
 def test_metadata_options_need_unit(tmp_path):
     # --resolution without --unit was ignored: gaps went unreported, with exit 0.
     path = str(write(tmp_path, CLEAN.replace("2024-01-01T01:30:00Z,1.50\n", "")))
@@ -608,6 +625,31 @@ def test_flags_csv_step_is_checked_before_the_report_is_written(tmp_path):
     )
     assert code == 2 and "different resolutions" in err
     assert not report.exists()  # was written before the error
+
+
+def test_flags_csv_grid_across_schema_columns(tmp_path):
+    csv = write(
+        tmp_path, "timestamp,a,b\n2024-01-01T00:00Z,1,2\n2024-01-01T01:00Z,1,2\n2024-01-01T03:00Z,1,2\n"
+    )
+
+    def schema(b_resolution):
+        b = {"unit": "kW"} | ({"resolution": b_resolution} if b_resolution else {})
+        fields = [
+            {"name": "a", "energydata_kit": {"unit": "kW", "resolution": "60min"}},
+            {"name": "b", "energydata_kit": b},
+        ]
+        return str(write(tmp_path, json.dumps({"fields": fields}), "schema.json"))
+
+    flags = tmp_path / "flags.csv"
+    # "60min" and "1h" were refused as "different resolutions"; they are one grid.
+    code, _, err = run("report", str(csv), "--schema", schema("1h"), "--flags-csv", str(flags))
+    assert (code, err) == (0, "") and flags.exists()
+    # A column without a resolution was flagged on the other column's grid while its report had none.
+    report = tmp_path / "report.json"
+    code, _, err = run(
+        "report", str(csv), "--schema", schema(None), "--flags-csv", str(flags), "-o", str(report)
+    )
+    assert code == 2 and "have no resolution in --schema" in err and not report.exists()
 
 
 def test_unknown_time_zone(tmp_path):

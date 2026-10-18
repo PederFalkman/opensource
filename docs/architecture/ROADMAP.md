@@ -700,7 +700,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       one-table summary of the pre-release hardening for the release
       reviewers. No code changes.
 
-### OSS-67: fresh-eyes review — this change
+### OSS-67: fresh-eyes review — merged in [#73](https://github.com/PederFalkman/opensource/pull/73)
 
 - [x] A high-effort review read every module end to end; all nine
       findings were reproduced before fixing.
@@ -711,10 +711,67 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `stale_atol` flagging every other row of a near-zero run; CLI
       metadata options silently ignored without `--unit`; a report written
       before a `--flags-csv` error.
-- [ ] Open for the owner: whether a calendar resolution in metadata (for
+- [x] Open for the owner: whether a calendar resolution in metadata (for
       example `"D"` with `timezone="Europe/Stockholm"`) should use the
-      metadata time zone without `tz=`; today it is a fixed 24-hour UTC
-      step.
+      metadata time zone without `tz=`. Decided in OSS-68, narrowed after a
+      second review to steps with no fixed length (see below).
+
+### OSS-68: calendar resolutions in metadata — merged in [#74](https://github.com/PederFalkman/opensource/pull/74)
+
+- [x] A metadata resolution with no fixed length (`"MS"`, `"W-MON"`) is a
+      local-calendar step in `metadata.timezone` when no `tz=` is given;
+      before, it was refused. The report, frame reports, the Pandera schema
+      and both `--flags-csv` paths use the same rule.
+- [x] `"D"` stays the 24-hour step, as before, by the owner's decision after
+      a second review: as a local-calendar step it crashed in zones where
+      DST skips midnight (São Paulo, Santiago, Cairo) and moved daily data
+      stamped at UTC midnight off the grid. Local days need `tz=` (`--tz`),
+      now documented.
+
+### OSS-69: release facts refreshed — merged in [#75](https://github.com/PederFalkman/opensource/pull/75)
+
+- [x] `RELEASE_DECISIONS.md`: commit counts, the hardening since OSS-60 and
+      the Pandera 0.24 pin; the shared decision brief republished to match.
+
+### OSS-70: release dry run — branch only, not for merge before D1, D2, D4, D6
+
+- [x] Branch `claude/oss-70-release-dry-run` holds the release edits
+      (upload guard removed, changelog dated, readiness test inverted);
+      `check_release_readiness --strict` and `release_dry_run --build` pass.
+      A draft release-PR description was prepared from the checklist. It
+      is rebased and opened only after the human gates are signed off.
+
+### OSS-71: second fresh-eyes review — fixes in #74 and OSS-72
+
+- [x] A second whole-package review on the OSS-68 code: its three
+      regressions (DST-skipped midnights, UTC-stamped daily data, UTC
+      aliases) were fixed in #74 by keeping `"D"` a 24-hour step; two CLI
+      edge cases went to OSS-72; code-quality notes left as possible
+      follow-ups.
+
+### OSS-72: `--flags-csv` grid across `--schema` columns — merged in [#76](https://github.com/PederFalkman/opensource/pull/76)
+
+- [x] Equal fixed steps spelled differently (`"60min"`, `"1h"`) are one
+      grid, not "different resolutions".
+- [x] A column without a resolution, next to columns with one, is refused
+      with exit 2 before anything is written, instead of being flagged on
+      another column's grid while its report has none.
+
+### OSS-73: one rule for the grid taken from metadata — merged in [#77](https://github.com/PederFalkman/opensource/pull/77)
+
+- [x] From the second review's code-quality notes, with no behaviour
+      change: the helper that picks the grid from metadata lives in
+      `metadata.py`, and fixed vs calendar is decided by `to_step()`, the
+      rule that validates resolutions, instead of a second check with a
+      pandas 2/3 special case. A test pins the classification on both.
+
+### OSS-74: build the grid once in `assess_quality` — this change
+
+- [x] The last note from the second review: gaps, completeness and
+      known outages share one expected grid and one presence test
+      instead of building them two or three times. Reports are
+      byte-identical; `assess_quality` is 10–40 % faster on long series.
+      The measurements are in `PERFORMANCE.md`.
 
 ## Explicitly not planned
 
