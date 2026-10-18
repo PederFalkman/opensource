@@ -1,6 +1,7 @@
 import importlib.util
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -84,6 +85,38 @@ def test_release_edits(tmp_path):
     assert "Private :: Do Not Upload" not in pyproject and "Typing :: Typed" in pyproject
     for licence in (root / "LICENSE", pkg / "LICENSE"):
         assert licence.read_text().startswith("DRY-RUN PLACEHOLDER - THIS IS NOT A LICENCE.")
+
+
+def test_release_edits_do_not_double_declare_an_existing_licence(tmp_path):
+    """The regression that broke CI on the PR that passed G2.
+
+    The dry run rehearses *adding* a licence. Once the repository has one, the
+    old code appended a second ``license`` key and wrote the placeholder over
+    the real text, so the throwaway copy was invalid TOML and the whole dry run
+    died with "Cannot overwrite a value" instead of rehearsing a release.
+    """
+    root = make_repo(tmp_path)
+    pkg = root / "packages" / "demo"
+    pyproject = pkg / "pyproject.toml"
+    pyproject.write_text(
+        pyproject.read_text().replace(
+            'requires-python = ">=3.11"', 'requires-python = ">=3.11"\nlicense = "Apache-2.0"', 1
+        )
+    )
+    (root / "LICENSE").write_text("Apache License\nVersion 2.0, January 2004\n")
+    (pkg / "LICENSE").write_text("Apache License\nVersion 2.0, January 2004\n")
+
+    rdr.apply_release_edits(root, "demo", "0.3.0", "2026-11-01")
+
+    text = pyproject.read_text()
+    assert tomllib.loads(text)["project"]["license"] == "Apache-2.0"
+    assert text.count("license =") == 1
+    assert rdr.PLACEHOLDER_LICENSE not in text
+    # The real licence text survives; the placeholder never overwrites it.
+    for licence in (root / "LICENSE", pkg / "LICENSE"):
+        assert licence.read_text().startswith("Apache License")
+    # The G7 rehearsal still happens — that gate is not passed.
+    assert "Private :: Do Not Upload" not in text
 
 
 def test_dry_run_passes_and_leaves_source_untouched(tmp_path):

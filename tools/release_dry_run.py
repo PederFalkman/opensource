@@ -41,6 +41,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import tomllib
 import zipfile
 from pathlib import Path
 
@@ -109,12 +110,21 @@ def apply_release_edits(root: Path, package: str, version: str, date: str) -> No
             text = f"{head}\n{dated.group(0)}\n{pending}\n{rest}"
             changelog.write_text(text)
 
-    (root / "LICENSE").write_text(PLACEHOLDER_TEXT, encoding="utf-8")
-    (pkg_dir / "LICENSE").write_text(PLACEHOLDER_TEXT, encoding="utf-8")
+    # Only stand in for a licence the repository does not have yet. Once G2 is
+    # passed, the real LICENSE and the real `license = ...` are what a release
+    # ships, and there is nothing left to rehearse: overwriting them with the
+    # placeholder would rehearse the wrong thing, and inserting a second
+    # `license` key made the copy invalid TOML ("Cannot overwrite a value")
+    # instead of rehearsing anything at all.
+    for licence in (root / "LICENSE", pkg_dir / "LICENSE"):
+        if not licence.is_file():
+            licence.write_text(PLACEHOLDER_TEXT, encoding="utf-8")
 
     pyproject = pkg_dir / "pyproject.toml"
-    lines = pyproject.read_text(encoding="utf-8").splitlines(keepends=True)
-    out, in_project, declared = [], False, False
+    text = pyproject.read_text(encoding="utf-8")
+    already_declared = "license" in tomllib.loads(text).get("project", {})
+    lines = text.splitlines(keepends=True)
+    out, in_project, declared = [], False, already_declared
     for line in lines:
         stripped = line.strip()
         if stripped.startswith("["):
