@@ -5,6 +5,15 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Licensed **Apache-2.0** (gate G2, granted 2026-10-18). `LICENSE` is at the
+  repository root with a byte-identical copy in this package directory, and the
+  package declares `license = "Apache-2.0"` with `license-files`, so the licence
+  ships in both the wheel and the sdist. The build-system floor moved to
+  `hatchling>=1.27`, the first release with PEP 639 support for that form.
+  **This does not publish anything:** the `Private :: Do Not Upload` classifier
+  stays until gate G7, and the G1 ownership questions remain open.
+
 ### Added
 - Parquet input for `energydata-kit report`: a file ending in `.parquet`,
   `.parq` or `.pq` is read with pandas and pyarrow, with the same column
