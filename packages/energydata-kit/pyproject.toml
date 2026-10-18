@@ -26,6 +26,9 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering",
     "Typing :: Typed",
+    # PyPI rejects uploads carrying this classifier. Remove only when the
+    # release gates are passed.
+    "Private :: Do Not Upload",
 ]
 dependencies = [
     "numpy>=1.26",
