@@ -234,14 +234,29 @@ def _read_parquet(args: argparse.Namespace) -> pd.DataFrame:
     """Read a Parquet input file (optional [parquet] extra: pyarrow)."""
     if args.delimiter != "," or args.decimal != ".":
         raise CliError("--delimiter and --decimal apply to CSV files only, not Parquet")
+    if Path(args.csv).is_dir():  # pandas would read it as a partitioned dataset
+        raise CliError(f"{args.csv} is a directory; pass a single Parquet file")
     try:
-        return pd.read_parquet(args.csv)
+        frame = pd.read_parquet(args.csv)
     except FileNotFoundError as exc:
         raise CliError(f"file not found: {args.csv}") from exc
     except ImportError as exc:  # pyarrow missing, or installed but unusable (e.g. NumPy too old)
         raise CliError(
             f"reading Parquet needs pyarrow: python -m pip install 'energydata-kit[parquet]' ({exc})"
         ) from exc
+    except (OSError, ValueError) as exc:  # pyarrow's errors name a '<Buffer>', not the file
+        raise CliError(f"could not read Parquet file {args.csv}: {exc}") from exc
+    # pandas writes a named index (often the timestamps) into the file and restores it as
+    # the index; make it a column again, as in the CSV of the same data.
+    names = list(frame.index.names)
+    if all(name is not None for name in names) and not set(names) & set(frame.columns):
+        frame = frame.reset_index()
+    elif isinstance(frame.index, pd.DatetimeIndex) and args.timestamp_col not in frame.columns:
+        raise CliError(
+            f"timestamp column {args.timestamp_col!r} not found; the file's timestamps are an unnamed "
+            "index: name it (df.index.name = 'timestamp') or make it a column before writing the file"
+        )
+    return frame
 
 
 def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
