@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling>=1.24"]
+requires = ["hatchling>=1.27"]   # 1.27 added PEP 639 (SPDX `license`, `license-files`)
 build-backend = "hatchling.build"
 
 [project]
@@ -8,8 +8,12 @@ dynamic = ["version"]
 description = "Framework-independent quality checks for energy time-series data."
 readme = "README.md"
 requires-python = ">=3.11"
-# No license is declared yet: licensing is pending ownership and legal review
-# (see docs/governance/RELEASE_GATES.md in the repository root).
+# Apache-2.0 granted by owner decision, 2026-10-18 (gate G2 / decision D3 in
+# docs/governance/). The licence text is LICENSE at the repository root, with a
+# byte-identical copy in this directory because the build only ships licence
+# files from inside the package. Publication remains blocked by G7 below.
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [{ name = "Solid Soup Open Engineering" }]
 keywords = ["energy", "time series", "data quality", "validation"]
 classifiers = [
@@ -61,7 +65,7 @@ path = "src/energydata_kit/__init__.py"
 packages = ["src/energydata_kit"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src/", "tests/", "examples/", "README.md", "pyproject.toml"]
+include = ["src/", "tests/", "examples/", "README.md", "LICENSE", "pyproject.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
