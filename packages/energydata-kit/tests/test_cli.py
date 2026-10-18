@@ -627,6 +627,31 @@ def test_flags_csv_step_is_checked_before_the_report_is_written(tmp_path):
     assert not report.exists()  # was written before the error
 
 
+def test_flags_csv_grid_across_schema_columns(tmp_path):
+    csv = write(
+        tmp_path, "timestamp,a,b\n2024-01-01T00:00Z,1,2\n2024-01-01T01:00Z,1,2\n2024-01-01T03:00Z,1,2\n"
+    )
+
+    def schema(b_resolution):
+        b = {"unit": "kW"} | ({"resolution": b_resolution} if b_resolution else {})
+        fields = [
+            {"name": "a", "energydata_kit": {"unit": "kW", "resolution": "60min"}},
+            {"name": "b", "energydata_kit": b},
+        ]
+        return str(write(tmp_path, json.dumps({"fields": fields}), "schema.json"))
+
+    flags = tmp_path / "flags.csv"
+    # "60min" and "1h" were refused as "different resolutions"; they are one grid.
+    code, _, err = run("report", str(csv), "--schema", schema("1h"), "--flags-csv", str(flags))
+    assert (code, err) == (0, "") and flags.exists()
+    # A column without a resolution was flagged on the other column's grid while its report had none.
+    report = tmp_path / "report.json"
+    code, _, err = run(
+        "report", str(csv), "--schema", schema(None), "--flags-csv", str(flags), "-o", str(report)
+    )
+    assert code == 2 and "have no resolution in --schema" in err and not report.exists()
+
+
 def test_unknown_time_zone(tmp_path):
     # --tz Mars/Phobos ended in a zoneinfo traceback with exit status 1 ("issues found").
     path = str(write(tmp_path, CLEAN))
