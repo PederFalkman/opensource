@@ -773,6 +773,24 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       byte-identical; `assess_quality` is 10–40 % faster on long series.
       The measurements are in `PERFORMANCE.md`.
 
+### OSS-75: docs accuracy audit — this change
+
+- [x] For release gate G6, README, the guide, OVERVIEW, CONTRIBUTING,
+      API_REVIEW, the docstrings and `--help` were checked against the code
+      after OSS-59 to OSS-74. Every suspected inaccuracy was confirmed by
+      running it before it was fixed.
+- [x] Fixed: the package README said no licence had been granted, and
+      the README and OVERVIEW said calendar steps were never taken from
+      metadata (true before OSS-68). CONTRIBUTING told contributors to
+      write changelog entries under `[Unreleased]`, against the practice
+      since OSS-61. The `report` and `compare` help said JSON and CSV
+      only. Four docstrings were out of date (`local_days`, empty
+      completeness, `resolution_timedelta`, the resolution field), and
+      the text summary blamed a missing `--freq` for every empty
+      completeness.
+- [x] The guide gains two executed examples: a monthly metadata
+      resolution laid out in its time zone, and Parquet input.
+
 ## Explicitly not planned
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
