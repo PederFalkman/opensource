@@ -3,9 +3,14 @@
 Open-source Python tools for energy data, scientific computing, engineering
 validation and reproducible workflows.
 
-> **Status: pre-release.** Nothing is published and **no open-source license
-> has been granted yet**. Licensing (Apache-2.0 preferred) is pending ownership
-> and legal review; see [release gates](docs/governance/RELEASE_GATES.md).
+> **Status: pre-release.** Licensed **Apache-2.0** (granted 2026-10-18; gate G2
+> passed) — the licence text is [`LICENSE`](LICENSE). **Nothing is published**:
+> publication is still blocked by gate G7, and the packages carry the
+> `Private :: Do Not Upload` classifier that PyPI rejects. The ownership
+> questions in G1/D2 — employment terms, AI-assisted authorship, whether
+> external contributions need a CLA or DCO — remain open and are **not**
+> settled by the licence grant. See [release
+> gates](docs/governance/RELEASE_GATES.md).
 
 ## Packages
 

@@ -12,15 +12,18 @@ repository itself:
    (if that dated heading already exists, anything under ``[Unreleased]`` is
    folded into it instead);
 3. a ``LICENSE`` file at the root, a copy in the package directory (only
-   files there ship in the wheel and sdist) and a ``license`` declaration,
-   all **placeholders** (``LicenseRef-Dry-Run-Placeholder``): no licence is
-   chosen or granted here, that is gate G2;
+   files there ship in the wheel and sdist) and a ``license`` declaration —
+   as **placeholders** (``LicenseRef-Dry-Run-Placeholder``) only where the
+   repository has none, since no licence is chosen or granted here, that is
+   gate G2. Once G2 is passed the real licence is what a release ships, so
+   the rehearsal keeps it and substitutes nothing;
 4. the ``Private :: Do Not Upload`` classifier removed.
 
 It then runs ``tools/check_release_readiness.py --strict`` with the matching
 tag on the copy. With ``--build`` it also builds the sdist and wheel,
-runs ``twine check``, checks the wheel metadata (version, placeholder
-licence and licence file, no upload guard) and prints the SHA-256 digests. The copy and
+runs ``twine check``, checks the wheel metadata (version, no upload guard,
+the licence file, and a ``License-Expression`` matching whatever the copy
+declares — placeholder or real) and prints the SHA-256 digests. The copy and
 everything built in it are deleted afterwards; nothing is uploaded.
 
 A failure means the next release PR would fail too, so fix it before it
@@ -41,6 +44,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import tomllib
 import zipfile
 from pathlib import Path
 
@@ -109,12 +113,21 @@ def apply_release_edits(root: Path, package: str, version: str, date: str) -> No
             text = f"{head}\n{dated.group(0)}\n{pending}\n{rest}"
             changelog.write_text(text)
 
-    (root / "LICENSE").write_text(PLACEHOLDER_TEXT, encoding="utf-8")
-    (pkg_dir / "LICENSE").write_text(PLACEHOLDER_TEXT, encoding="utf-8")
+    # Only stand in for a licence the repository does not have yet. Once G2 is
+    # passed, the real LICENSE and the real `license = ...` are what a release
+    # ships, and there is nothing left to rehearse: overwriting them with the
+    # placeholder would rehearse the wrong thing, and inserting a second
+    # `license` key made the copy invalid TOML ("Cannot overwrite a value")
+    # instead of rehearsing anything at all.
+    for licence in (root / "LICENSE", pkg_dir / "LICENSE"):
+        if not licence.is_file():
+            licence.write_text(PLACEHOLDER_TEXT, encoding="utf-8")
 
     pyproject = pkg_dir / "pyproject.toml"
-    lines = pyproject.read_text(encoding="utf-8").splitlines(keepends=True)
-    out, in_project, declared = [], False, False
+    text = pyproject.read_text(encoding="utf-8")
+    already_declared = "license" in tomllib.loads(text).get("project", {})
+    lines = text.splitlines(keepends=True)
+    out, in_project, declared = [], False, already_declared
     for line in lines:
         stripped = line.strip()
         if stripped.startswith("["):
@@ -148,15 +161,29 @@ def sdist_has_license(sdist: Path) -> bool:
         return any(name.endswith("/LICENSE") for name in tf.getnames())
 
 
-def check_wheel(wheel: Path, version: str) -> list[str]:
+def declared_license(pkg_dir: Path) -> str:
+    """The licence expression the copy's pyproject declares, placeholder or real."""
+    declared = tomllib.loads((pkg_dir / "pyproject.toml").read_text(encoding="utf-8"))["project"]["license"]
+    # PEP 639 makes this an SPDX string; a pre-639 table is still accepted here.
+    return declared if isinstance(declared, str) else str(declared.get("text", declared))
+
+
+def check_wheel(wheel: Path, version: str, expected_license: str) -> list[str]:
     meta = wheel_metadata(wheel)
     problems = []
     if meta["Version"] != version:
         problems.append(f"wheel version is {meta['Version']!r}, expected {version!r}")
     if GUARD_CLASSIFIER in (meta.get_all("Classifier") or []):
         problems.append("wheel still carries the upload guard")
-    if meta.get("License-Expression") != PLACEHOLDER_LICENSE:
-        problems.append(f"wheel License-Expression is {meta.get('License-Expression')!r}")
+    # Compare against what the copy actually declares rather than against the
+    # placeholder constant: that holds whether the dry run substituted a
+    # placeholder (G2 unmet) or kept the repository's real licence (G2 passed),
+    # and it checks the stronger property either way — that the build
+    # propagated the declaration into the wheel instead of dropping it.
+    if meta.get("License-Expression") != expected_license:
+        problems.append(
+            f"wheel License-Expression is {meta.get('License-Expression')!r}, expected {expected_license!r}"
+        )
     if "LICENSE" not in (meta.get_all("License-File") or []):
         problems.append("wheel does not include the LICENSE file")
     return problems
@@ -189,7 +216,7 @@ def dry_run(package: str, version: str | None, date: str, build: bool, root: Pat
             wheels = [f for f in files if f.suffix == ".whl"]
             if len(wheels) != 1:
                 raise DryRunError(f"expected one wheel, built {len(wheels)}")
-            problems = check_wheel(wheels[0], version)
+            problems = check_wheel(wheels[0], version, declared_license(pkg_dir))
             sdists = [f for f in files if f.name.endswith(".tar.gz")]
             if len(sdists) != 1 or not sdist_has_license(sdists[0]):
                 problems.append("sdist does not include the LICENSE file")

@@ -36,7 +36,7 @@ Supporting tooling (none of it publishes anything):
 | # | Gate | Evidence required | Owner |
 |---|---|---|---|
 | G1 | **Ownership confirmed.** The publishing legal entity owns all contributed code (employment / contractor agreements cover it). | Written confirmation from management / counsel | Management |
-| G2 | **License chosen.** Apache-2.0 is the preferred candidate, subject to legal review. A `LICENSE` file (and `NOTICE` if required) is added by a dedicated PR. | Legal sign-off; LICENSE PR merged | Legal |
+| G2 | **License chosen — PASSED 2026-10-18.** Apache-2.0, granted by owner decision. `LICENSE` at the repository root and a byte-identical copy in `packages/energydata-kit/`; `license = "Apache-2.0"` and `license-files` in the package `pyproject.toml`. No `NOTICE` — per D3, none is required because no third-party code is copied into the repository. Verified in the built artifacts, not just the gate: the wheel carries `License-Expression: Apache-2.0` and ships `dist-info/licenses/LICENSE`, and the sdist ships `LICENSE`, both byte-identical to the root file. | Owner decision 2026-10-18; LICENSE PR | Legal |
 | G3 | **IP boundary review.** A maintainer who knows the private codebase confirms that the release contains no proprietary code, data or algorithms (see `IP_BOUNDARY.md`). | Signed review note in the release PR | Technical lead |
 | G4 | **Third-party licenses.** All runtime dependencies have licenses compatible with the chosen project license. Any copied code is credited and recorded in the duplication register. | Dependency license table in the release PR | Maintainer |
 | G5 | **CI green.** Lint, type check, tests on all supported Python versions (including lowest supported dependency versions), packaging test, IP-boundary check, secret scan and dependency audit all pass on the release commit. | Link to CI run | Maintainer |
@@ -50,12 +50,14 @@ repository is already public** (observed 2026-10-15). Until G1 to G3 are
 passed, the owners should decide whether to:
 
 - make the repository private until the gates are passed, or
-- keep it public and accept that all branches are visible now. Without a
-  license file, the default is "all rights reserved", which permits viewing
-  but not reuse.
+- keep it public and accept that all branches are visible now.
 
-This decision is recorded here and needs an owner. It is not made by this
-document.
+**Updated 2026-10-18.** The second limb of that trade-off has changed: there is
+now a `LICENSE` (Apache-2.0, G2), so the repository is no longer public under an
+implied "all rights reserved" with no terms for a reader at all. The visibility
+decision itself still needs an owner, because G1 (ownership) and G3 (IP boundary
+review) are not passed — a granted licence is not a substitute for either. It is
+not made by this document.
 
 ## Versioning
 

@@ -101,10 +101,17 @@ def test_missing_package(tmp_path):
 
 
 def test_real_repository_is_not_release_ready():
-    # Gates G2 and G7 are not passed yet: the real package must not look
-    # releasable, even on a release branch that already has the final version.
+    # Gate G2 passed on 2026-10-18 (Apache-2.0); G7 has not. The real package
+    # must still not look releasable, even on a release branch that already has
+    # the final version.
     failed = {c.name for c in crr.check_package(REPO, "energydata-kit") if not c.ok}
-    gated = {"LICENSE file", "LICENSE shipped with package", "license declared", "upload guard removed"}
+    gated = {"upload guard removed"}
     assert gated <= failed
+    # And the G2 checks must now PASS. Asserting this rather than deleting the
+    # names keeps the test a live statement about the licence: if a LICENSE or
+    # the declaration is ever dropped, this fails instead of quietly widening
+    # the set of things allowed to be broken.
+    licensed = {"LICENSE file", "LICENSE shipped with package", "license declared"}
+    assert not (licensed & failed), f"G2 regressed: {sorted(licensed & failed)}"
     assert crr.main(["energydata-kit", "--root", str(REPO)]) == 0
     assert crr.main(["energydata-kit", "--strict", "--root", str(REPO)]) == 1

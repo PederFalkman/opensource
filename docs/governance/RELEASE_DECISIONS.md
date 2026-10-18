@@ -91,7 +91,29 @@ commit and branch is already visible. Without a LICENSE file the default is
   Origin sign-off.
 - **Evidence to record:** written confirmation, linked from the release PR.
 
-### D3. Licence, G2 (owner: legal)
+### D3. Licence, G2 (owner: legal) — DECIDED 2026-10-18
+
+**Apache-2.0, granted by owner decision on 2026-10-18.** Answers to the three
+questions below, in order: (1) Apache-2.0; (2) `Copyright 2026 Mica AB`, the
+entity already used across the portfolio's other repositories; (3) no `NOTICE`,
+for the reason this section already gave. The licence-only scope was explicit:
+publication was **not** authorised, so G7's `Private :: Do Not Upload`
+classifier stays in place.
+
+What landed, exactly as the "After the decision" paragraph below specifies:
+`LICENSE` at the repository root, a byte-identical copy in
+`packages/energydata-kit/`, and `license = "Apache-2.0"` plus
+`license-files = ["LICENSE"]` in the package `pyproject.toml` (the build-system
+floor moved to `hatchling>=1.27`, the first version with PEP 639 support for
+that SPDX form). Verified by building rather than by inspection: the wheel
+reports `License-Expression: Apache-2.0` and ships
+`dist-info/licenses/LICENSE`, the sdist ships `LICENSE`, both byte-identical to
+the root file, and `Private :: Do Not Upload` is still in the wheel metadata.
+
+**Still open, and not resolved by this decision:** D2/G1 ownership — counsel on
+how employment terms and AI-assisted authorship affect the ability to license,
+and whether external contributions need a CLA or DCO. A licence grant is not
+an ownership opinion.
 
 Apache-2.0 is the preferred candidate. `THIRD_PARTY_LICENSES.md` assumes it
 and found no conflict: every shipped dependency is permissively licensed,

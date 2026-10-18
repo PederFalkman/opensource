@@ -145,9 +145,10 @@ jobs:
           /tmp/wheel-env/bin/python -m pytest -q -p no:cacheprovider tests
 
   release-dry-run:
-    # Rehearses the release PR edits in a temporary copy (placeholder licence,
-    # nothing committed) and builds there. Nothing is uploaded: the files are
-    # deleted with the copy. See tools/release_dry_run.py.
+    # Rehearses the release PR edits in a temporary copy (a placeholder licence
+    # only where the repository has none; nothing committed) and builds there.
+    # Nothing is uploaded: the files are deleted with the copy. See
+    # tools/release_dry_run.py.
     name: Release dry run
     runs-on: ubuntu-latest
     steps:

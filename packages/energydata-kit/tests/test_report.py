@@ -166,6 +166,12 @@ def test_known_outages_explain_missing_intervals():
         ([("2024-01-01T05:00Z", "2024-01-01T03:00Z")], "starts after it ends"),
         ([("2024-01-01T05:00Z",)], r"\(start, end\) pair"),
         ("2024-01-01T05:00Z", "list of"),
+        (None, "list of"),
+        ([5], r"\(start, end\) pair"),
+        ([pd.Timestamp("2024-01-01T05:00Z")], r"\(start, end\) pair"),
+        ([(pd.NaT, "2024-01-01T03:00Z")], "must be a timestamp"),
+        ([("soon", "2024-01-01T03:00Z")], "cannot read 'soon'"),
+        ([("2024-01-01T05:00Z", "2300-01-01T00:00Z")], "known outage"),  # beyond what pandas holds in ns
     ],
 )
 def test_known_outages_are_validated(outages, error):
