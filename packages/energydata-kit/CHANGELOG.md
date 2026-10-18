@@ -115,5 +115,5 @@ found on request, 2 usage, input or file error (listed in `--help`).
 - Reports, flags CSVs and fingerprints are byte-identical on every
   supported Python, pandas and numpy version and on every platform (files
   end lines in `\n`), pinned by golden tests.
-- `assess_quality` on a year of one-minute data takes about a quarter of a
+- `assess_quality` on a year of one-minute data takes under a quarter of a
   second on the benchmark machine (`docs/architecture/PERFORMANCE.md`).

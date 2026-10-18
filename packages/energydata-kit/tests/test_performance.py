@@ -28,3 +28,31 @@ def test_assess_quality_on_a_year_of_minute_data_is_fast():
     elapsed = time.perf_counter() - start
     assert report.n_missing_intervals == 525
     assert elapsed < 10.0, f"assess_quality took {elapsed:.1f} s on 525k rows"
+
+
+def test_assess_quality_builds_the_grid_once(monkeypatch):
+    # Gaps, completeness and known outages share one grid and one presence test (OSS-74).
+    import energydata_kit.report as report_module
+
+    calls = {"expected_grid": 0, "on_index": 0}
+    for name in calls:
+        original = getattr(report_module, name)
+
+        def counted(*args, _original=original, _name=name, **kwargs):
+            calls[_name] += 1
+            return _original(*args, **kwargs)
+
+        monkeypatch.setattr(report_module, name, counted)
+
+    index = pd.date_range("2024-03-30", periods=96 * 3, freq="15min", tz="UTC").delete([5, 6, 200])
+    series = pd.Series(1.0, index=index)
+    outage = [(index[0], index[10])]
+    for tz in (None, "Europe/Stockholm"):
+        calls.update(expected_grid=0, on_index=0)
+        report = ek.assess_quality(series, freq="15min", tz=tz, known_outages=outage)
+        assert calls == {"expected_grid": 1, "on_index": 1}
+        expected_gaps = ek.find_missing_intervals(index, "15min", tz=tz)
+        assert [(g.start.isoformat(), g.end.isoformat(), g.missing_count) for g in expected_gaps] == [
+            (g["start"], g["end"], g["missing_count"]) for g in report.to_dict()["gaps"]
+        ]
+        assert report.n_missing_intervals == 3 and report.n_missing_explained == 2

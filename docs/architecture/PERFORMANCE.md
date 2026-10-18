@@ -1,7 +1,8 @@
 # Performance
 
 **Measured:** 2026-10-16 (OSS-18), re-measured 2026-10-17 (OSS-50) after
-the input checks added in OSS-40 to OSS-49, on one x86_64 CI-class container.
+the input checks added in OSS-40 to OSS-49 (`assess_quality` again on
+2026-10-18, see OSS-74 below), on one x86_64 CI-class container.
 Numbers are wall time (best of 3) and peak memory traced by Python's
 `tracemalloc` (includes NumPy and pandas buffers). They depend on the
 machine; use them for orders of magnitude and compare runs on the same
@@ -38,6 +39,32 @@ machine, the code before OSS-40 was no faster in either, so that is
 run-to-run noise. `compare_reports`, which validates
 its input since OSS-47, takes about 0.4 ms for two reports with 350 listed
 gaps each.
+
+## Changes in OSS-74
+
+`assess_quality` built the expected grid twice and tested which grid
+timestamps are present two or three times: once for gaps, once for
+completeness and once more for known outages. It now builds the grid once
+and runs one presence test that all three share. Reports are unchanged
+(golden tests); a test checks that the grid is built once.
+
+Measured on 2026-10-18 with `benchmarks/run.py`, the code before and after
+this change, side by side on the same machine (best of 3, in seconds):
+
+| Case | Python 3.13, pandas 3.0.6 | Python 3.11, pandas 2.1.4 |
+|---|---|---|
+| `assess_quality`, 1 year at 1 min | 0.16 → 0.13 | 0.15 → 0.11 |
+| `assess_quality`, 10 years at 15 min, every check | 0.18 → 0.16 | 0.14 → 0.12 |
+| `assess_frame`, 5 columns, 10 years at 15 min | 0.60 → 0.50 | 0.59 → 0.52 |
+
+Peak memory is the same, within 1 MiB. The other cases do not use this
+code, and they changed only within run-to-run noise. Best of 15 runs, the
+gain is larger with a local-calendar grid (one year at 1 min with
+`tz="Europe/Stockholm"`: 0.16 → 0.11 s on pandas 3) and with known
+outages (ten years at 15 min with metadata and one outage: 0.10 → 0.06 s).
+With `tz=`, `flag_series` still builds its own grid to flag off-grid
+timestamps. Sharing that grid would mean changing `flag_series`, and the
+gain does not justify that.
 
 ## Changes in OSS-18
 
