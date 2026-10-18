@@ -17,6 +17,28 @@ from energydata_kit import (
 IDX = pd.DatetimeIndex(["2024-01-01T00:15Z", "2024-01-01T00:30Z", "2024-01-01T00:30Z"])
 
 
+def test_calendar_resolution_in_metadata_uses_its_time_zone():
+    # resolution="D" in Europe/Stockholm was a fixed 24 h UTC step: complete daily
+    # data read 75 % complete across the March DST change, and "MS" was refused.
+    days = pd.date_range("2024-03-29", periods=5, freq="D", tz="Europe/Stockholm").tz_convert("UTC")
+    meta = MeasurementMetadata("d", "kWh", resolution="D", timezone="Europe/Stockholm", aggregation="sum")
+    report = assess_quality(pd.Series(1.0, index=days, name="d"), metadata=meta)
+    assert (report.completeness, report.n_missing_intervals) == (1.0, 0)
+    assert report.flag_counts["OFF_GRID_TIMESTAMP"] == 0 and report.parameters["tz"] == "Europe/Stockholm"
+    months = pd.date_range("2024-01-01", periods=4, freq="MS", tz="Europe/Stockholm")
+    monthly = MeasurementMetadata("m", "kWh", resolution="MS", timezone="Europe/Stockholm", aggregation="sum")
+    assert assess_quality(pd.Series(1.0, index=months, name="m"), metadata=monthly).completeness == 1.0
+    # Unchanged: "D" in UTC (a fixed 24 h step there), fixed resolutions, an explicit freq=.
+    utc = MeasurementMetadata("d", "kWh", resolution="D", aggregation="sum")
+    assert assess_quality(pd.Series(1.0, index=days, name="d"), metadata=utc).parameters["tz"] is None
+    quarter = MeasurementMetadata("p", "kW", resolution="15min", timezone="Europe/Stockholm")
+    assert (
+        assess_quality(make_synthetic_series(periods=4).rename("p"), metadata=quarter).parameters["tz"]
+        is None
+    )
+    assert assess_quality(pd.Series(1.0, index=days, name="d"), metadata=meta, freq="D").completeness == 0.75
+
+
 def test_relabel_round_trip_preserves_order_and_duplicates():
     starts = relabel_intervals(IDX, "15min", "end", "start")
     assert list(starts) == [

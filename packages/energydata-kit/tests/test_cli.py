@@ -588,6 +588,23 @@ def test_parquet_rejects_csv_options_and_explains_a_missing_pyarrow(tmp_path, mo
     assert code == 2 and "python -m pip install 'energydata-kit[parquet]'" in err
 
 
+def test_calendar_resolution_from_metadata_in_report_and_flags(tmp_path):
+    # Daily local midnights across the March DST change: complete, nothing flagged.
+    rows = [
+        "2024-03-29T00:00+01:00",
+        "2024-03-30T00:00+01:00",
+        "2024-03-31T00:00+01:00",
+        "2024-04-01T00:00+02:00",
+    ]
+    path = str(write(tmp_path, "timestamp,kwh\n" + "".join(f"{r},1\n" for r in rows)))
+    flags = tmp_path / "flags.csv"
+    meta = ["--unit", "kWh", "--aggregation", "sum", "--resolution", "D", "--timezone", "Europe/Stockholm"]
+    code, out, err = run("report", path, *meta, "--flags-csv", str(flags))
+    assert (code, err) == (0, "")
+    assert json.loads(out)["completeness"] == 1.0
+    assert [line.rsplit(",", 1)[1] for line in flags.read_text().splitlines()[1:]] == ["0"] * 4
+
+
 def test_unknown_time_zone(tmp_path):
     # --tz Mars/Phobos ended in a zoneinfo traceback with exit status 1 ("issues found").
     path = str(write(tmp_path, CLEAN))
