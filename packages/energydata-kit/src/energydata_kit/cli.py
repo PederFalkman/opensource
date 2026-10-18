@@ -603,9 +603,9 @@ def _run_frame_report(
         for m in metadata.values():
             if m.resolution is not None:
                 step, zone = _grid_from_metadata(None, None, m)
-                # Fixed steps compare by length, so "60min" and "1h" are one grid.
+                # Steps compare by value, so "60min" and "1h" (or "MS" and "1MS") are one grid.
                 assert step is not None  # m.resolution is set
-                key = (to_step(step) if zone is None else str(step), zone)
+                key = (to_step(step) if zone is None else pd.tseries.frequencies.to_offset(step), zone)
                 grids.setdefault(key, (step, zone))
         if len(grids) > 1:
             steps = sorted({f"{f} ({z})" if z else str(f) for f, z in grids.values()})

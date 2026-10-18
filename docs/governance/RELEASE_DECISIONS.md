@@ -1,7 +1,7 @@
 # Release decisions for energydata-kit 0.1.0
 
 **Status:** prepared 2026-10-16 (OSS-22), facts refreshed 2026-10-17
-(OSS-48) and 2026-10-18 (OSS-60, OSS-69) · **For:** management, legal counsel
+(OSS-48) and 2026-10-18 (OSS-60, OSS-69, OSS-77) · **For:** management, legal counsel
 and the technical lead who sign off the release gates in `RELEASE_GATES.md`.
 
 This page collects every decision that still blocks the first release, the
@@ -9,12 +9,16 @@ evidence already in the repository for each, and the exact questions to
 answer. It does not make any of these decisions. Engineering work for 0.1.0
 is complete; nothing below needs more code before the decisions are made.
 Since the first version of this page, correctness passes (OSS-40 to OSS-49,
-OSS-59, OSS-62, OSS-64, OSS-65 and the whole-package review OSS-67) fixed
-the bugs they found, and the five approved proposals P-2 to P-6 were added (OSS-54 to OSS-58; see "What changed since OSS-48" below).
+OSS-59, OSS-62, OSS-64, OSS-65 and the whole-package reviews OSS-67 and
+OSS-71) fixed the bugs they found, and the five approved proposals P-2 to P-6 were added (OSS-54 to OSS-58; see "What changed since OSS-48" below).
 D3 is decided (Apache-2.0, #66), so the licence checks pass, and the
 changelog entries for the work above are part of the 0.1.0 notes (OSS-61).
 The readiness check fails on one item only: *upload guard removed*, which
-waits on D6.
+waits on D6. The release itself is rehearsed: branch
+`claude/oss-76-release-refresh` holds the release edits on top of `main`,
+passes the strict readiness check and builds a wheel and sdist that pass
+`twine check` (not uploaded). After the decisions, it needs only the final
+`main`, the release date and the sign-offs below.
 
 ## What changed since OSS-48
 
@@ -44,8 +48,17 @@ facts were last refreshed:
   options are type-checked when given (no booleans or text for numbers,
   `cumulative` is `True` or `False`); an unknown time zone is an error, not
   a traceback; CLI metadata options need `--unit`.
-- **In review** (OSS-68, #74): a calendar resolution in metadata (`"D"`,
-  `"MS"`) will count in the metadata's time zone, decided by the owner.
+- **Calendar resolutions in metadata** (OSS-68, #74, decided by the
+  owner): a resolution with no fixed length (`"MS"`, `"W-MON"`) counts in
+  the metadata's time zone; `"D"` stays a 24-hour step, after a second
+  review (OSS-71) showed the local-day version broke zones where DST skips
+  midnight.
+- **Since then** (OSS-72 to OSS-76): two command-line edge cases of
+  `--flags-csv` fixed (#76); internal tidying with no behaviour change
+  (#77); `assess_quality` builds its grid once, 10–40 % faster, reports
+  byte-identical (#78); a documentation accuracy audit for G6 (#79); the
+  release branch refreshed (no PR). No new dependency, data file or report
+  field since OSS-58.
 
 ## Where things stand
 
@@ -56,7 +69,7 @@ facts were last refreshed:
 | G3 IP boundary review | **Open: review needed** | See D4 below |
 | G4 Third-party licences | Evidence ready; needs legal confirmation | `THIRD_PARTY_LICENSES.md`, kept in sync by `tools/check_third_party.py` in CI |
 | G5 CI green | Green on `main` (Python 3.11 to 3.14 on Linux, lowest supported dependencies, Windows and macOS); re-checked on the release commit | `.github/workflows/ci.yml`, `security.yml` |
-| G6 Documentation honest | Reviewed in OSS-20 and OSS-45; README and guide extended with each of P-2 to P-6; re-checked in the release PR | Package `README.md` (capabilities and known limitations), `CHANGELOG.md`, `examples/GUIDE.md` (executed by the tests) |
+| G6 Documentation honest | Reviewed in OSS-20 and OSS-45; full accuracy audit of README, guide, architecture docs, docstrings and `--help` against the code in OSS-75 (#79); confirmed on the release commit | Package `README.md` (capabilities and known limitations), `CHANGELOG.md`, `examples/GUIDE.md` (executed by the tests) |
 | G7 Publication | **Open: decision needed** | See D6 below |
 
 The mechanical release steps are rehearsed on every change by the *Release
@@ -83,13 +96,13 @@ replace either (see `RELEASE_GATES.md`).
 
 - **Question:** does the publishing legal entity own all code in the
   repository, so that it can license it?
-- **Facts for the answer** (from `git log` on `main` at `572b335`, after #73,
-  2026-10-18): 177 commits.
-  - 95 by an AI coding assistant (author "Claude", with a `Co-Authored-By`
-    trailer) in sessions run by the repository owner: 82 contain the code,
-    docs, licence and roadmap updates, 13 merge `main` into a pull-request
+- **Facts for the answer** (from `git log` on `main` at `da0b0ca`, after #79,
+  2026-10-18): 197 commits.
+  - 109 by an AI coding assistant (author "Claude", with a `Co-Authored-By`
+    trailer) in sessions run by the repository owner: 92 contain the code,
+    docs, licence and roadmap updates, 17 merge `main` into a pull-request
     branch.
-  - 78 by the repository owner: 72 pull-request merges, 4 merges of `main`
+  - 84 by the repository owner: 78 pull-request merges, 4 merges of `main`
     into a pull-request branch, and 2 own commits (the initial commit and a
     roadmap note).
   - 4 Dependabot updates of pinned GitHub Actions.
@@ -205,7 +218,9 @@ Not a release gate, but it protects the release commit.
 3. D4 IP review, on the commit intended for release.
 4. D5 branch protection, any time before the release PR.
 5. D6 publication approval.
-6. Release PR from `RELEASE_CHECKLIST.md`. `main` already has version
+6. Release PR from `RELEASE_CHECKLIST.md`, opened from the rehearsed
+   branch `claude/oss-76-release-refresh` after merging the final `main`
+   into it. `main` already has version
    `0.1.0` and a dated `## [0.1.0]` changelog section (OSS-24, #30; nothing
    is released; `[Unreleased]` is empty since OSS-61). The release PR folds
    in anything added there since, sets the section's date to
