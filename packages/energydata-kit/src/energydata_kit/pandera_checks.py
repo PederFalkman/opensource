@@ -37,8 +37,7 @@ from energydata_kit.flags import (
     stale_mask,
 )
 from energydata_kit.intervals import duplicate_mask, expected_grid, off_grid_mask
-from energydata_kit.metadata import MeasurementMetadata
-from energydata_kit.report import _grid_from_metadata
+from energydata_kit.metadata import MeasurementMetadata, _grid_from_metadata
 from energydata_kit.timestamps import on_index
 
 __all__ = [

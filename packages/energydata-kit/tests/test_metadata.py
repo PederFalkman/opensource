@@ -92,3 +92,26 @@ def test_resolution_must_be_a_string():
 def test_non_string_name_or_timezone(field):
     with pytest.raises(TypeError, match=f"{field} must be a string"):
         MeasurementMetadata(**{"name": "p", "unit": "kW", field: 5})
+
+
+@pytest.mark.parametrize(
+    ("resolution", "calendar"),
+    [
+        ("15min", False),
+        ("1h", False),
+        ("D", False),
+        ("2D", False),
+        ("MS", True),
+        ("W-MON", True),
+        ("QS", True),
+    ],
+)
+def test_grid_from_metadata(resolution, calendar):
+    # One rule for the report, the Pandera schema and the CLI, the same on pandas 2 and 3
+    # (where "D" stopped being a Tick): fixed-length steps stay fixed, the rest use metadata.timezone.
+    from energydata_kit.metadata import _grid_from_metadata
+
+    meta = MeasurementMetadata("x", "kW", resolution=resolution, timezone="Europe/Stockholm")
+    assert _grid_from_metadata(None, None, meta) == (resolution, "Europe/Stockholm" if calendar else None)
+    assert _grid_from_metadata("15min", None, meta) == ("15min", None)  # an explicit step wins
+    assert _grid_from_metadata(None, "UTC", meta) == (resolution, "UTC")  # so does an explicit tz
