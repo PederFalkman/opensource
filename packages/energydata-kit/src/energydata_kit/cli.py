@@ -447,7 +447,8 @@ def _series_facts(data: dict[str, Any]) -> tuple[str, _Facts]:
     if data["completeness"] is None:
         facts.append(("completeness", "not checked (no --freq or --resolution)"))
     else:
-        present = round(data["completeness"] * data["n_expected_intervals"])
+        # Exact; rebuilding it from the rounded completeness is off by one or more above ~10**6 intervals.
+        present = data["n_expected_intervals"] - data["n_missing_intervals"]
         facts.append(
             (
                 "completeness",
@@ -481,12 +482,18 @@ def _series_facts(data: dict[str, Any]) -> tuple[str, _Facts]:
     return head, facts
 
 
-_MARKDOWN_SPECIAL = re.compile(r"([\\`*_\[\]<>#|])")
+_MARKDOWN_SPECIAL = re.compile(r"([\\`*_\[\]<>#|&~$])")
+_CONTROL = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]+")
+
+
+def _one_line(text: str) -> str:
+    """User-supplied text (column names) with line breaks and other control characters as one space."""
+    return _CONTROL.sub(" ", text)
 
 
 def _md(text: str) -> str:
-    """Escape user-supplied text (column names) for Markdown."""
-    return _MARKDOWN_SPECIAL.sub(r"\\\1", text)
+    """Escape user-supplied text (column names) for Markdown, on one line."""
+    return _MARKDOWN_SPECIAL.sub(r"\\\1", _one_line(text))
 
 
 def _md_facts(facts: _Facts) -> list[str]:
@@ -514,7 +521,7 @@ def _summary(data: dict[str, Any], markdown: bool = False) -> str:
     lines = [] if single else [f"{len(series)} column(s)"]
     for name, part in series:
         head, facts = _series_facts(part)
-        lines.append(f"{indent}{name}: {head}")
+        lines.append(f"{indent}{_one_line(name)}: {head}")
         lines += [f"{indent}  {label}: {text}" if label else f"{indent}  {text}" for label, text in facts]
     lines.append(f"fingerprint: {footer}")
     return "\n".join(lines) + "\n"
@@ -653,16 +660,16 @@ def _comparison_summary(data: dict[str, Any], markdown: bool = False) -> str:
         return "\n".join(lines) + "\n"
     lines = [verdict]
     for name, changes in data["changes"].items():
-        label = name or "series"
+        label = _one_line(name) or "series"
         if not changes:
             lines.append(f"{label}: no changes")
             continue
         lines.append(f"{label}:")
         lines += [f"  {line}" for line in _changes_facts(changes)]
     if added:
-        lines.append(f"columns added: {added}")
+        lines.append(f"columns added: {_one_line(added)}")
     if removed:
-        lines.append(f"columns removed: {removed}")
+        lines.append(f"columns removed: {_one_line(removed)}")
     return "\n".join(lines) + "\n"
 
 

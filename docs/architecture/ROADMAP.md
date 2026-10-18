@@ -576,7 +576,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] JSON Schema, golden frame report (only the new section added) and
       tests updated.
 
-### OSS-58: Parquet input (P-5) — this change
+### OSS-58: Parquet input (P-5) — merged in [#64](https://github.com/PederFalkman/opensource/pull/64)
 
 - [x] `energydata-kit report` reads `.parquet`/`.parq`/`.pq` files with
       the new optional extra `[parquet]` (pyarrow, Apache-2.0,
@@ -585,6 +585,16 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Allowlist, licence table and CI updated. The lowest-dependencies job
       pins pyarrow 14.0.2: current pyarrow needs NumPy 2, and the CLI
       turns an unusable pyarrow into a clear exit 2.
+
+### OSS-59: bug hunt in the newer features — this change
+
+- [x] Probed known outages, the frame `timestamps` section, Markdown
+      output and the report JSON Schema; the outage figures matched a
+      brute-force reference on 1,500 random series.
+- [x] Fixed: a `known_outages` generator reached only the first column of
+      `assess_frame`; unclear errors for malformed outages; summary counts
+      off above about 10**6 intervals; control characters in column names
+      breaking summary lines and Markdown headings.
 
 ## Explicitly not planned
 

@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 
 import energydata_kit as ek
-from energydata_kit import __version__
+from energydata_kit import __version__, cli
 from energydata_kit.cli import main
 
 CLEAN = "timestamp,kwh\n" + "".join(
@@ -485,6 +485,29 @@ def test_markdown_escapes_column_names(tmp_path):
     path = write(tmp_path, CLEAN.replace("kwh", "a_b|c*"))
     code, md, _ = run("report", str(path), "--freq", "15min", "--format", "markdown")
     assert code == 0 and md.splitlines()[0] == r"# Quality report: a\_b\|c\*"
+
+
+def test_column_names_stay_on_one_line(tmp_path):
+    # A line break in a column name split the Markdown heading and the text summary line.
+    path = write(tmp_path, CLEAN.replace("kwh", '"a\nb&~$"'))
+    code, md, _ = run("report", str(path), "--freq", "15min", "--format", "markdown")
+    assert code == 0 and md.splitlines()[0] == r"# Quality report: a b\&\~\$"
+    _, text, _ = run("report", str(path), "--freq", "15min", "--format", "text")
+    assert text.startswith("a b&~$: ")
+    s = ek.make_synthetic_series(periods=4)
+    before = ek.assess_frame(pd.DataFrame({"x": s}))
+    after = ek.assess_frame(pd.DataFrame({"x": s, "a\nb": s}))
+    comparison = ek.compare_reports(before, after).to_dict()
+    assert "columns added: a b\n" in cli._comparison_summary(comparison)
+    assert "Columns added: a b\n" in cli._comparison_summary(comparison, markdown=True)
+
+
+def test_summary_counts_are_exact_for_long_series():
+    # Present intervals were rebuilt from the rounded completeness: above about
+    # a million intervals that read "3000001 of 3000001 expected; 1 missing".
+    data = ek.assess_quality(ek.make_synthetic_series(periods=4), freq="15min").to_dict()
+    data.update(n_expected_intervals=3_000_001, n_missing_intervals=1, n_gaps=1, completeness=1.0)
+    assert "(3000000 of 3000001 expected); 1 missing in 1 gap(s)" in cli._summary(data)
 
 
 def test_markdown_comparison(tmp_path):

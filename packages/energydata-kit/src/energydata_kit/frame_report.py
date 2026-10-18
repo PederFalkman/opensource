@@ -20,7 +20,7 @@ import pandas as pd
 from energydata_kit import __version__
 from energydata_kit.flags import FLAG_COLUMN, VALUE_COLUMN, flag_series
 from energydata_kit.metadata import MeasurementMetadata
-from energydata_kit.report import REPORT_SCHEMA_VERSION, QualityReport, assess_quality
+from energydata_kit.report import REPORT_SCHEMA_VERSION, QualityReport, _outages, assess_quality
 
 __all__ = [
     "COLUMN_OPTIONS",
@@ -175,6 +175,11 @@ def assess_frame(
         Allowed keys: :data:`COLUMN_OPTIONS`.
     """
     names, metas, overrides_by_column = _validate(frame, columns, metadata, per_column, COLUMN_OPTIONS)
+    # Read once: a generator would otherwise reach only the first column.
+    outages = [
+        (pd.Timestamp(lo, unit="ns", tz="UTC"), pd.Timestamp(hi, unit="ns", tz="UTC"))
+        for lo, hi in _outages(known_outages)
+    ]
 
     shared: dict[str, Any] = {
         "metadata": None,
@@ -195,7 +200,7 @@ def assess_frame(
             freq=freq,
             origin=origin,
             tz=tz,
-            known_outages=known_outages,
+            known_outages=outages,
             max_listed=max_listed,
             **options,
         )

@@ -41,6 +41,20 @@ versioning: [SemVer](https://semver.org/).
   (OSS-51).
 
 ### Fixed
+- `assess_frame(..., known_outages=...)` given a generator used it up on the
+  first column, so the other columns had no known outages and the frame had
+  no `timestamps` section. The outages are now read once (OSS-59).
+- `known_outages` errors: a bare timestamp or number instead of a
+  `(start, end)` pair, `None`, `NaT`, unreadable text and dates beyond what
+  pandas can hold (after 2262) raised internal `TypeError`s or pandas
+  errors that did not mention the outage; each now raises `ValueError` or
+  `TypeError` naming the known outage and the problem (OSS-59).
+- `--format text` and `markdown`: above about a million expected intervals
+  the summary could read "3000001 of 3000001 expected; 1 missing", because
+  the present count was rebuilt from the rounded completeness. It is now
+  exact. A line break or other control character in a column name split
+  the heading or summary line; it is shown as a space, and Markdown output
+  also escapes `&`, `~` and `$` (OSS-59).
 - Command line on Windows: `-o` files and `--flags-csv` were written with
   `\r\n` line endings, so reports were not byte-identical to those made on
   Linux or macOS. Both now end lines in `\n` on every platform; the tests
