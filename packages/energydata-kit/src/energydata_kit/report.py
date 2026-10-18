@@ -10,7 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import operator
-from collections.abc import Collection, Iterable
+from collections.abc import Collection, Iterable, Sized
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -21,7 +21,6 @@ from energydata_kit import __version__
 from energydata_kit.flags import FLAG_COLUMN, QualityFlag, flag_series
 from energydata_kit.intervals import (
     Gap,
-    _aware,
     expected_grid,
     find_duplicate_timestamps,
     find_missing_intervals,
@@ -54,18 +53,37 @@ def _outages(
 ) -> list[tuple[int, int]]:
     """Validate ``known_outages`` as UTC nanosecond ``(start, end)`` pairs, both ends included."""
     given: object = known_outages  # a single string would otherwise be split into characters
-    if isinstance(given, str | bytes):
+    if isinstance(given, str | bytes) or not isinstance(given, Iterable):
         raise TypeError("known_outages must be a list of (start, end) pairs")
     result = []
     for item in known_outages:
         pair: object = item
-        if isinstance(pair, str | bytes) or len(item) != 2:
+        if isinstance(pair, str | bytes) or not isinstance(pair, Sized) or len(item) != 2:
             raise ValueError(f"each known outage must be a (start, end) pair, got {item!r}")
-        start, end = (_aware(ts, "known outage") for ts in item)
+        start, end = (_outage_end(ts) for ts in item)
         if start > end:
             raise ValueError(f"known outage starts after it ends: {start.isoformat()} > {end.isoformat()}")
-        result.append((start.as_unit("ns").value, end.as_unit("ns").value))
+        result.append((start.value, end.value))
     return result
+
+
+def _outage_end(value: pd.Timestamp | str) -> pd.Timestamp:
+    """One end of a known outage as a timezone-aware timestamp that fits in nanoseconds."""
+    try:
+        ts = pd.Timestamp(value)
+    except (TypeError, ValueError) as exc:  # pandas' parse errors are ValueErrors
+        raise ValueError(f"known outage: cannot read {value!r} as a timestamp ({exc})") from None
+    if pd.isna(ts):
+        raise ValueError(f"known outage must be a timestamp, got {value!r}")
+    if ts.tz is None:
+        raise ValueError(f"known outage must be timezone-aware, got {value!r}")
+    try:
+        return ts.as_unit("ns")
+    except pd.errors.OutOfBoundsDatetime:
+        raise ValueError(
+            f"known outage {ts.isoformat()} is outside the timestamps pandas can hold "
+            f"({pd.Timestamp.min.date()} to {pd.Timestamp.max.date()})"
+        ) from None
 
 
 def _iso_ns(value: int) -> str:

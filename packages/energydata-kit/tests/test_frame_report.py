@@ -159,6 +159,19 @@ def test_shared_timestamp_section():
     assert shared["truncated"] == {"gaps": False, "duplicate_timestamps": False}
 
 
+def test_known_outages_reach_every_column():
+    # A generator was used up by the first column, so later columns had no outages.
+    frame = meter_frame()
+    outages = (pair for pair in [("2024-01-01T00:30Z", "2024-01-01T01:00Z")])
+    report = assess_frame(frame, freq="15min", known_outages=outages)
+    assert [r.n_missing_explained for r in report.columns.values()] == [1, 1]
+    assert report.timestamps is not None and report.timestamps["n_missing_explained"] == 1
+    single = assess_quality(
+        frame["power_kw"], freq="15min", known_outages=[("2024-01-01T00:30Z", "2024-01-01T01:00Z")]
+    )
+    assert report.columns["power_kw"].to_json() == single.to_json()
+
+
 def test_no_shared_timestamp_section_when_steps_differ():
     # Without --freq each column takes its step from its metadata; 15 and 30 minutes disagree.
     frame = meter_frame()
