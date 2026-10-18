@@ -800,11 +800,24 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       has the new digests. The release PR is opened from this branch after
       the decisions, with the final `main` merged in and the date set.
 
-### OSS-77: decision brief refreshed — this change
+### OSS-77: decision brief refreshed — merged in [#80](https://github.com/PederFalkman/opensource/pull/80)
 
 - [x] `RELEASE_DECISIONS.md`: what changed since OSS-68, G6 audited in
       OSS-75, the rehearsed release branch, commit counts at #79; the
       shared decision brief republished to match.
+
+### OSS-78: review of the code since OSS-71 — this change
+
+- [x] A focused review of the code merged after the second review (#76
+      to #79): the `--flags-csv` grid check, the grid helper in
+      `metadata.py`, the grid built once and the new summary messages.
+      300 random reports were byte-identical before and after #78 on
+      pandas 2.1 and 3.
+- [x] Fixed: equal calendar steps spelled differently (`"MS"` and
+      `"1MS"`, `"W"` and `"W-SUN"`) were refused as "different
+      resolutions" by `--flags-csv`, as `"60min"` and `"1h"` were before
+      OSS-72. Two docstrings corrected (`"D"` is a fixed step; no
+      `local_days` for an empty series).
 
 ## Explicitly not planned
 

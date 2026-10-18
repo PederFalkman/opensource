@@ -667,6 +667,25 @@ def test_flags_csv_grid_across_schema_columns(tmp_path):
     assert code == 2 and "have no resolution in --schema" in err and not report.exists()
 
 
+def test_flags_csv_grid_equal_calendar_steps(tmp_path):
+    # Calendar steps were compared by spelling, so "MS" and "1MS" (or "W" and "W-SUN") were
+    # refused as "different resolutions" (OSS-78); different calendar steps still are.
+    csv = write(
+        tmp_path, "timestamp,a,b\n2024-01-01T00:00Z,1,2\n2024-02-01T00:00Z,1,2\n2024-04-01T00:00Z,1,2\n"
+    )
+    flags = tmp_path / "flags.csv"
+    for a, b, ok in [("MS", "1MS", True), ("W", "W-SUN", True), ("MS", "W-MON", False), ("MS", "2MS", False)]:
+        fields = [
+            {"name": c, "energydata_kit": {"unit": "kW", "resolution": r}} for c, r in [("a", a), ("b", b)]
+        ]
+        schema = str(write(tmp_path, json.dumps({"fields": fields}), "schema.json"))
+        code, _, err = run("report", str(csv), "--schema", schema, "--flags-csv", str(flags))
+        if ok:
+            assert (code, err) == (0, ""), (a, b, err)
+        else:
+            assert code == 2 and "different resolutions" in err, (a, b)
+
+
 def test_unknown_time_zone(tmp_path):
     # --tz Mars/Phobos ended in a zoneinfo traceback with exit status 1 ("issues found").
     path = str(write(tmp_path, CLEAN))

@@ -88,7 +88,7 @@ def units_compatible(unit_a: str, unit_b: str) -> bool:
 
 
 def _validate_resolution(resolution: str) -> None:
-    """Accept a positive fixed step (``"15min"``) or calendar step (``"D"``, ``"MS"``)."""
+    """Accept a positive fixed step (``"15min"``, ``"D"``) or calendar step (``"MS"``, ``"W-MON"``)."""
     try:
         to_step(resolution)
         return
