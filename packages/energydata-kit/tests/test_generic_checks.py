@@ -142,6 +142,45 @@ def test_non_finite_options_are_rejected():
             assess_quality(s, freq="15min", **options)
 
 
+@pytest.mark.parametrize(
+    ("options", "error"),
+    [
+        # Booleans and non-boolean flags were recorded as-is, so the report failed its JSON Schema.
+        ({"max_listed": True}, TypeError),
+        ({"cumulative": "yes"}, TypeError),
+        ({"cumulative": 1}, TypeError),
+        ({"cumulative": True, "counter_tolerance": True}, TypeError),
+        ({"jump_max_delta": True}, TypeError),
+        ({"bounds": (False, True)}, TypeError),
+        ({"stale_min_run": 3, "stale_atol": True}, TypeError),
+        ({"stale_min_run": 3, "stale_exclude": [True]}, ValueError),
+        # Text failed inside numpy instead of naming the option.
+        ({"stale_min_run": "3"}, TypeError),
+        ({"jump_max_delta": "5"}, TypeError),
+        ({"bounds": ("0", "5")}, TypeError),
+        ({"bounds": (0, 1, 2)}, ValueError),  # was "too many values to unpack"
+        ({"freq": "D", "tz": "Mars/Phobos"}, ValueError),  # was a KeyError from zoneinfo
+    ],
+)
+def test_option_types_are_checked(options, error):
+    with pytest.raises(error, match=r"must be|must contain|pair|unknown time zone|interpreted as an integer"):
+        assess_quality(make_synthetic_series(periods=6), **options)
+
+
+def test_numpy_options_are_accepted():
+    s = make_synthetic_series(periods=6)
+    report = assess_quality(
+        s,
+        freq="15min",
+        bounds=np.array([0.0, 50.0]),
+        stale_min_run=np.int64(3),
+        cumulative=np.bool_(False),
+        jump_max_delta=np.float32(5.0),
+        max_listed=np.int64(2),
+    )
+    assert report.parameters["stale_min_run"] == 3 and report.parameters["max_listed"] == 2
+
+
 def test_stale_exclude_accepts_arrays_and_is_checked_on_empty_input():
     s = make_synthetic_series(periods=6)
     # A numpy array of two or more values raised "truth value ... is ambiguous".

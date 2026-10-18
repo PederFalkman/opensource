@@ -18,6 +18,8 @@ timestamp does not shift the whole grid.
 
 from __future__ import annotations
 
+import datetime as dt
+import zoneinfo
 from dataclasses import dataclass
 from typing import Any
 
@@ -97,6 +99,16 @@ def find_duplicate_timestamps(index: pd.DatetimeIndex) -> pd.DatetimeIndex:
     return pd.DatetimeIndex(index[index.duplicated(keep="first")].unique()).sort_values()
 
 
+def _check_tz(tz: str | None) -> None:
+    """Reject an unknown ``tz`` with ``ValueError`` (zoneinfo raises a ``KeyError`` subclass)."""
+    if tz is None or isinstance(tz, dt.tzinfo):
+        return
+    try:
+        zoneinfo.ZoneInfo(tz)
+    except (zoneinfo.ZoneInfoNotFoundError, ValueError, TypeError) as exc:
+        raise ValueError(f"unknown time zone {tz!r}") from exc
+
+
 def off_grid_mask(
     index: pd.DatetimeIndex,
     freq: str | pd.Timedelta,
@@ -111,6 +123,7 @@ def off_grid_mask(
     defaults to the earliest timestamp.
     """
     _require_aware(index)
+    _check_tz(tz)
     if len(index) == 0:
         return np.zeros(0, dtype=bool)
     if tz is not None:
@@ -157,6 +170,7 @@ def expected_grid(
     calendar offsets such as ``"MS"`` snap to their own anchor points.
     """
     _require_aware(index)
+    _check_tz(tz)
     if len(index) == 0 and (start is None or end is None):
         return pd.DatetimeIndex([], tz="UTC").as_unit("ns")
     lo = index.min() if start is None else _aware(start, "start")

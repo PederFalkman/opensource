@@ -7,9 +7,11 @@ check in this module modifies, drops, fills or reorders input values.
 from __future__ import annotations
 
 import functools
+import numbers
 import operator
 from collections.abc import Collection
 from enum import IntFlag
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -92,6 +94,25 @@ def non_finite_mask(values: pd.Series | np.ndarray | list[object]) -> np.ndarray
     return np.asarray(np.isinf(_numeric(_as_series(values)).to_numpy()), dtype=bool)
 
 
+def _number(value: object, name: str) -> float:
+    """``value`` as a float, if it is a real number (numpy ones included) but not a bool."""
+    if isinstance(value, bool | np.bool_) or not isinstance(value, numbers.Real):
+        raise TypeError(f"{name} must be a number, got {value!r}")
+    return float(value)
+
+
+def _bounds(bounds: object) -> tuple[Any, Any]:
+    """``bounds`` checked as a ``(lower, upper)`` pair of numbers or ``None``, returned unchanged."""
+    pair: Any = bounds
+    if isinstance(pair, str | bytes) or not hasattr(pair, "__len__") or len(pair) != 2:
+        raise ValueError(f"bounds must be a (lower, upper) pair, got {bounds!r}")
+    lower, upper = pair
+    for name, bound in (("lower bound", lower), ("upper bound", upper)):
+        if bound is not None:
+            _number(bound, name)
+    return lower, upper
+
+
 def out_of_bounds_mask(
     values: pd.Series | np.ndarray | list[object],
     *,
@@ -103,7 +124,9 @@ def out_of_bounds_mask(
     Bounds are supplied by the caller; the package ships no domain limits.
     """
     for name, bound in (("lower", lower), ("upper", upper)):
-        if bound is not None and not np.isfinite(bound):  # NaN or inf would make the report invalid JSON
+        if bound is not None and not np.isfinite(
+            _number(bound, f"{name} bound")
+        ):  # NaN or inf would make the report invalid JSON
             raise ValueError(f"{name} bound must be a finite number or None, got {bound!r}")
     if lower is not None and upper is not None and lower > upper:
         raise ValueError(f"lower bound {lower} exceeds upper bound {upper}")
@@ -132,9 +155,12 @@ def stale_mask(
     ``exclude`` (e.g. ``0.0`` for generation at night) are not flagged. Time
     gaps between rows are not considered; check gaps separately.
     """
+    if isinstance(min_run, bool | np.bool_):
+        raise TypeError(f"min_run must be an integer, got {min_run!r}")
+    min_run = operator.index(min_run)  # TypeError for 3.5 or "3"; accepts numpy integers
     if min_run < 2:
         raise ValueError("min_run must be >= 2")
-    if not np.isfinite(atol) or atol < 0:
+    if not np.isfinite(_number(atol, "atol")) or atol < 0:
         raise ValueError("atol must be a finite number >= 0")
     excluded = _excluded_values(exclude)
     v = _numeric(_as_series(values)).to_numpy()
@@ -157,10 +183,13 @@ def _excluded_values(exclude: Collection[float]) -> np.ndarray:
     given: object = exclude
     if isinstance(given, str | bytes):
         raise TypeError("exclude must be a collection of numbers, not a string")
+    values = list(exclude)
+    if any(isinstance(x, bool | np.bool_) for x in values):
+        raise ValueError(f"exclude must contain only numbers, got {values!r}")
     try:
-        excluded = np.asarray(list(exclude), dtype="float64")
+        excluded = np.asarray(values, dtype="float64")
     except (TypeError, ValueError):
-        raise ValueError(f"exclude must contain only numbers, got {list(exclude)!r}") from None
+        raise ValueError(f"exclude must contain only numbers, got {values!r}") from None
     if not np.isfinite(excluded).all():
         # Non-finite values never form a run, and NaN or inf would make the report invalid JSON.
         raise ValueError(f"exclude must contain finite numbers, got {excluded.tolist()!r}")
@@ -180,7 +209,7 @@ def counter_decrease_mask(
     both show up as decreases; this function does not guess which one it is.
     Drops of at most ``tolerance`` are ignored.
     """
-    if not np.isfinite(tolerance) or tolerance < 0:
+    if not np.isfinite(_number(tolerance, "tolerance")) or tolerance < 0:
         raise ValueError("tolerance must be a finite number >= 0")
     v = _numeric(_as_series(values))
     finite = pd.Series(np.isfinite(v.to_numpy()), index=v.index)
@@ -201,7 +230,7 @@ def jump_mask(
     is supplied by the caller; the package ships no domain limits. Time gaps
     between rows are not considered; check gaps separately.
     """
-    if not np.isfinite(max_delta) or max_delta <= 0:
+    if not np.isfinite(_number(max_delta, "max_delta")) or max_delta <= 0:
         raise ValueError("max_delta must be a finite number > 0")
     v = _numeric(_as_series(values))
     finite = pd.Series(np.isfinite(v.to_numpy()), index=v.index)
@@ -216,7 +245,9 @@ def _check_options(
     cumulative: bool,
     counter_tolerance: float,
 ) -> None:
-    """Reject fine-tuning options given without the check they tune."""
+    """Reject a non-boolean ``cumulative`` and fine-tuning options given without the check they tune."""
+    if not isinstance(cumulative, bool | np.bool_):
+        raise TypeError(f"cumulative must be True or False, got {cumulative!r}")
     if stale_min_run is None and (stale_atol or len(stale_exclude)):
         raise ValueError("stale_atol and stale_exclude require stale_min_run")
     if not cumulative and counter_tolerance:
@@ -300,7 +331,7 @@ def flag_series(
     if freq is not None:
         flags[off_grid_mask(index, freq, origin=origin, tz=tz)] |= np.uint16(QualityFlag.OFF_GRID_TIMESTAMP)
     if bounds is not None:
-        lower, upper = bounds
+        lower, upper = _bounds(bounds)
         flags[out_of_bounds_mask(series, lower=lower, upper=upper)] |= np.uint16(QualityFlag.OUT_OF_BOUNDS)
     if stale_min_run is not None:
         stale = stale_mask(series, stale_min_run, atol=stale_atol, exclude=stale_exclude)

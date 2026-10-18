@@ -99,7 +99,10 @@ found on request, 2 usage, input or file error (listed in `--help`).
 - Invalid input raises `ValueError` or `TypeError` with the reason (for
   example a `NaT` timestamp, a flag value no flag uses or a non-finite
   bound or tolerance), never a silent guess. Options are checked when they
-  are given, also for empty data and when a Pandera check is built.
+  are given, also for empty data and when a Pandera check is built:
+  numeric options take real numbers (numpy ones included) but not booleans
+  or text, `cumulative` takes `True` or `False`, run lengths and
+  `max_listed` take integers, and `tz` must name a known time zone.
 - Python 3.11 to 3.14, tested on Linux, Windows and macOS.
 - Reports, flags CSVs and fingerprints are byte-identical on every
   supported Python, pandas and numpy version and on every platform (files

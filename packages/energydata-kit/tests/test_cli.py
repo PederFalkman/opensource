@@ -588,6 +588,13 @@ def test_parquet_rejects_csv_options_and_explains_a_missing_pyarrow(tmp_path, mo
     assert code == 2 and "python -m pip install 'energydata-kit[parquet]'" in err
 
 
+def test_unknown_time_zone(tmp_path):
+    # --tz Mars/Phobos ended in a zoneinfo traceback with exit status 1 ("issues found").
+    path = str(write(tmp_path, CLEAN))
+    code, out, err = run("report", path, "--freq", "D", "--tz", "Mars/Phobos")
+    assert (code, out) == (2, "") and "unknown time zone 'Mars/Phobos'" in err
+
+
 def test_unreadable_parquet_input(tmp_path):
     pytest.importorskip("pyarrow")
     (tmp_path / "empty.parquet").write_bytes(b"")
