@@ -12,15 +12,18 @@ repository itself:
    (if that dated heading already exists, anything under ``[Unreleased]`` is
    folded into it instead);
 3. a ``LICENSE`` file at the root, a copy in the package directory (only
-   files there ship in the wheel and sdist) and a ``license`` declaration,
-   all **placeholders** (``LicenseRef-Dry-Run-Placeholder``): no licence is
-   chosen or granted here, that is gate G2;
+   files there ship in the wheel and sdist) and a ``license`` declaration —
+   as **placeholders** (``LicenseRef-Dry-Run-Placeholder``) only where the
+   repository has none, since no licence is chosen or granted here, that is
+   gate G2. Once G2 is passed the real licence is what a release ships, so
+   the rehearsal keeps it and substitutes nothing;
 4. the ``Private :: Do Not Upload`` classifier removed.
 
 It then runs ``tools/check_release_readiness.py --strict`` with the matching
 tag on the copy. With ``--build`` it also builds the sdist and wheel,
-runs ``twine check``, checks the wheel metadata (version, placeholder
-licence and licence file, no upload guard) and prints the SHA-256 digests. The copy and
+runs ``twine check``, checks the wheel metadata (version, no upload guard,
+the licence file, and a ``License-Expression`` matching whatever the copy
+declares — placeholder or real) and prints the SHA-256 digests. The copy and
 everything built in it are deleted afterwards; nothing is uploaded.
 
 A failure means the next release PR would fail too, so fix it before it
@@ -179,8 +182,7 @@ def check_wheel(wheel: Path, version: str, expected_license: str) -> list[str]:
     # propagated the declaration into the wheel instead of dropping it.
     if meta.get("License-Expression") != expected_license:
         problems.append(
-            f"wheel License-Expression is {meta.get('License-Expression')!r}, "
-            f"expected {expected_license!r}"
+            f"wheel License-Expression is {meta.get('License-Expression')!r}, expected {expected_license!r}"
         )
     if "LICENSE" not in (meta.get_all("License-File") or []):
         problems.append("wheel does not include the LICENSE file")
