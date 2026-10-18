@@ -158,15 +158,30 @@ def sdist_has_license(sdist: Path) -> bool:
         return any(name.endswith("/LICENSE") for name in tf.getnames())
 
 
-def check_wheel(wheel: Path, version: str) -> list[str]:
+def declared_license(pkg_dir: Path) -> str:
+    """The licence expression the copy's pyproject declares, placeholder or real."""
+    declared = tomllib.loads((pkg_dir / "pyproject.toml").read_text(encoding="utf-8"))["project"]["license"]
+    # PEP 639 makes this an SPDX string; a pre-639 table is still accepted here.
+    return declared if isinstance(declared, str) else str(declared.get("text", declared))
+
+
+def check_wheel(wheel: Path, version: str, expected_license: str) -> list[str]:
     meta = wheel_metadata(wheel)
     problems = []
     if meta["Version"] != version:
         problems.append(f"wheel version is {meta['Version']!r}, expected {version!r}")
     if GUARD_CLASSIFIER in (meta.get_all("Classifier") or []):
         problems.append("wheel still carries the upload guard")
-    if meta.get("License-Expression") != PLACEHOLDER_LICENSE:
-        problems.append(f"wheel License-Expression is {meta.get('License-Expression')!r}")
+    # Compare against what the copy actually declares rather than against the
+    # placeholder constant: that holds whether the dry run substituted a
+    # placeholder (G2 unmet) or kept the repository's real licence (G2 passed),
+    # and it checks the stronger property either way — that the build
+    # propagated the declaration into the wheel instead of dropping it.
+    if meta.get("License-Expression") != expected_license:
+        problems.append(
+            f"wheel License-Expression is {meta.get('License-Expression')!r}, "
+            f"expected {expected_license!r}"
+        )
     if "LICENSE" not in (meta.get_all("License-File") or []):
         problems.append("wheel does not include the LICENSE file")
     return problems
@@ -199,7 +214,7 @@ def dry_run(package: str, version: str | None, date: str, build: bool, root: Pat
             wheels = [f for f in files if f.suffix == ".whl"]
             if len(wheels) != 1:
                 raise DryRunError(f"expected one wheel, built {len(wheels)}")
-            problems = check_wheel(wheels[0], version)
+            problems = check_wheel(wheels[0], version, declared_license(pkg_dir))
             sdists = [f for f in files if f.name.endswith(".tar.gz")]
             if len(sdists) != 1 or not sdist_has_license(sdists[0]):
                 problems.append("sdist does not include the LICENSE file")

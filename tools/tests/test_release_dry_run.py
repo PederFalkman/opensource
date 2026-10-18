@@ -119,6 +119,29 @@ def test_release_edits_do_not_double_declare_an_existing_licence(tmp_path):
     assert "Private :: Do Not Upload" not in text
 
 
+def test_declared_license_follows_the_copy_not_a_constant(tmp_path):
+    """The second half of the same regression.
+
+    ``check_wheel`` used to assert the wheel's License-Expression equalled the
+    dry-run placeholder, so a repository with a real licence failed with
+    "wheel License-Expression is 'Apache-2.0'" — the build was correct and the
+    check was stale. The expectation now comes from what the copy declares, so
+    it holds in both states and additionally proves the build propagated the
+    declaration instead of dropping it.
+    """
+    root = make_repo(tmp_path)
+    pkg = root / "packages" / "demo"
+
+    # G2 unmet: the dry run substitutes, so the placeholder is what to expect.
+    rdr.apply_release_edits(root, "demo", "0.3.0", "2026-11-01")
+    assert rdr.declared_license(pkg) == rdr.PLACEHOLDER_LICENSE
+
+    # G2 passed: the real licence is what a release ships, and what to expect.
+    pyproject = pkg / "pyproject.toml"
+    pyproject.write_text(pyproject.read_text().replace(rdr.PLACEHOLDER_LICENSE, "Apache-2.0", 1))
+    assert rdr.declared_license(pkg) == "Apache-2.0"
+
+
 def test_dry_run_passes_and_leaves_source_untouched(tmp_path):
     root = make_repo(tmp_path)
     before = {p: p.read_bytes() for p in root.rglob("*") if p.is_file()}
