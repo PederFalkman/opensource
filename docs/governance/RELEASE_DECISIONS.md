@@ -206,9 +206,15 @@ Not a release gate, but it protects the release commit.
      `energydata_kit` were not taken on PyPI or TestPyPI (HTTP 404 from
      their JSON APIs); availability can change until the first upload.
   3. Who owns the PyPI project and its trusted-publishing configuration?
+- **Evidence to record:** the owner adds one line under this heading,
+  starting the line with `**D6 approved:** YYYY-MM-DD`, then the index and
+  who approved. Since OSS-83, CI refuses removing the upload guard until
+  that line exists, so a release merge cannot pass by editing the guard
+  and its test together (as #82 did).
 - **After approval:** the release PR removes the `Private :: Do Not Upload`
-  classifier; trusted publishing is set up in a separate, reviewed change.
-  Nothing in the repository uploads anything today.
+  classifier together with that line; trusted publishing is set up in a
+  separate, reviewed change. Nothing in the repository uploads anything
+  today.
 
 ## Suggested order
 

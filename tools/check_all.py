@@ -6,7 +6,8 @@ The same commands as in CONTRIBUTING.md, in one go:
 - per package under ``packages/``: ``ruff check``, ``ruff format --check``,
   ``mypy`` and ``pytest``;
 - repository checks: IP boundary, workflow pins, documentation, third-party
-  licences, the tools' own tests and the release dry run;
+  licences, the upload guard (kept until D6 is recorded), the tools' own
+  tests and the release dry run;
 - the release readiness report, shown for information only (it fails until
   the release gates pass).
 
@@ -71,6 +72,7 @@ def default_checks(root: Path = ROOT, *, build: bool = False, quick: bool = Fals
         Check("workflow pins", [PY, str(tools / "check_workflow_pins.py")], root),
         Check("docs", [PY, str(tools / "check_docs.py")], root),
         Check("third-party licences", [PY, str(tools / "check_third_party.py")], root),
+        Check("upload guard", [PY, str(tools / "check_release_readiness.py"), "--guard"], root),
         Check("tools tests", [PY, "-m", "pytest", "-q", "-p", "no:cacheprovider", "tools/tests"], root),
     ]
     if not quick:

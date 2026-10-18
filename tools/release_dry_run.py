@@ -17,7 +17,9 @@ repository itself:
    repository has none, since no licence is chosen or granted here, that is
    gate G2. Once G2 is passed the real licence is what a release ships, so
    the rehearsal keeps it and substitutes nothing;
-4. the ``Private :: Do Not Upload`` classifier removed.
+4. the ``Private :: Do Not Upload`` classifier removed, with a placeholder
+   ``**D6 approved:**`` line appended to ``RELEASE_DECISIONS.md`` (the real
+   release PR carries the owner's approval line; OSS-83).
 
 It then runs ``tools/check_release_readiness.py --strict`` with the matching
 tag on the copy. With ``--build`` it also builds the sdist and wheel,
@@ -141,6 +143,13 @@ def apply_release_edits(root: Path, package: str, version: str, date: str) -> No
     if not declared:
         raise DryRunError("could not place the license declaration (no requires-python in [project])")
     pyproject.write_text("".join(out), encoding="utf-8")
+
+    # The release PR also records the owner's D6 approval, without which the
+    # guard may not be removed; the rehearsal stands in for it like the licence.
+    decisions = root / "docs" / "governance" / "RELEASE_DECISIONS.md"
+    decisions.parent.mkdir(parents=True, exist_ok=True)
+    with decisions.open("a", encoding="utf-8") as f:
+        f.write(f"\n**D6 approved:** {date} (release dry-run placeholder)\n")
 
 
 def run(cmd: list[str], cwd: Path) -> str:

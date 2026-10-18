@@ -24,6 +24,7 @@ def make_repo(
     package_license: str | None = "license text\n",
     license_field: bool = True,
     guard: bool = False,
+    approved: bool = True,
 ) -> Path:
     pkg = tmp_path / "packages" / "demo"
     (pkg / "src" / "demo").mkdir(parents=True)
@@ -46,6 +47,10 @@ def make_repo(
         (tmp_path / "LICENSE").write_text("license text\n")
     if package_license is not None:
         (pkg / "LICENSE").write_text(package_license)
+    decisions = tmp_path / "docs" / "governance" / "RELEASE_DECISIONS.md"
+    decisions.parent.mkdir(parents=True)
+    approval = "**D6 approved:** 2026-11-01, PyPI, by the owner\n" if approved else ""
+    decisions.write_text(f"# Release decisions\n\n### D6. Publication\n\n{approval}")
     return tmp_path
 
 
@@ -71,6 +76,7 @@ def test_ready_package_passes(tmp_path):
         ({"package_license": "other text\n"}, ["LICENSE shipped with package"]),
         ({"license_field": False}, ["license declared"]),
         ({"guard": True}, ["upload guard removed"]),
+        ({"approved": False}, ["publication approved (D6)"]),
     ],
 )
 def test_each_condition(tmp_path, kwargs, expected):
@@ -86,6 +92,29 @@ def test_strict_and_report_modes(tmp_path, capsys):
     assert crr.main(["demo", "--root", str(root)]) == 0
     assert crr.main(["demo", "--strict", "--root", str(root)]) == 1
     assert "[FAIL] upload guard removed" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    ("guard", "approved", "ok"),
+    [(True, False, True), (True, True, True), (False, True, True), (False, False, False)],
+)
+def test_guard_mode(tmp_path, capsys, guard, approved, ok):
+    # #82 removed the guard and inverted its test together, so CI stayed green (OSS-83).
+    root = make_repo(tmp_path, guard=guard, approved=approved)
+    assert crr.check_guard(root, "demo").ok is ok
+    assert crr.main(["demo", "--guard", "--root", str(root)]) == (0 if ok else 1)
+    if not ok:
+        assert "record the approval in the same pull request" in capsys.readouterr().out
+
+
+def test_approval_line_must_be_its_own_dated_line(tmp_path):
+    root = make_repo(tmp_path, guard=False, approved=False)
+    decisions = root / crr.DECISIONS
+    for text in ["Once **D6 approved:** 2026-11-01 is added", "**D6 approved:** soon", "**D6 approved:**"]:
+        decisions.write_text(text + "\n")
+        assert not crr.check_guard(root, "demo").ok, text
+    decisions.write_text("intro\n**D6 approved:** 2026-11-01 (PyPI)\n")
+    assert crr.check_guard(root, "demo").ok
 
 
 def test_unreleased_entries_block_a_final_version(tmp_path):
@@ -111,7 +140,10 @@ def test_real_repository_is_not_release_ready():
     # names keeps the test a live statement about the licence: if a LICENSE or
     # the declaration is ever dropped, this fails instead of quietly widening
     # the set of things allowed to be broken.
+    assert "publication approved (D6)" in failed
     licensed = {"LICENSE file", "LICENSE shipped with package", "license declared"}
     assert not (licensed & failed), f"G2 regressed: {sorted(licensed & failed)}"
     assert crr.main(["energydata-kit", "--root", str(REPO)]) == 0
     assert crr.main(["energydata-kit", "--strict", "--root", str(REPO)]) == 1
+    # Kept until D6: the check CI runs on every change.
+    assert crr.main(["energydata-kit", "--guard", "--root", str(REPO)]) == 0
