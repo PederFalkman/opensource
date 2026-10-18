@@ -11,12 +11,10 @@ is complete; nothing below needs more code before the decisions are made.
 Since the first version of this page, correctness passes (OSS-40 to OSS-49,
 OSS-59) fixed the bugs they found, and the five approved proposals P-2 to
 P-6 were added (OSS-54 to OSS-58; see "What changed since OSS-48" below).
-D3 is decided (Apache-2.0, #66), so the licence checks pass. The readiness
-check fails on two items: *upload guard removed*, which waits on D6, and
-*nothing left unreleased*, because the changelog entries for the work above
-are under `[Unreleased]`. Moving those entries
-into the 0.1.0 section is a changelog edit, made once no other pull request
-touches the changelog, or in the release PR at the latest.
+D3 is decided (Apache-2.0, #66), so the licence checks pass, and the
+changelog entries for the work above are part of the 0.1.0 notes (OSS-61).
+The readiness check fails on one item only: *upload guard removed*, which
+waits on D6.
 
 ## What changed since OSS-48
 
@@ -199,9 +197,8 @@ Not a release gate, but it protects the release commit.
 5. D6 publication approval.
 6. Release PR from `RELEASE_CHECKLIST.md`. `main` already has version
    `0.1.0` and a dated `## [0.1.0]` changelog section (OSS-24, #30; nothing
-   is released). `[Unreleased]` holds the P-2 to P-6 additions and later
-   fixes; they move into the 0.1.0 section in a changelog-only PR, or the
-   release PR folds them in. The release PR sets the section's date to
+   is released; `[Unreleased]` is empty since OSS-61). The release PR folds
+   in anything added there since, sets the section's date to
    the release day and removes the guard (LICENSE and the licence
    declaration are already on `main` since #66);
    then tag `energydata-kit-v0.1.0`. The *Release build* workflow re-runs the

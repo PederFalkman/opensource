@@ -596,7 +596,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       off above about 10**6 intervals; control characters in column names
       breaking summary lines and Markdown headings.
 
-### OSS-60: release-readiness refresh — this change
+### OSS-60: release-readiness refresh — merged in [#67](https://github.com/PederFalkman/opensource/pull/67)
 
 - [x] `RELEASE_DECISIONS.md` facts refreshed after P-2 to P-6 and the
       Apache-2.0 licence (#66): what changed since OSS-48, G2 passed,
@@ -604,9 +604,16 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       protection, a note for the IP reviewer on known outages.
 - [x] pip-audit now also installs the `[parquet]` extra, so pyarrow is
       audited; the licence checklist has a pyarrow row.
-- [ ] Moving the `[Unreleased]` changelog entries into the 0.1.0 section
-      (the readiness check's *nothing left unreleased*) is left for a
-      changelog-only change or the release PR.
+- [x] Moving the `[Unreleased]` changelog entries into the 0.1.0 section
+      was left for a changelog-only change: OSS-61.
+
+### OSS-61: changelog fold — this change
+
+- [x] The `[Unreleased]` entries (P-2 to P-6, the licence, Python 3.14,
+      Windows and macOS, pre-release fixes) folded into the 0.1.0 notes by
+      theme; fixes to unreleased code described as the shipped behaviour.
+- [x] The readiness check fails only on the upload guard (G7, decision
+      D6); `RELEASE_DECISIONS.md` says so.
 
 ## Explicitly not planned
 
