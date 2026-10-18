@@ -224,8 +224,8 @@ def assess_quality(
     ``origin`` anchors the grid and ``tz`` makes ``freq`` a local-calendar
     step (see :func:`energydata_kit.expected_grid`). The per-local-day
     section (``local_days``, in ``metadata.timezone``, else UTC) is produced
-    only for a fixed step without ``tz``; it is ``None`` on a calendar grid
-    and without a step.
+    only for a fixed step without ``tz``; it is ``None`` on a calendar grid,
+    without a step and for an empty series.
 
     ``known_outages`` lists periods in which data is known to be missing
     (maintenance, a meter swap), as timezone-aware ``(start, end)`` pairs,
