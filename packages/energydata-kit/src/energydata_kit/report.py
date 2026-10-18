@@ -218,11 +218,14 @@ def assess_quality(
     present, whatever their values: a row with a missing value still counts
     and is flagged ``MISSING_VALUE`` instead. It is ``None`` without a step,
     for an empty series, or when no grid point falls inside the data's time
-    span (possible with ``origin``).
+    span (possible with ``origin``, or with a calendar step longer than the
+    data, such as ``"MS"`` on two weeks of data).
 
     ``origin`` anchors the grid and ``tz`` makes ``freq`` a local-calendar
-    step (see :func:`energydata_kit.expected_grid`); the per-local-day
-    section is only produced for fixed steps.
+    step (see :func:`energydata_kit.expected_grid`). The per-local-day
+    section (``local_days``, in ``metadata.timezone``, else UTC) is produced
+    only for a fixed step without ``tz``; it is ``None`` on a calendar grid
+    and without a step.
 
     ``known_outages`` lists periods in which data is known to be missing
     (maintenance, a meter swap), as timezone-aware ``(start, end)`` pairs,

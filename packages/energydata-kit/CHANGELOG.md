@@ -80,7 +80,7 @@ found on request, 2 usage, input or file error (listed in `--help`).
   `--known-outage START END`, `--flags-csv`, `--fail-on-issues`, and
   `--format text` or `markdown` for a readable summary (Markdown to paste
   into an issue or pull request; column names escaped and kept on one
-  line). Metadata from `--unit` (one column, with `--resolution`,
+  line; when completeness is missing, the summary says why). Metadata from `--unit` (one column, with `--resolution`,
   `--aggregation`, `--interval-label` and `--timezone`) or `--schema` (a
   Table Schema, any number of columns). `--delimiter` and `--decimal` read `;`-, tab- or
   `|`-separated files with decimal commas; the flags CSV follows the input's

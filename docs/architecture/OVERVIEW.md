@@ -4,13 +4,13 @@
 
 ```
 opensource/
-├── README.md, CONTRIBUTING.md, SECURITY.md
+├── README.md, CONTRIBUTING.md, SECURITY.md, LICENSE (Apache-2.0)
 ├── ruff.toml                    # lint config for tools/ only
 ├── docs/
 │   ├── architecture/            # this file, audit, duplication register, roadmap,
 │   │                            # API review, performance
-│   └── governance/              # IP boundary, release gates and checklist,
-│                                # third-party licences
+│   └── governance/              # IP boundary, release gates, checklist and
+│                                # open decisions, third-party licences
 ├── packages/
 │   └── energydata-kit/          # the only package authorized so far
 │       ├── pyproject.toml       # own metadata, deps, lint/type/test config
@@ -89,7 +89,7 @@ Key decisions:
 | Reports have no wall-clock time | Same input + parameters + version → byte-identical JSON. The fingerprint covers UTC ns timestamps, canonicalized float64 values and the series name, so it does not depend on pandas' datetime resolution or display time zone. |
 | pandas, numpy, Pint as the only required runtime dependencies (Pandera and pyarrow are optional extras, for Pandera checks and Parquet input) | Mature, permissively licensed (BSD), already ubiquitous in energy data work. No schema engine, unit system or I/O layer is reimplemented. |
 | Pint registry extended with `var` | Pint has no reactive-power unit; `var` is defined as dimensionally equal to `VA`. |
-| Calendar grids only with an explicit `tz` | Daily and longer steps in local time are laid out by pandas in wall-clock time (23/25-hour DST days). They are never inferred from metadata, so a fixed `"1D"` step stays 24 h in UTC unless the caller says otherwise. |
+| Calendar grids only when stated | Daily and longer steps in local time are laid out by pandas in wall-clock time (23/25-hour DST days). They need `tz=`, or a metadata resolution with no fixed length (`"MS"`, `"W-MON"`), which is laid out in the metadata's time zone (OSS-68). `"D"` and `"1D"` stay 24 h in UTC unless the caller passes `tz=`. |
 | Opt-in checks for stale values, counters and jumps | A sensible run length or jump limit depends on the signal, and whether a series is cumulative is the caller's knowledge; all three stay off by default and the package ships no limits. |
 | CLI is a thin layer | `energydata-kit report` and `compare` only parse arguments, CSV and JSON, then call the library (`assess_quality`, `assess_frame`, `flag_series`, `flag_frame`, `compare_reports`); exit status 1 for issues (`--fail-on-issues`, `--fail-if-worse`), 2 for usage, input and file errors. |
 
@@ -98,4 +98,6 @@ Key decisions:
 - Python 3.11, 3.12, 3.13, 3.14 (CI matrix).
 - Linux for every check; the tests also run on Windows and macOS (CI).
 - Lowest supported runtime dependencies are tested in CI: numpy 1.26,
-  pandas 2.1, Pint 0.24. Latest tested locally: pandas 3.0, Pint 0.26.
+  pandas 2.1, Pint 0.24, and the extras at pyarrow 14.0.2 and Pandera 0.24.
+  Latest tested locally: numpy 2.5, pandas 3.0, Pint 0.26, pyarrow 26,
+  Pandera 0.34.

@@ -113,7 +113,8 @@ class MeasurementMetadata:
     unit: str
     _: KW_ONLY  # every field after name and unit is keyword-only
     quantity: str | None = None
-    resolution: str | None = None  # fixed ("15min") or calendar ("D", "MS", used with tz)
+    # Fixed ("15min", "D" = 24 h) or calendar ("MS", "W-MON": local steps in timezone).
+    resolution: str | None = None
     aggregation: Aggregation = Aggregation.INSTANTANEOUS
     interval_label: IntervalLabel = IntervalLabel.START
     timezone: str = "UTC"
@@ -143,7 +144,10 @@ class MeasurementMetadata:
 
     @property
     def resolution_timedelta(self) -> pd.Timedelta | None:
-        """The resolution as a fixed ``Timedelta``; raises ``ValueError`` for calendar steps."""
+        """The resolution as a fixed ``Timedelta`` (``"D"`` is 24 hours).
+
+        Raises ``ValueError`` for a resolution with no fixed length (``"MS"``, ``"W-MON"``).
+        """
         return None if self.resolution is None else to_step(self.resolution)
 
     def to_dict(self) -> dict[str, Any]:

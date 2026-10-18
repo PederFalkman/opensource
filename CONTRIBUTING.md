@@ -1,8 +1,8 @@
 # Contributing
 
-Thanks for your interest. The project is pre-release and not yet licensed
-for reuse (see `docs/governance/RELEASE_GATES.md`), so external contributions
-cannot be accepted until a license and contribution terms are in place.
+Thanks for your interest. The project is pre-release. It is licensed
+Apache-2.0 (`LICENSE`), but external contributions cannot be accepted until
+contribution terms are in place (see `docs/governance/RELEASE_GATES.md`).
 Whether contributors will sign off commits (Developer Certificate of Origin)
 or sign a contributor agreement is an open decision, D2 in
 [`RELEASE_DECISIONS.md`](docs/governance/RELEASE_DECISIONS.md). Issues
@@ -88,10 +88,11 @@ python -m pytest tools/tests
   change that slows the year-of-minute-data cases noticeably needs a note in
   `docs/architecture/PERFORMANCE.md`.
 - User-visible changes, including public API, `QualityFlag` values and the
-  report schema, need an entry under `## [Unreleased]` in the package
-  `CHANGELOG.md`. `main` already carries the version `0.1.0` and its dated
-  section although nothing is released; the release PR folds `[Unreleased]`
-  into that section, so do not edit the `0.1.0` section directly.
+  report schema, need a changelog entry in the package `CHANGELOG.md`. Until
+  0.1.0 is released, `main` carries the version `0.1.0` and its section
+  describes the behaviour as it will ship: update that section and keep
+  `## [Unreleased]` empty (the readiness check requires it; OSS-61). After
+  the release, new entries go under `## [Unreleased]`.
 
 ## Pull request checklist
 

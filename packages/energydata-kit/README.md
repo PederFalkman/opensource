@@ -2,8 +2,9 @@
 
 Framework-independent quality checks for energy time-series data.
 
-> **Status: 0.1.0 release candidate, not released.** Not published. No license
-> has been granted yet; see the repository's `docs/governance/RELEASE_GATES.md`.
+> **Status: 0.1.0 release candidate, not released.** Not published.
+> Licensed Apache-2.0 (`LICENSE`); publication still waits on the release
+> gates in the repository's `docs/governance/RELEASE_GATES.md`.
 
 energydata-kit is a small layer on top of [pandas](https://pandas.pydata.org)
 and [Pint](https://pint.readthedocs.io). It adds the parts those libraries do not
@@ -161,8 +162,8 @@ after that, a new field or a changed one means schema 2.
   lines in `\n` everywhere.
 - **UTC grid by default.** Sub-daily gap detection runs on a fixed UTC grid, so
   a 23- or 25-hour local DST day is not reported as missing or duplicated
-  data. Daily and longer steps in local time use an explicit calendar grid
-  (`tz=`).
+  data. Daily and longer steps in local time use a calendar grid: `tz=`, or
+  a metadata resolution such as `"MS"` with its time zone.
 
 ## Quality flags
 
@@ -194,9 +195,12 @@ use Pint or pint-pandas directly, e.g. `series.astype(f"pint[{meta.unit}]")`.
 
 - Grids are anchored at the first timestamp unless you pass `origin`, so
   without it a leading off-grid timestamp shifts the grid.
-- Calendar steps (`"D"`, `"W-MON"`, `"MS"`, …) need an explicit `tz=`; they are
-  never inferred from `MeasurementMetadata.timezone`. With `tz`, the report's
-  per-local-day section is skipped.
+- Calendar steps (`"D"`, `"W-MON"`, `"MS"`, …) passed as `freq` need an
+  explicit `tz=`. A metadata resolution with no fixed length (`"MS"`,
+  `"W-MON"`) is laid out in `MeasurementMetadata.timezone` when no `freq` or
+  `tz` is given; `"D"` in metadata stays a 24-hour step, so pass `tz=`
+  (`--tz`) for local days. On a calendar grid the report's per-local-day
+  section is `null`.
 - A calendar grid whose wall-clock time falls in a skipped or repeated DST hour
   (e.g. daily at 02:30 in Europe/Stockholm) raises, because pandas cannot place
   it.

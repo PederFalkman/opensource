@@ -82,8 +82,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     rep = sub.add_parser(
         "report",
-        help="print a JSON quality report for a CSV file",
-        description="Print a deterministic JSON quality report for value columns of a CSV file.",
+        help="print a quality report for a CSV or Parquet file",
+        description=(
+            "Print a quality report for value columns of a CSV or Parquet file: "
+            "deterministic JSON, or a short summary with --format."
+        ),
         epilog=_EXIT_REPORT,
     )
     rep.add_argument(
@@ -196,7 +199,9 @@ def build_parser() -> argparse.ArgumentParser:
     cmp = sub.add_parser(
         "compare",
         help="print what changed between two saved JSON reports",
-        description="Print a deterministic JSON comparison of two reports written by 'report'.",
+        description=(
+            "Compare two reports written by 'report': deterministic JSON, or a short summary with --format."
+        ),
         epilog=_EXIT_COMPARE,
     )
     cmp.add_argument("before", help="earlier report (JSON)")
@@ -471,7 +476,13 @@ def _series_facts(data: dict[str, Any]) -> tuple[str, _Facts]:
         head += f", {data['first_timestamp']} to {data['last_timestamp']}"
     facts: _Facts = []
     if data["completeness"] is None:
-        facts.append(("completeness", "not checked (no --freq or --resolution)"))
+        if not data["n_rows"]:
+            why = "not checked (no rows)"
+        elif data["n_expected_intervals"] is None:
+            why = "not checked (no step: pass --freq, or a resolution with --unit or --schema)"
+        else:
+            why = "undefined (no expected interval within the data's time span)"
+        facts.append(("completeness", why))
     else:
         # Exact; rebuilding it from the rounded completeness is off by one or more above ~10**6 intervals.
         present = data["n_expected_intervals"] - data["n_missing_intervals"]
