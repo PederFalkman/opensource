@@ -791,14 +791,15 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] The guide gains two executed examples: a monthly metadata
       resolution laid out in its time zone, and Parquet input.
 
-### OSS-76: release branch refreshed — branch only, not for merge before D1, D2, D4, D6
+### OSS-76: release branch refreshed — branch only; merged by mistake in #82, reverted in OSS-81
 
 - [x] `claude/oss-76-release-refresh`: the OSS-70 release edits with
       `main` merged in (through #79; through #81 since OSS-80). The
       strict readiness check, the wheel and sdist build with `twine
-      check`, every repository check and the lowest-dependency tests pass. The draft release-PR description
-      has the new digests. The release PR is opened from this branch after
-      the decisions, with the final `main` merged in and the date set.
+      check`, every repository check and the lowest-dependency tests
+      pass. The draft release-PR description has the new digests. Since
+      OSS-81 the release PR is a fresh branch from the final `main` (see
+      below), with the date set.
 
 ### OSS-77: decision brief refreshed — merged in [#80](https://github.com/PederFalkman/opensource/pull/80)
 
@@ -825,7 +826,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       docs audited and the release rehearsed; the release waits on D1,
       D2, D4 and D6.
 
-### OSS-80: release branch brought up to date — this change
+### OSS-80: release branch brought up to date — merged in [#83](https://github.com/PederFalkman/opensource/pull/83)
 
 - [x] `main` (through #81) merged into `claude/oss-76-release-refresh`;
       the strict readiness check, the build with `twine check`, every
