@@ -1,7 +1,7 @@
 # Release decisions for energydata-kit 0.1.0
 
 **Status:** prepared 2026-10-16 (OSS-22), facts refreshed 2026-10-17
-(OSS-48) and 2026-10-18 (OSS-60, OSS-69, OSS-77) · **For:** management, legal counsel
+(OSS-48) and 2026-10-18 (OSS-60, OSS-69, OSS-77, OSS-85) · **For:** management, legal counsel
 and the technical lead who sign off the release gates in `RELEASE_GATES.md`.
 
 This page collects every decision that still blocks the first release, the
@@ -9,16 +9,18 @@ evidence already in the repository for each, and the exact questions to
 answer. It does not make any of these decisions. Engineering work for 0.1.0
 is complete; nothing below needs more code before the decisions are made.
 Since the first version of this page, correctness passes (OSS-40 to OSS-49,
-OSS-59, OSS-62, OSS-64, OSS-65 and the whole-package reviews OSS-67 and
-OSS-71) fixed the bugs they found, and the five approved proposals P-2 to P-6 were added (OSS-54 to OSS-58; see "What changed since OSS-48" below).
+OSS-59, OSS-62, OSS-64, OSS-65, the whole-package reviews OSS-67 and
+OSS-71 and the review of the later code, OSS-78) fixed the bugs they found, and the five approved proposals P-2 to P-6 were added (OSS-54 to OSS-58; see "What changed since OSS-48" below).
 D3 is decided (Apache-2.0, #66), so the licence checks pass, and the
 changelog entries for the work above are part of the 0.1.0 notes (OSS-61).
-The readiness check fails on one item only: *upload guard removed*, which
-waits on D6. The release itself is rehearsed: branch
-`claude/oss-76-release-refresh` holds the release edits on top of `main`,
-passes the strict readiness check and builds a wheel and sdist that pass
-`twine check` (not uploaded). After the decisions, it needs only the final
-`main`, the release date and the sign-offs below.
+The readiness check fails on two items only, both waiting on D6:
+*upload guard removed* and *publication approved (D6)*, the owner's
+approval line under D6 below. Since OSS-83, CI refuses removing the guard
+before that line exists. The release itself is rehearsed: the release
+edits pass the strict readiness check and build a wheel and sdist that pass
+`twine check` (not uploaded; the dry run does this on every change). After
+the decisions, the release PR needs only those edits, the D6 line, the
+release date and the sign-offs below.
 
 ## What changed since OSS-48
 
@@ -59,6 +61,13 @@ facts were last refreshed:
   byte-identical (#78); a documentation accuracy audit for G6 (#79); the
   release branch refreshed (no PR). No new dependency, data file or report
   field since OSS-58.
+- **Since OSS-77** (OSS-78 to OSS-83): a review of the code merged after
+  OSS-71 found one small `--flags-csv` bug (equal calendar steps such as
+  `"MS"` and `"1MS"` refused), fixed in #81. On 2026-10-18 #82 merged the
+  release rehearsal into `main` by mistake, removing the upload guard
+  while D1, D2, D4 and D6 were open; nothing was tagged or published, and
+  #84 reverted it within half an hour. To stop a repeat, #85 ties the
+  guard to the D6 record (see D6). No package behaviour changed.
 
 ## Where things stand
 
@@ -96,13 +105,13 @@ replace either (see `RELEASE_GATES.md`).
 
 - **Question:** does the publishing legal entity own all code in the
   repository, so that it can license it?
-- **Facts for the answer** (from `git log` on `main` at `da0b0ca`, after #79,
-  2026-10-18): 197 commits.
-  - 109 by an AI coding assistant (author "Claude", with a `Co-Authored-By`
-    trailer) in sessions run by the repository owner: 92 contain the code,
-    docs, licence and roadmap updates, 17 merge `main` into a pull-request
+- **Facts for the answer** (from `git log` on `main` at `a1a8ea0`, after #85,
+  2026-10-18): 215 commits.
+  - 121 by an AI coding assistant (author "Claude", with a `Co-Authored-By`
+    trailer) in sessions run by the repository owner: 100 contain the code,
+    docs, licence and roadmap updates, 21 merge `main` into a pull-request
     branch.
-  - 84 by the repository owner: 78 pull-request merges, 4 merges of `main`
+  - 90 by the repository owner: 84 pull-request merges, 4 merges of `main`
     into a pull-request branch, and 2 own commits (the initial commit and a
     roadmap note).
   - 4 Dependabot updates of pinned GitHub Actions.
@@ -224,9 +233,10 @@ Not a release gate, but it protects the release commit.
 3. D4 IP review, on the commit intended for release.
 4. D5 branch protection, any time before the release PR.
 5. D6 publication approval.
-6. Release PR from `RELEASE_CHECKLIST.md`, opened from the rehearsed
-   branch `claude/oss-76-release-refresh` after merging the final `main`
-   into it. `main` already has version
+6. Release PR from `RELEASE_CHECKLIST.md`: a fresh branch from the final
+   `main` that reverts the OSS-81 revert (#84), which brings back the
+   release edits rehearsed on `claude/oss-76-release-refresh`, and adds
+   the owner's `**D6 approved:**` line. `main` already has version
    `0.1.0` and a dated `## [0.1.0]` changelog section (OSS-24, #30; nothing
    is released; `[Unreleased]` is empty since OSS-61). The release PR folds
    in anything added there since, sets the section's date to

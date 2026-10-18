@@ -849,7 +849,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 
 - [x] No new work by the owner's choice, after #84 restored the guard.
 
-### OSS-83: upload guard tied to the decision record — this change
+### OSS-83: upload guard tied to the decision record — merged in [#85](https://github.com/PederFalkman/opensource/pull/85)
 
 - [x] `check_release_readiness.py --guard`, run in CI and by
       `check_all.py` on every change: removing `Private :: Do Not Upload`
@@ -860,6 +860,18 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       the D6 line; the release dry run adds a placeholder one to its copy,
       as it does for the licence. The checklist, gates and D6 say the
       release PR carries the approval line with the guard removal.
+
+### OSS-84: pause until the release decisions
+
+- [x] No new work by the owner's choice while #85 was in review.
+
+### OSS-85: decision brief refreshed — this change
+
+- [x] `RELEASE_DECISIONS.md`: what changed since OSS-77 (the #81 fix,
+      the #82 merge and its revert in #84, the D6-tied guard of #85),
+      the readiness check now failing on the guard and the D6 line,
+      the release PR as a revert of the revert, and commit counts at
+      #85. The shared decision brief republished to match.
 
 ## Explicitly not planned
 
