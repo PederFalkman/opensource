@@ -794,9 +794,9 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 ### OSS-76: release branch refreshed — branch only, not for merge before D1, D2, D4, D6
 
 - [x] `claude/oss-76-release-refresh`: the OSS-70 release edits with
-      `main` merged in (through #79). The strict readiness check, the
-      wheel and sdist build with `twine check`, every repository check and
-      the lowest-dependency tests pass. The draft release-PR description
+      `main` merged in (through #79; through #81 since OSS-80). The
+      strict readiness check, the wheel and sdist build with `twine
+      check`, every repository check and the lowest-dependency tests pass. The draft release-PR description
       has the new digests. The release PR is opened from this branch after
       the decisions, with the final `main` merged in and the date set.
 
@@ -806,7 +806,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       OSS-75, the rehearsed release branch, commit counts at #79; the
       shared decision brief republished to match.
 
-### OSS-78: review of the code since OSS-71 — this change
+### OSS-78: review of the code since OSS-71 — merged in [#81](https://github.com/PederFalkman/opensource/pull/81)
 
 - [x] A focused review of the code merged after the second review (#76
       to #79): the `--flags-csv` grid check, the grid helper in
@@ -818,6 +818,19 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       resolutions" by `--flags-csv`, as `"60min"` and `"1h"` were before
       OSS-72. Two docstrings corrected (`"D"` is a fixed step; no
       `local_days` for an empty series).
+
+### OSS-79: pause until the release decisions
+
+- [x] No new work by the owner's choice: the package is reviewed, the
+      docs audited and the release rehearsed; the release waits on D1,
+      D2, D4 and D6.
+
+### OSS-80: release branch brought up to date — this change
+
+- [x] `main` (through #81) merged into `claude/oss-76-release-refresh`;
+      the strict readiness check, the build with `twine check`, every
+      repository check and 403 tests on the lowest supported versions
+      pass. The draft release-PR description has the new digests.
 
 ## Explicitly not planned
 
