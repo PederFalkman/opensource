@@ -11,6 +11,23 @@ def test_naive_requires_assume_tz():
         normalize_timestamps(["2024-01-01 00:00", "2024-01-01 01:00"])
 
 
+def test_dates_without_time_are_naive():
+    # "2024-01-02" ends in "-02", which was read as a UTC offset: dates came out
+    # as UTC midnights and assume_tz was refused as "already timezone-aware".
+    with pytest.raises(TimestampError, match="naive"):
+        normalize_timestamps(["2024-01-01", "2024-01-02"])
+    idx = normalize_timestamps(["2024-01-01", "2024-01-02"], assume_tz="Europe/Stockholm")
+    assert list(idx) == [pd.Timestamp("2023-12-31T23:00Z"), pd.Timestamp("2024-01-01T23:00Z")]
+    # Offsets after a time of day are still recognised, in every ISO form.
+    for text in (
+        "2024-01-01T01:00+01:00",
+        "2024-01-01 01:00:00.0 +01:00",
+        "20240101T0100+0100",
+        "2024-01-01T01+01",
+    ):
+        assert list(normalize_timestamps([text])) == [pd.Timestamp("2024-01-01T00:00Z")], text
+
+
 def test_naive_localized_and_converted_to_utc():
     idx = normalize_timestamps(["2024-01-01 01:00", "2024-01-01 02:00"], assume_tz="Europe/Stockholm")
     assert str(idx.tz) == "UTC"

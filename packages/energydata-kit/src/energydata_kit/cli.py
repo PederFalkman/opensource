@@ -386,6 +386,16 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
         raise CliError("--insert-missing only affects --flags-csv")
     if args.schema and args.unit is not None:
         raise CliError("--schema and --unit both set metadata; use one")
+    if args.unit is None and (
+        args.resolution
+        or args.timezone
+        or args.aggregation != "instantaneous"
+        or args.interval_label != "start"
+    ):
+        raise CliError(
+            "--resolution, --aggregation, --interval-label and --timezone describe the metadata set "
+            "with --unit; pass --unit too (for the grid step alone, use --freq)"
+        )
     args.schema_metadata = _load_schema(args.schema) if args.schema else {}
 
     frame = _read_frame(args, stdin)
@@ -572,15 +582,16 @@ def _run_frame_report(
         max_listed=args.max_listed,
         **checks,
     )
+    freq = args.freq
+    if args.flags_csv and freq is None:
+        # As in the report, the metadata resolution is the step; one table needs one step.
+        # Checked before anything is written, so a failed command leaves no report behind.
+        steps = {str(m.resolution) for m in metadata.values() if m.resolution is not None}
+        if len(steps) > 1:
+            raise CliError(f"--schema columns have different resolutions {sorted(steps)}; pass --freq")
+        freq = next((m.resolution for m in metadata.values() if m.resolution is not None), None)
     _write_report(args, report, stdout)
     if args.flags_csv:
-        freq = args.freq
-        if freq is None:
-            # As in the report, the metadata resolution is the step; one table needs one step.
-            steps = {str(m.resolution) for m in metadata.values() if m.resolution is not None}
-            if len(steps) > 1:
-                raise CliError(f"--schema columns have different resolutions {sorted(steps)}; pass --freq")
-            freq = next((m.resolution for m in metadata.values() if m.resolution is not None), None)
         flagged = flag_frame(
             frame, freq=freq, insert_missing=args.insert_missing, origin=origin, tz=args.tz, **checks
         )

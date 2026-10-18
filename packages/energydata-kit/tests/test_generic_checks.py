@@ -5,6 +5,7 @@ import pytest
 from energydata_kit import (
     FLAG_COLUMN,
     QualityFlag,
+    assess_frame,
     assess_quality,
     counter_decrease_mask,
     flag_series,
@@ -35,6 +36,9 @@ def test_stale_tolerance_and_exclude():
     assert stale_mask(v, 3).tolist() == [False, False, False, False, True, True, True]
     assert stale_mask(v, 3, atol=1e-3).tolist() == [True, True, True, False, True, True, True]
     assert stale_mask(v, 3, exclude=[0.0]).tolist() == [False] * 7
+    # With atol, a near-zero run is excluded whole; only exact zeros were, flagging every other row.
+    assert stale_mask([0.0, 0.005, 0.0, 0.005], 3, atol=0.01, exclude=[0.0]).tolist() == [False] * 4
+    assert stale_mask([0.0, 0.0, 0.0, 5.0, 5.0, 5.0], 3, exclude=[0.0]).tolist() == [False] * 3 + [True] * 3
 
 
 def test_stale_edge_cases():
@@ -165,6 +169,16 @@ def test_non_finite_options_are_rejected():
 def test_option_types_are_checked(options, error):
     with pytest.raises(error, match=r"must be|must contain|pair|unknown time zone|interpreted as an integer"):
         assess_quality(make_synthetic_series(periods=6), **options)
+
+
+def test_stale_exclude_iterators_are_read_once():
+    # A generator was used up by the first column of a frame, and the report recorded [].
+    index = pd.date_range("2024-01-01", periods=4, freq="h", tz="UTC")
+    frame = pd.DataFrame({"a": 0.0, "b": 0.0}, index=index)
+    report = assess_frame(frame, stale_min_run=3, stale_exclude=(x for x in [0.0]))
+    assert [r.flag_counts["STALE_VALUE"] for r in report.columns.values()] == [0, 0]
+    single = assess_quality(frame["a"], stale_min_run=3, stale_exclude=(x for x in [0.0]))
+    assert single.parameters["stale_exclude"] == [0.0]
 
 
 def test_numpy_options_are_accepted():

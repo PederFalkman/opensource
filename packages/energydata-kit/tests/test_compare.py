@@ -77,6 +77,14 @@ def test_deterministic_json():
     assert compare_reports(a, b).to_json() == compare_reports(a, b).to_json()
 
 
+def test_null_truncated_is_read_as_not_truncated():
+    # "truncated": null passes the input check but crashed with AttributeError when gaps differed.
+    before = assess_quality(make_synthetic_series(periods=8), freq="15min").to_dict()
+    after = assess_quality(make_synthetic_series(periods=8, drop=[3]), freq="15min").to_dict()
+    after["truncated"] = None
+    assert compare_reports(before, after).changes[""]["gaps"]["lists_truncated"] is False
+
+
 def test_rejects_mismatched_inputs():
     single = report()
     frame = assess_frame(make_synthetic_series(periods=4).to_frame(), freq="15min")

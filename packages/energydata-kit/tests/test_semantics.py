@@ -17,6 +17,21 @@ from energydata_kit import (
 IDX = pd.DatetimeIndex(["2024-01-01T00:15Z", "2024-01-01T00:30Z", "2024-01-01T00:30Z"])
 
 
+def test_local_days_follow_the_origin_grid():
+    # With origin=00:05 a complete day read as 0 % in local_days while completeness was 100 %.
+    index = pd.date_range("2024-01-01T00:05Z", periods=96, freq="15min")
+    origin = pd.Timestamp("2024-01-01T00:05Z")
+    report = assess_quality(pd.Series(1.0, index=index), freq="15min", origin=origin)
+    assert report.completeness == 1.0
+    assert report.local_days["min_completeness"] == 1.0 and report.local_days["n_incomplete_days"] == 0
+    days = local_day_completeness(index.delete(10), "15min", "UTC", origin=origin)
+    assert days["present"].tolist() == [95] and days["expected"].tolist() == [96]
+    # A midnight origin gives the default grid.
+    assert local_day_completeness(index, "15min", "UTC", origin=pd.Timestamp("2024-01-01T00:00Z")).equals(
+        local_day_completeness(index, "15min", "UTC")
+    )
+
+
 def test_relabel_round_trip_preserves_order_and_duplicates():
     starts = relabel_intervals(IDX, "15min", "end", "start")
     assert list(starts) == [

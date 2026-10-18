@@ -26,7 +26,11 @@ __all__ = [
     "utc_ns",
 ]
 
-_OFFSET_SUFFIX = re.compile(r"(?:Z|[+-]\d{2}(?::?\d{2})?)$", re.IGNORECASE)
+# "Z", or a numeric offset after a time of day: a date such as "2024-01-02"
+# ends in "-02" but has no offset.
+_OFFSET_SUFFIX = re.compile(
+    r"(?:Z|[T\s]\d{2}(?::?\d{2})*(?:[.,]\d+)?\s*[+-]\d{2}(?::?\d{2})?)$", re.IGNORECASE
+)
 
 AmbiguousPolicy = Literal["raise", "infer"]
 NonexistentPolicy = Literal["raise", "shift_forward", "shift_backward"]
