@@ -877,7 +877,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 
 - [x] No new work by the owner's choice.
 
-### OSS-90: release energydata-kit 0.1.0 — this change
+### OSS-90: release energydata-kit 0.1.0 — merged in [#87](https://github.com/PederFalkman/opensource/pull/87)
 
 - [x] Decisions recorded by the owner on 2026-10-19: D1 make the
       repository private for now; D2 ownership confirmed in writing by
@@ -890,6 +890,23 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [ ] After merge, by the owner: tag `energydata-kit-v0.1.0` on the merge
       commit; the *Release build* workflow builds and attests the files,
       which are attached to a GitHub release. Nothing is uploaded.
+
+### OSS-91 to OSS-96: pause until #87 merged
+
+- [x] No new work while the release PR was open.
+
+### OSS-97: open 0.2.0 development — this change
+
+- [x] `__version__` is `0.2.0.dev0`; `[Unreleased]` takes the changes
+      after 0.1.0; CONTRIBUTING says so. The 0.1.0 section stays as
+      released.
+- [x] The `Private :: Do Not Upload` guard is back: D6 approved 0.1.0 as a
+      GitHub release only, so no index upload is approved for 0.2.0. The
+      readiness test again expects a package that is not release-ready.
+- [ ] Open for the owner: the next release needs a new D6 approval. The
+      `**D6 approved:**` line for 0.1.0 is still in `RELEASE_DECISIONS.md`
+      and would satisfy the guard check, so the release PR for 0.2.0 should
+      replace it rather than rely on it.
 
 ## Explicitly not planned
 
