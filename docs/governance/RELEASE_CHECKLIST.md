@@ -51,9 +51,12 @@ The questions and evidence for each open gate are in `RELEASE_DECISIONS.md`.
 - [ ] Tag the merge commit `energydata-kit-vX.Y.Z` (annotated, signed if
       possible). The *Release build* workflow then re-runs the strict
       readiness check against the tag, builds and `twine check`s the files,
-      and records a build provenance attestation.
-- [ ] Compare the SHA-256 digests in the workflow summary with a local
-      `python -m build` from the same commit.
+      records a build provenance attestation and attaches the wheel, sdist
+      and `SHA256SUMS` to a **draft** GitHub release for the tag.
+- [ ] Compare the SHA-256 digests in the workflow summary (and
+      `SHA256SUMS`) with a local `python -m build` from the same commit.
+- [ ] Review the draft release (notes, files) and publish it. The workflow
+      never changes the files of a published release.
 - [ ] Publishing to an index is **not** automated. If G7 approved it, set up
       trusted publishing in a separate, reviewed change.
 

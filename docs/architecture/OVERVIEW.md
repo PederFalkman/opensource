@@ -32,7 +32,7 @@ opensource/
 └── .github/
     ├── workflows/ci.yml         # IP boundary, lint, types, tests, packaging, release dry run
     ├── workflows/security.yml   # gitleaks, pip-audit, dependency review
-    ├── workflows/release-build.yml # build + attest on release tags; never publishes
+    ├── workflows/release-build.yml # on release tags: build, attest, draft GitHub release; no index upload
     ├── dependabot.yml
     └── CODEOWNERS
 ```
