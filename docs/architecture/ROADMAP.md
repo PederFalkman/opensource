@@ -105,7 +105,7 @@ schema change.
 | P-8 | **Runs and comparisons that stop at gaps.** An opt-in `max_gap` for the stale, counter and jump checks: consecutive rows further apart than this are not compared, and a stale run does not continue across the gap. | Known limitation: these checks compare consecutive rows and ignore time gaps, so a flat line before and after an outage counts as one run and a jump across a long gap is flagged. | S–M | Schema 2 if recorded. Default off, so 0.1.0 results stay identical. Interacts with P-7; worth designing together. |
 | P-9 | **Counter rollover (wrap-around) separated from resets.** An opt-in `counter_rollover` (the register's modulus, e.g. 10**6 kWh, supplied by the caller): a drop consistent with wrapping past the modulus gets a new `COUNTER_ROLLOVER` flag (bit 1024) instead of `COUNTER_DECREASE`. | Known limitation: a register reset and a rollover both appear as `COUNTER_DECREASE`; a caller who knows the register size can tell them apart. | S | Adds a flag bit (public contract: never renumbered) and a flag count, so schema 2. No modulus is shipped or guessed. |
 | P-10 | **Overlap-aware gap comparison.** `compare_reports` matches gaps by overlap, so a gap that shrank or grew shows as *changed* (with before/after bounds) instead of one resolved and one new gap. | Known limitation in the README; the before/after view of a fix is the main use of `compare`. | M | Changes the comparison output (a new `changed` list): comparisons are schema-versioned with reports, so this rides on schema 2 too. Only listed gaps can be compared, as today (`max_listed`). |
-| P-11 | **Attach the built files to the GitHub release.** The *Release build* workflow, on an `energydata-kit-v*` tag, also creates (or updates) the GitHub release and uploads the wheel, sdist and their SHA-256 sums. Still never uploads to an index. | D6 chose GitHub releases only; today the owner attaches the files by hand after the workflow builds them, which is error-prone and leaves the attested files and the attached files separate. | S | Needs `contents: write` for that job only, a pinned action or `gh`, and a test in the dry run. Gated by the strict readiness check (D6 line for that version) already in the workflow. No package change. |
+| P-11 | *Approved by the owner on 2026-10-19; not started.* **Attach the built files to the GitHub release.** The *Release build* workflow, on an `energydata-kit-v*` tag, also creates (or updates) the GitHub release and uploads the wheel, sdist and their SHA-256 sums. Still never uploads to an index. | D6 chose GitHub releases only; today the owner attaches the files by hand after the workflow builds them, which is error-prone and leaves the attested files and the attached files separate. | S | Needs `contents: write` for that job only, a pinned action or `gh`, and a test in the dry run. Gated by the strict readiness check (D6 line for that version) already in the workflow. No package change. |
 
 Considered and not proposed:
 - **Automatic or statistical limits** (outlier scores, learned thresholds):
@@ -964,7 +964,8 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 ### OSS-100: post-0.1.0 proposals — this change
 
 - [x] P-7 to P-11 drafted above for the owner to approve or reject one by
-      one; nothing implemented. The schema-2 constraint is spelled out,
+      one; nothing implemented. P-11 approved by the owner on 2026-10-19;
+      P-7 to P-10 not decided. The schema-2 constraint is spelled out,
       since four of the five change what reports record.
 
 ## Explicitly not planned
