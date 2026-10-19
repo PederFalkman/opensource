@@ -38,8 +38,9 @@ The questions and evidence for each open gate are in `RELEASE_DECISIONS.md`.
 - [ ] `pyproject.toml`: `license = "<SPDX id>"` declared.
 - [ ] `pyproject.toml`: classifier `Private :: Do Not Upload` removed (only
       after G7), in the same PR as the owner's approval line in
-      `RELEASE_DECISIONS.md` (`**D6 approved:** YYYY-MM-DD ...` on a line of
-      its own); without it CI fails (`check_release_readiness.py --guard`).
+      `RELEASE_DECISIONS.md` (`**D6 approved:** YYYY-MM-DD energydata-kit X.Y.Z ...`
+      on a line of its own, naming this version); without it CI fails
+      (`check_release_readiness.py --guard`).
 - [ ] `python tools/check_release_readiness.py energydata-kit --strict` passes
       locally.
 - [ ] Before opening the PR, `python tools/release_dry_run.py energydata-kit --build`

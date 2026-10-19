@@ -16,8 +16,10 @@ Checks, per package under ``packages/``:
   package directory (in the wheel and sdist);
 - ``pyproject.toml`` declares a ``license`` (gate G2);
 - the ``Private :: Do Not Upload`` classifier is gone (gate G7);
-- ``docs/governance/RELEASE_DECISIONS.md`` records publication as approved
-  (decision D6) on a line ``**D6 approved:** YYYY-MM-DD ...``;
+- ``docs/governance/RELEASE_DECISIONS.md`` records publication of this
+  version as approved (decision D6) on a line
+  ``**D6 approved:** YYYY-MM-DD <package> <version> ...``, so an approval for
+  one release does not cover the next (OSS-98);
 - with ``--tag``, the tag equals ``<package>-v<version>``.
 
 By default it prints the status and exits 0; ``--strict`` exits 1 if any
@@ -43,7 +45,7 @@ LICENSE_NAMES = ("LICENSE", "LICENSE.txt", "LICENSE.md")
 _FINAL_VERSION = re.compile(r"^\d+\.\d+\.\d+$")
 _VERSION_ASSIGN = re.compile(r"""^__version__\s*=\s*["']([^"']+)["']""", re.MULTILINE)
 DECISIONS = Path("docs/governance/RELEASE_DECISIONS.md")
-_D6_APPROVED = re.compile(r"^\*\*D6 approved:\*\* (\d{4}-\d{2}-\d{2})\b.*$", re.MULTILINE)
+_D6_APPROVED = re.compile(r"^\*\*D6 approved:\*\* \d{4}-\d{2}-\d{2}\b.*$", re.MULTILINE)
 _UNRELEASED = re.compile(r"^## \[Unreleased\][^\n]*\n(.*?)(?=^## \[|\Z)", re.MULTILINE | re.DOTALL)
 
 
@@ -68,15 +70,17 @@ def _version(pkg_dir: Path, pyproject: dict[str, object]) -> str | None:
     return None
 
 
-def publication_approved(root: Path) -> Check:
-    """Whether the decision record has the owner's D6 approval line."""
+def publication_approved(root: Path, name: str, version: str | None) -> Check:
+    """Whether the decision record has the owner's D6 approval line for this version."""
     path = root / DECISIONS
-    match = _D6_APPROVED.search(path.read_text(encoding="utf-8")) if path.is_file() else None
+    lines = _D6_APPROVED.findall(path.read_text(encoding="utf-8")) if path.is_file() else []
+    # The package and version as whole words, so 0.1.0 does not match 0.1.0rc1 or 10.1.0.
+    wanted = re.compile(rf"(?<![\w.-]){re.escape(name)} {re.escape(version or '')}(?![\w.-])")
+    match = next((line for line in lines if version and wanted.search(line)), None)
     if match:
-        return Check("publication approved (D6)", True, f"recorded: {match.group(0).strip()!r}")
-    return Check(
-        "publication approved (D6)", False, f"no '**D6 approved:** YYYY-MM-DD' line in {DECISIONS} (gate G7)"
-    )
+        return Check("publication approved (D6)", True, f"recorded: {match.strip()!r}")
+    expected = f"**D6 approved:** YYYY-MM-DD {name} {version}"
+    return Check("publication approved (D6)", False, f"no '{expected}' line in {DECISIONS} (gate G7)")
 
 
 def guarded(pkg_dir: Path) -> bool:
@@ -87,10 +91,12 @@ def guarded(pkg_dir: Path) -> bool:
 
 
 def check_guard(root: Path, name: str) -> Check:
-    """The upload guard is in place, or publication is recorded as approved."""
-    if guarded(root / "packages" / name):
+    """The upload guard is in place, or publication of this version is recorded as approved."""
+    pkg_dir = root / "packages" / name
+    if guarded(pkg_dir):
         return Check("upload guard kept until D6", True, f"'{GUARD_CLASSIFIER}' present")
-    approval = publication_approved(root)
+    pyproject = tomllib.loads((pkg_dir / "pyproject.toml").read_text(encoding="utf-8"))
+    approval = publication_approved(root, name, _version(pkg_dir, pyproject))
     if approval.ok:
         return Check("upload guard kept until D6", True, f"removed; {approval.detail}")
     return Check(
@@ -178,7 +184,7 @@ def check_package(root: Path, name: str, tag: str | None = None) -> list[Check]:
             f"'{GUARD_CLASSIFIER}' still present (gate G7)" if has_guard else "removed",
         )
     )
-    checks.append(publication_approved(root))
+    checks.append(publication_approved(root, name, version))
 
     if tag is not None:
         expected = f"{name}-v{version}"

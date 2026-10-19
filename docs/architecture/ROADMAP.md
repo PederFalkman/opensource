@@ -903,10 +903,19 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] The `Private :: Do Not Upload` guard is back: D6 approved 0.1.0 as a
       GitHub release only, so no index upload is approved for 0.2.0. The
       readiness test again expects a package that is not release-ready.
-- [ ] Open for the owner: the next release needs a new D6 approval. The
-      `**D6 approved:**` line for 0.1.0 is still in `RELEASE_DECISIONS.md`
-      and would satisfy the guard check, so the release PR for 0.2.0 should
-      replace it rather than rely on it.
+- [x] The next release needs a new D6 approval; since OSS-98 the guard
+      check enforces it, as the 0.1.0 line names its version.
+
+### OSS-98: D6 approval tied to the version — this change
+
+- [x] The guard check (and the strict readiness check) accept only a
+      `**D6 approved:** YYYY-MM-DD` line that names the package and the
+      version being released, as whole words: the 0.1.0 approval no longer
+      unlocks the guard for 0.2.0, and a `.devN` version cannot drop it.
+      The 0.1.0 record already names its version, so the release commit
+      `827a2df` still passes; `b9444a6` (#82) still fails.
+- [x] The release dry run writes its placeholder line with the version;
+      D6, the checklist and the gates show the format.
 
 ## Explicitly not planned
 
