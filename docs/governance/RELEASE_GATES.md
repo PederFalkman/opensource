@@ -23,7 +23,7 @@ Supporting tooling (none of it publishes anything):
   package, declared license, guard removed, D6 recorded as approved, tag
   matching version); `--strict` fails if any is unmet. `--guard` runs in CI on
   every change and fails if the guard is removed before the decision record
-  has the owner's D6 approval line (OSS-83).
+  has the owner's D6 approval line for that version (OSS-83, OSS-98).
 - `tools/release_dry_run.py`: rehearses the release PR edits in a temporary
   copy with a placeholder licence, runs the strict readiness check and (with
   `--build`) builds, `twine check`s and inspects the files. Runs in CI on every

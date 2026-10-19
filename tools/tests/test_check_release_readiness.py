@@ -49,7 +49,7 @@ def make_repo(
         (pkg / "LICENSE").write_text(package_license)
     decisions = tmp_path / "docs" / "governance" / "RELEASE_DECISIONS.md"
     decisions.parent.mkdir(parents=True)
-    approval = "**D6 approved:** 2026-11-01, PyPI, by the owner\n" if approved else ""
+    approval = f"**D6 approved:** 2026-11-01, demo {version} on PyPI, by the owner\n" if approved else ""
     decisions.write_text(f"# Release decisions\n\n### D6. Publication\n\n{approval}")
     return tmp_path
 
@@ -113,8 +113,32 @@ def test_approval_line_must_be_its_own_dated_line(tmp_path):
     for text in ["Once **D6 approved:** 2026-11-01 is added", "**D6 approved:** soon", "**D6 approved:**"]:
         decisions.write_text(text + "\n")
         assert not crr.check_guard(root, "demo").ok, text
-    decisions.write_text("intro\n**D6 approved:** 2026-11-01 (PyPI)\n")
+    decisions.write_text("intro\n**D6 approved:** 2026-11-01 demo 0.1.0 (PyPI)\n")
     assert crr.check_guard(root, "demo").ok
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "**D6 approved:** 2026-11-01, demo 0.0.9 as a GitHub release",  # an earlier release
+        "**D6 approved:** 2026-11-01 demo 0.1.0rc1",
+        "**D6 approved:** 2026-11-01 demo 10.1.0",
+        "**D6 approved:** 2026-11-01 other 0.1.0",
+        "**D6 approved:** 2026-11-01 PyPI",  # no package or version
+    ],
+)
+def test_approval_must_name_this_version(tmp_path, line):
+    # An approval for one release must not unlock the guard for the next (OSS-98).
+    root = make_repo(tmp_path, guard=False, approved=False)
+    (root / crr.DECISIONS).write_text(f"**D6 approved:** 2026-10-19 demo 0.0.9\n{line}\n")
+    assert not crr.check_guard(root, "demo").ok, line
+    assert "publication approved (D6)" in failing(root)
+
+
+def test_a_dev_version_cannot_drop_the_guard(tmp_path):
+    root = make_repo(tmp_path, version="0.2.0.dev0", guard=False, approved=False)
+    (root / crr.DECISIONS).write_text("**D6 approved:** 2026-10-19 demo 0.1.0\n")
+    assert not crr.check_guard(root, "demo").ok
 
 
 def test_unreleased_entries_block_a_final_version(tmp_path):

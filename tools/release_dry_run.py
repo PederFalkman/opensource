@@ -149,7 +149,7 @@ def apply_release_edits(root: Path, package: str, version: str, date: str) -> No
     decisions = root / "docs" / "governance" / "RELEASE_DECISIONS.md"
     decisions.parent.mkdir(parents=True, exist_ok=True)
     with decisions.open("a", encoding="utf-8") as f:
-        f.write(f"\n**D6 approved:** {date} (release dry-run placeholder)\n")
+        f.write(f"\n**D6 approved:** {date} {package} {version} (release dry-run placeholder)\n")
 
 
 def run(cmd: list[str], cwd: Path) -> str:
