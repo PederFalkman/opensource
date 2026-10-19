@@ -3,13 +3,12 @@
 Open-source Python tools for energy data, scientific computing, engineering
 validation and reproducible workflows.
 
-> **Status: pre-release.** Licensed **Apache-2.0** (granted 2026-10-18; gate G2
-> passed) — the licence text is [`LICENSE`](LICENSE). **Nothing is published**:
-> publication is still blocked by gate G7, and the packages carry the
-> `Private :: Do Not Upload` classifier that PyPI rejects. The ownership
-> questions in G1/D2 — employment terms, AI-assisted authorship, whether
-> external contributions need a CLA or DCO — remain open and are **not**
-> settled by the licence grant. See [release
+> **Status: energydata-kit 0.1.0 is released as a GitHub release** (built
+> wheel and sdist attached to the tag; **not** on PyPI or any other index).
+> Licensed **Apache-2.0** — the licence text is [`LICENSE`](LICENSE). The
+> release decisions are recorded in
+> [`RELEASE_DECISIONS.md`](docs/governance/RELEASE_DECISIONS.md); whether
+> external contributions need a CLA or DCO is still open. See [release
 > gates](docs/governance/RELEASE_GATES.md).
 
 ## Packages
@@ -19,7 +18,7 @@ dependencies, tests and version.
 
 | Package | Status | Description |
 |---|---|---|
-| [`energydata-kit`](packages/energydata-kit) | pre-alpha; 0.1.0 release candidate, not released | Quality checks for energy time series: UTC timestamp normalization, gap/duplicate detection (UTC or local-calendar grids), interval semantics, unit metadata, non-destructive quality flags, reproducible reports, optional Pandera checks and an `energydata-kit report` command line |
+| [`energydata-kit`](packages/energydata-kit) | pre-alpha; 0.1.0 (GitHub release, not on PyPI) | Quality checks for energy time series: UTC timestamp normalization, gap/duplicate detection (UTC or local-calendar grids), interval semantics, unit metadata, non-destructive quality flags, reproducible reports, optional Pandera checks and an `energydata-kit report` command line |
 
 ## Quick start
 

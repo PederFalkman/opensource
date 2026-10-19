@@ -129,21 +129,12 @@ def test_missing_package(tmp_path):
     assert [c.name for c in crr.check_package(tmp_path, "absent")] == ["package exists"]
 
 
-def test_real_repository_is_not_release_ready():
-    # Gate G2 passed on 2026-10-18 (Apache-2.0); G7 has not. The real package
-    # must still not look releasable, even on a release branch that already has
-    # the final version.
+def test_real_repository_is_release_ready():
+    # Release 0.1.0: D1, D2, D4 and D6 are recorded, the upload guard is removed
+    # (gate G7) and the changelog dated, so every mechanical check passes and
+    # --strict exits 0.
     failed = {c.name for c in crr.check_package(REPO, "energydata-kit") if not c.ok}
-    gated = {"upload guard removed"}
-    assert gated <= failed
-    # And the G2 checks must now PASS. Asserting this rather than deleting the
-    # names keeps the test a live statement about the licence: if a LICENSE or
-    # the declaration is ever dropped, this fails instead of quietly widening
-    # the set of things allowed to be broken.
-    assert "publication approved (D6)" in failed
-    licensed = {"LICENSE file", "LICENSE shipped with package", "license declared"}
-    assert not (licensed & failed), f"G2 regressed: {sorted(licensed & failed)}"
-    assert crr.main(["energydata-kit", "--root", str(REPO)]) == 0
-    assert crr.main(["energydata-kit", "--strict", "--root", str(REPO)]) == 1
-    # Kept until D6: the check CI runs on every change.
+    assert failed == set(), f"not release-ready: {sorted(failed)}"
+    assert crr.main(["energydata-kit", "--strict", "--root", str(REPO)]) == 0
+    # The upload guard is gone because D6 is recorded (OSS-83).
     assert crr.main(["energydata-kit", "--guard", "--root", str(REPO)]) == 0
