@@ -73,13 +73,13 @@ facts were last refreshed:
 
 | Gate | State | Evidence in the repository |
 |---|---|---|
-| G1 Ownership | **Open: decision needed** | See D2 below |
+| G1 Ownership | **Passed 2026-10-19**: confirmed in writing by counsel | D2 below |
 | G2 Licence | **Passed 2026-10-18**: Apache-2.0 | D3 below; `LICENSE` at the root and in the package (#66) |
-| G3 IP boundary review | **Open: review needed** | See D4 below |
+| G3 IP boundary review | **Passed 2026-10-19**: signed off by the technical lead | D4 below |
 | G4 Third-party licences | Evidence ready; needs legal confirmation | `THIRD_PARTY_LICENSES.md`, kept in sync by `tools/check_third_party.py` in CI |
 | G5 CI green | Green on `main` (Python 3.11 to 3.14 on Linux, lowest supported dependencies, Windows and macOS); re-checked on the release commit | `.github/workflows/ci.yml`, `security.yml` |
 | G6 Documentation honest | Reviewed in OSS-20 and OSS-45; full accuracy audit of README, guide, architecture docs, docstrings and `--help` against the code in OSS-75 (#79); confirmed on the release commit | Package `README.md` (capabilities and known limitations), `CHANGELOG.md`, `examples/GUIDE.md` (executed by the tests) |
-| G7 Publication | **Open: decision needed** | See D6 below |
+| G7 Publication | **Passed 2026-10-19**: GitHub release only, no package index | D6 below |
 
 The mechanical release steps are rehearsed on every change by the *Release
 dry run* CI job (`tools/release_dry_run.py`), now with the real licence. The
@@ -87,7 +87,14 @@ real release PR will therefore only differ by the decisions recorded here.
 
 ## Decisions
 
-### D1. Repository visibility (owner: management)
+### D1. Repository visibility (owner: management) — DECIDED 2026-10-19
+
+**Make the repository private for now**, recorded by the repository owner on
+2026-10-19. The visibility change is made in the GitHub settings by the
+owner; nothing in the repository does it. While private, the GitHub release
+(D6) is visible only to people with access; making the repository public
+again is a separate decision.
+
 
 The GitHub repository is **public** (observed 2026-10-15), so every pushed
 commit and branch is already visible. Since #66 (2026-10-18) it carries an
@@ -101,7 +108,15 @@ replace either (see `RELEASE_GATES.md`).
   again later is part of G7.
 - **If public:** record the decision here; no change needed.
 
-### D2. Ownership, G1 (owner: management, with counsel)
+### D2. Ownership, G1 (owner: management, with counsel) — DECIDED 2026-10-19
+
+**Confirmed in writing by counsel**, as recorded by the repository owner on
+2026-10-19: the publishing legal entity owns the code in the repository and
+can license it. The written confirmation is held by the owner and is not
+copied here. Not recorded here: whether external contributions need a CLA
+or DCO (still open; no external contributions are accepted until it is
+settled, see `CONTRIBUTING.md`).
+
 
 - **Question:** does the publishing legal entity own all code in the
   repository, so that it can license it?
@@ -167,7 +182,13 @@ dependencies listed; `[parquet]`, pyarrow, Apache-2.0).
   `pyproject.toml`. `tools/check_release_readiness.py` then passes those
   three checks.
 
-### D4. IP boundary review, G3 (owner: technical lead)
+### D4. IP boundary review, G3 (owner: technical lead) — DECIDED 2026-10-19
+
+**Signed off by the technical lead**, as recorded by the repository owner on
+2026-10-19. The signed note is held by the owner. The package code has not
+changed since `main` at `d6b8abe` (#86); the release PR changes only the
+version date, the upload guard, a release-readiness test and these records.
+
 
 A person who knows the private Solid Soup / MICA codebase confirms that the
 release contains no proprietary code, data, parameters or algorithms.
@@ -206,7 +227,14 @@ Not a release gate, but it protects the release commit.
   (pip-audit)* and *Dependency review*; require code-owner review
   (`.github/CODEOWNERS`); block force pushes.
 
-### D6. Publication, G7 (owner: management)
+### D6. Publication, G7 (owner: management) — DECIDED 2026-10-19
+
+**D6 approved:** 2026-10-19, energydata-kit 0.1.0 as a GitHub release only (built wheel and sdist attached to the tagged release; no package index), recorded by the repository owner.
+
+Nothing is uploaded to PyPI or any other index; publishing there would need
+a new D6 decision and trusted publishing set up in a separate, reviewed
+change.
+
 
 - **Questions:**
   1. Publish to PyPI, or keep releases as GitHub-only build artifacts?

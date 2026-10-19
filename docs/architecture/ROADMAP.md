@@ -865,13 +865,31 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 
 - [x] No new work by the owner's choice while #85 was in review.
 
-### OSS-85: decision brief refreshed — this change
+### OSS-85: decision brief refreshed — merged in [#86](https://github.com/PederFalkman/opensource/pull/86)
 
 - [x] `RELEASE_DECISIONS.md`: what changed since OSS-77 (the #81 fix,
       the #82 merge and its revert in #84, the D6-tied guard of #85),
       the readiness check now failing on the guard and the D6 line,
       the release PR as a revert of the revert, and commit counts at
       #85. The shared decision brief republished to match.
+
+### OSS-86 to OSS-89: pause until the release decisions
+
+- [x] No new work by the owner's choice.
+
+### OSS-90: release energydata-kit 0.1.0 — this change
+
+- [x] Decisions recorded by the owner on 2026-10-19: D1 make the
+      repository private for now; D2 ownership confirmed in writing by
+      counsel; D4 IP review signed off by the technical lead; D6 GitHub
+      release only, no package index (`**D6 approved:**` line).
+- [x] Reverts the OSS-81 revert, bringing back the rehearsed release
+      edits: upload guard removed, changelog dated 2026-10-19, the
+      readiness test expecting a release-ready package. Status lines in
+      the READMEs, SECURITY and CONTRIBUTING updated.
+- [ ] After merge, by the owner: tag `energydata-kit-v0.1.0` on the merge
+      commit; the *Release build* workflow builds and attests the files,
+      which are attached to a GitHub release. Nothing is uploaded.
 
 ## Explicitly not planned
 

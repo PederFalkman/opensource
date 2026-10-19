@@ -53,12 +53,12 @@ advisories).
 | Version | Security fixes |
 |---|---|
 | `main` | Yes |
-| 0.1.0 | Not released yet ([release gates](docs/governance/RELEASE_GATES.md)) |
+| 0.1.0 | GitHub release only; fixes go to `main` and a later release |
 
-No version has been released, so fixes go to `main`. The support policy for
-released versions (for example, fixes only in the latest 0.x release) is to be
-set with the first release; until then nothing here promises patches for a
-particular version.
+Version 0.1.0 is a GitHub release (not on PyPI). Fixes go to `main` and ship
+in the next release; no support policy for older versions (for example,
+patch releases of 0.1.x) has been set, so nothing here promises patches for
+a particular version.
 
 ## How the package limits exposure
 

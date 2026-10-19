@@ -9,7 +9,9 @@ counts as not.
 
 As a technical guard, `energydata-kit` carries the PyPI classifier
 `Private :: Do Not Upload`, which PyPI rejects on upload. Removing it is part of
-gate G7.
+gate G7. For `energydata-kit` 0.1.0 the decisions D1, D2, D4 and D6 were
+recorded on 2026-10-19 (GitHub release only) and the release PR removes the
+guard; see `RELEASE_DECISIONS.md`.
 
 Supporting tooling (none of it publishes anything):
 

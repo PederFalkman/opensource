@@ -2,9 +2,9 @@
 
 Framework-independent quality checks for energy time-series data.
 
-> **Status: 0.1.0 release candidate, not released.** Not published.
-> Licensed Apache-2.0 (`LICENSE`); publication still waits on the release
-> gates in the repository's `docs/governance/RELEASE_GATES.md`.
+> **Status: 0.1.0, released as a GitHub release** (wheel and sdist attached
+> to the tag `energydata-kit-v0.1.0`); not published to PyPI or any other
+> index. Licensed Apache-2.0 (`LICENSE`).
 
 energydata-kit is a small layer on top of [pandas](https://pandas.pydata.org)
 and [Pint](https://pint.readthedocs.io). It adds the parts those libraries do not
