@@ -89,11 +89,9 @@ python -m pytest tools/tests
   change that slows the year-of-minute-data cases noticeably needs a note in
   `docs/architecture/PERFORMANCE.md`.
 - User-visible changes, including public API, `QualityFlag` values and the
-  report schema, need a changelog entry in the package `CHANGELOG.md`. Until
-  0.1.0 is released, `main` carries the version `0.1.0` and its section
-  describes the behaviour as it will ship: update that section and keep
-  `## [Unreleased]` empty (the readiness check requires it; OSS-61). After
-  the release, new entries go under `## [Unreleased]`.
+  report schema, need an entry under `## [Unreleased]` in the package
+  `CHANGELOG.md`. The released sections (`## [0.1.0]`) are not edited; the
+  release PR folds `[Unreleased]` into the new dated section.
 
 ## Pull request checklist
 
