@@ -203,6 +203,7 @@ def assess_quality(
     stale_exclude: Collection[float] = (),
     cumulative: bool = False,
     counter_tolerance: float = 0.0,
+    counter_rollover: float | None = None,
     jump_max_delta: float | None = None,
     jump_max_rate: tuple[float, str | pd.Timedelta] | None = None,
     max_gap: str | pd.Timedelta | None = None,
@@ -245,7 +246,8 @@ def assess_quality(
 
     ``stale_min_run``, ``cumulative`` and ``jump_max_delta`` or ``jump_max_rate``
     enable the opt-in stale-value, counter-decrease and jump checks; ``stale_atol``,
-    ``stale_exclude`` and ``counter_tolerance`` tune them, and ``max_gap``
+    ``stale_exclude``, ``counter_tolerance`` and ``counter_rollover`` (the
+    register modulus, which separates rollovers from decreases) tune them, and ``max_gap``
     (e.g. ``"1h"``) stops them comparing rows further apart than that (see
     :func:`energydata_kit.flag_series`). ``max_gap`` is recorded as an ISO
     8601 duration and ``jump_max_rate`` as ``[delta, duration]``.
@@ -279,6 +281,7 @@ def assess_quality(
         stale_exclude=stale_exclude,
         cumulative=cumulative,
         counter_tolerance=counter_tolerance,
+        counter_rollover=counter_rollover,
         jump_max_delta=jump_max_delta,
         jump_max_rate=jump_max_rate,
         max_gap=max_gap,
@@ -366,10 +369,10 @@ def assess_quality(
             "counter_tolerance": _plain(counter_tolerance),
             "jump_max_delta": _plain(jump_max_delta),
             "known_outages": [[_iso_ns(lo), _iso_ns(hi)] for lo, hi in outages],
-            # Schema 2 (docs/architecture/SCHEMA_2.md); the other options come in later steps.
+            # Schema 2 (docs/architecture/SCHEMA_2.md).
             "max_gap": _iso_duration(_max_gap(max_gap)),
             "jump_max_rate": _rate_parameter(jump_max_rate),
-            "counter_rollover": None,
+            "counter_rollover": _plain(counter_rollover),
         },
         metadata=None if metadata is None else metadata.to_dict(),
         truncated=truncated,

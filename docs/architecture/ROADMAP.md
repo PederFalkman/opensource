@@ -103,7 +103,7 @@ schema change.
 |---|---|---|---|---|
 | P-7 | *Approved by the owner on 2026-10-20, as part of report schema 2 (design in `SCHEMA_2.md`, OSS-103); implemented in OSS-106.* **Rate-based jump limit.** An opt-in `jump_max_rate` (change per unit of time, e.g. kW per hour) next to the absolute `jump_max_delta`, dividing each change by the time since the previous finite value. | Known limitation: the jump check uses an absolute limit per row, so a gap followed by a normal ramp looks like a jump, and the same limit can't fit two resolutions. | S | Schema 2 if recorded in reports. The caller picks the rate; units stay the caller's (no Pint conversion of limits). Must define behaviour across duplicates and off-grid rows. |
 | P-8 | *Approved by the owner on 2026-10-20, as part of report schema 2 (design in `SCHEMA_2.md`, OSS-103); implemented in OSS-105.* **Runs and comparisons that stop at gaps.** An opt-in `max_gap` for the stale, counter and jump checks: consecutive rows further apart than this are not compared, and a stale run does not continue across the gap. | Known limitation: these checks compare consecutive rows and ignore time gaps, so a flat line before and after an outage counts as one run and a jump across a long gap is flagged. | S–M | Schema 2 if recorded. Default off, so 0.1.0 results stay identical. Interacts with P-7; worth designing together. |
-| P-9 | *Approved by the owner on 2026-10-20, as part of report schema 2 (design in `SCHEMA_2.md`, OSS-103).* **Counter rollover (wrap-around) separated from resets.** An opt-in `counter_rollover` (the register's modulus, e.g. 10**6 kWh, supplied by the caller): a drop consistent with wrapping past the modulus gets a new `COUNTER_ROLLOVER` flag (bit 1024) instead of `COUNTER_DECREASE`. | Known limitation: a register reset and a rollover both appear as `COUNTER_DECREASE`; a caller who knows the register size can tell them apart. | S | Adds a flag bit (public contract: never renumbered) and a flag count, so schema 2. No modulus is shipped or guessed. |
+| P-9 | *Approved by the owner on 2026-10-20, as part of report schema 2 (design in `SCHEMA_2.md`, OSS-103); implemented in OSS-107.* **Counter rollover (wrap-around) separated from resets.** An opt-in `counter_rollover` (the register's modulus, e.g. 10**6 kWh, supplied by the caller): a drop consistent with wrapping past the modulus gets a new `COUNTER_ROLLOVER` flag (bit 1024) instead of `COUNTER_DECREASE`. | Known limitation: a register reset and a rollover both appear as `COUNTER_DECREASE`; a caller who knows the register size can tell them apart. | S | Adds a flag bit (public contract: never renumbered) and a flag count, so schema 2. No modulus is shipped or guessed. |
 | P-10 | *Approved by the owner on 2026-10-20, as part of report schema 2 (design in `SCHEMA_2.md`, OSS-103).* **Overlap-aware gap comparison.** `compare_reports` matches gaps by overlap, so a gap that shrank or grew shows as *changed* (with before/after bounds) instead of one resolved and one new gap. | Known limitation in the README; the before/after view of a fix is the main use of `compare`. | M | Changes the comparison output (a new `changed` list): comparisons are schema-versioned with reports, so this rides on schema 2 too. Only listed gaps can be compared, as today (`max_listed`). |
 | P-11 | *Approved by the owner on 2026-10-19; done in OSS-101, as a **draft** release the owner publishes.* **Attach the built files to the GitHub release.** The *Release build* workflow, on an `energydata-kit-v*` tag, also creates (or updates) the GitHub release and uploads the wheel, sdist and their SHA-256 sums. Still never uploads to an index. | D6 chose GitHub releases only; today the owner attaches the files by hand after the workflow builds them, which is error-prone and leaves the attested files and the attached files separate. | S | Needs `contents: write` for that job only, a pinned action or `gh`, and a test in the dry run. Gated by the strict readiness check (D6 line for that version) already in the workflow. No package change. |
 
@@ -1027,7 +1027,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       unreadable duration, input without a `DatetimeIndex`, and `max_gap`
       without a check it tunes.
 
-### OSS-106: report schema 2, step 3 (P-7 `jump_max_rate`) — this change
+### OSS-106: report schema 2, step 3 (P-7 `jump_max_rate`) — in [#97](https://github.com/PederFalkman/opensource/pull/97)
 
 - [x] `jump_rate_mask(values, (delta, period))`: flags a change larger than
       `delta × elapsed / period`, with `elapsed` the exact time since the
@@ -1039,6 +1039,21 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `JUMP`; `max_gap` may now tune a rate alone.
 - [x] Reports record `parameters.jump_max_rate` as `[delta, duration]`;
       `null` when off, so the golden reports are unchanged.
+
+### OSS-107: report schema 2, step 4 (P-9 `counter_rollover`) — this change
+
+- [x] `counter_rollover_mask(values, modulus)`: of the rows
+      `counter_decrease_mask` flags (same `tolerance` and `max_gap`), those
+      whose implied increase `cur + m − prev` is at least `-tolerance` and
+      below `m / 2`, the owner's rule in `SCHEMA_2.md`.
+- [x] `counter_rollover` on `flag_series` (sets `COUNTER_ROLLOVER`, bit
+      1024, instead of `COUNTER_DECREASE`), `assess_quality`,
+      `assess_frame`, `flag_frame` (also per column), `--counter-rollover`,
+      and Pandera (`counter_check(rollover=...)` passes rollovers;
+      `series_schema`). Requires `cumulative=True`; never guessed.
+- [x] Reports record `parameters.counter_rollover` and count
+      `COUNTER_ROLLOVER`; off by default, so the golden reports are
+      unchanged.
 
 ## Explicitly not planned
 
