@@ -33,7 +33,9 @@ Supporting tooling (none of it publishes anything):
   `tools/check_third_party.py` in CI.
 - `.github/workflows/release-build.yml`: builds and `twine check`s the release
   files on demand; for an `energydata-kit-v*` tag it first requires the strict
-  readiness check and then records a build provenance attestation.
+  readiness check, then records a build provenance attestation and attaches
+  the files and their SHA-256 sums to a draft GitHub release, which the owner
+  publishes (OSS-101). It never uploads to a package index.
 
 ## Gates
 

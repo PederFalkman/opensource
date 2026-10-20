@@ -7,9 +7,12 @@ name: Release build
 # - Manual run (workflow_dispatch): build, `twine check`, readiness report,
 #   files kept as a short-lived CI artifact.
 # - Tag `energydata-kit-v*`: additionally requires the strict readiness check
-#   to pass and records a build provenance attestation. For a public
-#   repository the attestation is written to a public transparency log, so it
-#   only happens for a deliberate release tag.
+#   to pass (including the owner's D6 approval for that version), records a
+#   build provenance attestation and attaches the files and their SHA-256
+#   sums to a *draft* GitHub release for the tag (P-11, OSS-101). The owner
+#   reviews and publishes the draft; nothing goes to a package index. For a
+#   public repository the attestation is written to a public transparency
+#   log, so it only happens for a deliberate release tag.
 
 on:
   workflow_dispatch:
@@ -78,3 +81,34 @@ jobs:
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: dist/*
+
+  github-release:
+    name: Attach files to a draft GitHub release
+    needs: [build, attest]
+    if: ${{ startsWith(github.ref, 'refs/tags/energydata-kit-v') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the draft release and upload its files; nothing else
+    steps:
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: energydata-kit-dist
+          path: dist
+      - name: Create or update the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          (cd dist && sha256sum -- * > SHA256SUMS)
+          if draft=$(gh release view "$TAG" --json isDraft --jq .isDraft 2> /dev/null); then
+            # Never replace the files of a release the owner has published.
+            if [ "$draft" != "true" ]; then
+              echo "::error::release $TAG is already published; not changing its files"
+              exit 1
+            fi
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* --draft --verify-tag --title "$TAG" \
+              --notes "Built and attested by the Release build workflow. Changes: CHANGELOG.md at this tag. SHA-256 sums: SHA256SUMS. Not published to any package index."
+          fi
