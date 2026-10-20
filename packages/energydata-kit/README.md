@@ -18,7 +18,7 @@ cover for metered energy data:
 | Missing intervals on a fixed UTC grid or a local-calendar grid (`tz=`), with an optional `origin` | `find_missing_intervals`, `missing_timestamps`, `expected_grid` |
 | Duplicate and off-grid timestamps | `find_duplicate_timestamps`, `duplicate_mask`, `off_grid_mask` |
 | Missing, non-finite, non-numeric and out-of-bounds values | `missing_value_mask`, `non_finite_mask`, `non_numeric_mask`, `out_of_bounds_mask` |
-| Stale (flat-line) values, cumulative-counter decreases and jumps between consecutive values, as an absolute limit or a rate per unit of time (opt-in) | `stale_mask`, `counter_decrease_mask`, `jump_mask`, `jump_rate_mask` |
+| Stale (flat-line) values, cumulative-counter decreases and jumps between consecutive values, as an absolute limit or a rate per unit of time (opt-in) | `stale_mask`, `counter_decrease_mask`, `counter_rollover_mask`, `jump_mask`, `jump_rate_mask` |
 | Non-destructive bitmask quality flags | `flag_series`, `QualityFlag`, `decode_flags` |
 | Unit and measurement metadata (units parsed by Pint) | `MeasurementMetadata`, `validate_unit`, `units_compatible` |
 | Explicit start/end interval relabelling | `relabel_intervals`, `interval_bounds` |
@@ -185,7 +185,7 @@ lists them. A further change means schema 3.
 | 128 | `STALE_VALUE` | Part of a run of at least `stale_min_run` repeated values (opt-in; tune with `stale_atol`, `stale_exclude`) |
 | 256 | `COUNTER_DECREASE` | Cumulative counter fell below its previous value (`cumulative=True`, opt-in; tune with `counter_tolerance`) |
 | 512 | `JUMP` | Changed by more than `jump_max_delta`, or faster than `jump_max_rate`, from the previous finite value (opt-in) |
-| 1024 | `COUNTER_ROLLOVER` | Cumulative counter wrapped past its modulus (reserved in 0.2.0 development; set once `counter_rollover` lands) |
+| 1024 | `COUNTER_ROLLOVER` | Cumulative counter wrapped past its register modulus `counter_rollover` (opt-in, with `cumulative=True`); flagged instead of `COUNTER_DECREASE` |
 
 Flag values are part of the public API and will not be renumbered.
 
@@ -221,7 +221,10 @@ use Pint or pint-pandas directly, e.g. `series.astype(f"pint[{meta.unit}]")`.
   between them unless you pass `max_gap` (`--max-gap`, e.g. `"1h"`): then rows
   further apart than that are not compared, so a stale run ends at the gap
   and a drop or jump across it is not flagged. A register reset and a rollover both appear as
-  `COUNTER_DECREASE`; telling them apart is left to the caller.
+  `COUNTER_DECREASE` unless you give the register modulus as `counter_rollover`
+  (`--counter-rollover 1e6`): then a drop that wraps past it, with an implied
+  increase below half the modulus, is `COUNTER_ROLLOVER`. The modulus is never
+  guessed.
 - The jump check flags the row where the change lands: a single outlier flags
   itself and the row after it. `jump_max_delta` is an absolute limit per row;
   `jump_max_rate=(delta, period)` (`--jump-max-rate 50 1h`) scales the limit

@@ -8,8 +8,8 @@ versioning: [SemVer](https://semver.org/).
 ### Changed
 - **Report schema 2.** Reports, frame reports and comparisons now carry
   `"schema_version": "2"`. Schema 2 only adds fields: the parameters
-  `max_gap`, `jump_max_rate` and `counter_rollover` (all `null` until their
-  options arrive), the flag count `COUNTER_ROLLOVER`, and `changed` in a
+  `max_gap`, `jump_max_rate` and `counter_rollover` (`null` when the
+  option is off; see Added), the flag count `COUNTER_ROLLOVER`, and `changed` in a
   comparison's gap section. `report_schema.json` validates schemas 1 and 2.
 - `compare_reports` compares schema-1 (0.1.0) and schema-2 reports, also
   with each other, and writes schema 2. A flag count only one side reports
@@ -30,8 +30,14 @@ versioning: [SemVer](https://semver.org/).
   and Pandera `jump_rate_check`; accepted by `flag_series`,
   `assess_quality`, `assess_frame` and `flag_frame` (also per column) and
   `series_schema`; recorded in reports as `[delta, ISO 8601 duration]`.
-- `QualityFlag.COUNTER_ROLLOVER` (1024), reserved for counter rollovers; no
-  check sets it yet.
+- `counter_rollover`, the register modulus of a cumulative counter
+  (`--counter-rollover M`): a decrease consistent with wrapping past it,
+  with an implied increase `cur + m - prev` from `-counter_tolerance` to
+  below `m / 2`, is flagged with the new `QualityFlag.COUNTER_ROLLOVER`
+  (1024) instead of `COUNTER_DECREASE`. New `counter_rollover_mask`;
+  accepted by `flag_series`, `assess_quality`, `assess_frame` and
+  `flag_frame` (also per column), Pandera `counter_check(rollover=...)` and
+  `series_schema`; recorded in reports. The modulus is never guessed.
 
 ## [0.1.0] - 2026-10-19
 

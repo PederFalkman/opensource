@@ -32,6 +32,7 @@ from energydata_kit.flags import (
     _max_gap,
     _rate,
     counter_decrease_mask,
+    counter_rollover_mask,
     jump_mask,
     jump_rate_mask,
     non_finite_mask,
@@ -207,13 +208,30 @@ def stale_check(
     )
 
 
-def counter_check(*, tolerance: float = 0.0, max_gap: str | pd.Timedelta | None = None) -> pa.Check:
-    """A cumulative counter never decreases (see :func:`energydata_kit.counter_decrease_mask`)."""
+def counter_check(
+    *,
+    tolerance: float = 0.0,
+    max_gap: str | pd.Timedelta | None = None,
+    rollover: float | None = None,
+) -> pa.Check:
+    """A cumulative counter never decreases (see :func:`energydata_kit.counter_decrease_mask`).
+
+    With ``rollover`` (the register modulus), a drop consistent with wrapping
+    past it passes (see :func:`energydata_kit.counter_rollover_mask`).
+    """
     counter_decrease_mask([], tolerance=tolerance, max_gap=max_gap)
+    if rollover is not None:
+        counter_rollover_mask([], rollover, tolerance=tolerance)
+
+    def decreases(s: pd.Series) -> Any:
+        s = _in_time_order(s)
+        failed = counter_decrease_mask(s, tolerance=tolerance, max_gap=max_gap)
+        if rollover is not None:
+            failed = failed & ~counter_rollover_mask(s, rollover, tolerance=tolerance, max_gap=max_gap)
+        return failed
+
     return pa.Check(
-        lambda s: pd.Series(
-            ~counter_decrease_mask(_in_time_order(s), tolerance=tolerance, max_gap=max_gap), index=s.index
-        ),
+        lambda s: pd.Series(~decreases(s), index=s.index),
         name=_PREFIX + "counter_not_decreasing",
         error="cumulative counter decreased",
         ignore_na=False,
@@ -263,6 +281,7 @@ def series_schema(
     stale_exclude: Collection[float] = (),
     cumulative: bool = False,
     counter_tolerance: float = 0.0,
+    counter_rollover: float | None = None,
     jump_max_delta: float | None = None,
     jump_max_rate: tuple[float, str | pd.Timedelta] | None = None,
     max_gap: str | pd.Timedelta | None = None,
@@ -285,6 +304,7 @@ def series_schema(
         jump_max_delta,
         max_gap,
         jump_max_rate,
+        counter_rollover,
     )
     freq, tz = _grid_from_metadata(freq, tz, metadata)
     index_checks = [timezone_aware_check(), no_duplicate_timestamps_check()]
@@ -302,7 +322,9 @@ def series_schema(
             stale_check(stale_min_run, atol=stale_atol, exclude=stale_exclude, max_gap=max_gap)
         )
     if cumulative:
-        value_checks.append(counter_check(tolerance=counter_tolerance, max_gap=max_gap))
+        value_checks.append(
+            counter_check(tolerance=counter_tolerance, max_gap=max_gap, rollover=counter_rollover)
+        )
     if jump_max_delta is not None:
         value_checks.append(jump_check(jump_max_delta, max_gap=max_gap))
     if jump_max_rate is not None:

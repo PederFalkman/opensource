@@ -81,7 +81,12 @@ def _variants():
             jump_max_delta=np.float32(5),
         ),
         "schema 2 options": ek.assess_quality(
-            s, freq="15min", jump_max_rate=(np.int64(50), "1h"), max_gap=pd.Timedelta("1h")
+            s,
+            freq="15min",
+            cumulative=True,
+            counter_rollover=1e6,
+            jump_max_rate=(np.int64(50), "1h"),
+            max_gap=pd.Timedelta("1h"),
         ),
         "frame, schema 2 options per column": ek.assess_frame(
             frame, per_column={"a": {"jump_max_rate": (5.0, "15min"), "max_gap": "30min"}}
