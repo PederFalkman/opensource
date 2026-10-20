@@ -1027,7 +1027,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       unreadable duration, input without a `DatetimeIndex`, and `max_gap`
       without a check it tunes.
 
-### OSS-106: report schema 2, step 3 (P-7 `jump_max_rate`) — in [#97](https://github.com/PederFalkman/opensource/pull/97)
+### OSS-106: report schema 2, step 3 (P-7 `jump_max_rate`) — merged in [#97](https://github.com/PederFalkman/opensource/pull/97)
 
 - [x] `jump_rate_mask(values, (delta, period))`: flags a change larger than
       `delta × elapsed / period`, with `elapsed` the exact time since the
