@@ -1115,7 +1115,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 
 - [x] No new work by the owner's choice while the 0.2.0 decisions were open.
 
-### OSS-133: release energydata-kit 0.2.0 — this change
+### OSS-133: release energydata-kit 0.2.0 — merged in [#104](https://github.com/PederFalkman/opensource/pull/104)
 
 - [x] `__version__` is `0.2.0`; the changelog's notes move under
       `## [0.2.0] - 2026-10-20` (date to set on release day) with an empty
@@ -1132,10 +1132,21 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       expects nothing to fail (`--strict` exits 0, `--guard` passes), and the
       status lines in both READMEs, `SECURITY.md`, `CONTRIBUTING.md` and
       `RELEASE_GATES.md` name 0.2.0 as a GitHub release.
-- [ ] After merge (owner): tag the merge commit `energydata-kit-v0.2.0`,
-      check the digests and publish the draft GitHub release the *Release
-      build* workflow creates. Then the next development cycle restores the
-      upload guard.
+- [x] After merge (owner): tagged `energydata-kit-v0.2.0` on `344c862`; the
+      *Release build* workflow passed (strict readiness, build, `twine
+      check`, provenance attestation) and created the draft release, which
+      the owner published on 2026-10-20 (marked pre-release). An independent
+      rebuild from the tag gave matching checksums to compare.
+
+### OSS-134: open 0.3.0 development — this change
+
+- [x] `__version__` is `0.3.0.dev0`; new changelog entries go under
+      `[Unreleased]`, and the released sections are not edited.
+- [x] The `Private :: Do Not Upload` guard is back: D6 approved 0.2.0 only,
+      as a GitHub release. The readiness test again expects a package that
+      is not release-ready, with the licence checks and `--guard` passing.
+- [x] Status lines: 0.2.0 is the GitHub release, `main` is 0.3.0
+      development.
 
 ## Explicitly not planned
 
