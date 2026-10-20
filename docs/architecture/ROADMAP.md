@@ -1040,7 +1040,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Reports record `parameters.jump_max_rate` as `[delta, duration]`;
       `null` when off, so the golden reports are unchanged.
 
-### OSS-107: report schema 2, step 4 (P-9 `counter_rollover`) — in [#98](https://github.com/PederFalkman/opensource/pull/98)
+### OSS-107: report schema 2, step 4 (P-9 `counter_rollover`) — in [#99](https://github.com/PederFalkman/opensource/pull/99) (reviewed in [#98](https://github.com/PederFalkman/opensource/pull/98), which merged into the OSS-106 branch instead of `main`)
 
 - [x] `counter_rollover_mask(values, modulus)`: of the rows
       `counter_decrease_mask` flags (same `tolerance` and `max_gap`), those
