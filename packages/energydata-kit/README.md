@@ -244,8 +244,10 @@ use Pint or pint-pandas directly, e.g. `series.astype(f"pint[{meta.unit}]")`.
   columns take different steps from their metadata. `compare_reports`
   compares frames column by column and does not read that section. On the command line, `--unit` works with a
   single `--value-col`; use `--schema` for metadata on several columns.
-- `compare_reports` matches gaps exactly (a gap that shrank appears as one
-  resolved and one new gap) and only compares listed gaps; check
+- `compare_reports` matches gaps by overlap: a gap that shrank, grew or moved
+  is listed under `changed` with its before and after bounds (a split or
+  merged gap once per overlapping pair), and only gaps overlapping nothing
+  are `resolved` or `new`. Only listed gaps are compared; check
   `lists_truncated` when reports capped their lists with `max_listed`.
 - Parsing timestamp strings whose UTC offset changes across DST is slow in
   pandas itself (about 2 s per 350,000 rows); pass a `DatetimeIndex` when you

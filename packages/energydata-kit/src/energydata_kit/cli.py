@@ -720,7 +720,8 @@ def _changes_facts(changes: dict[str, Any]) -> list[str]:
     if "gaps" in changes:
         gaps = changes["gaps"]
         note = " (lists truncated; see the JSON reports)" if gaps["lists_truncated"] else ""
-        lines.append(f"gaps resolved: {len(gaps['resolved'])}, new: {len(gaps['new'])}{note}")
+        counts_text = f"resolved: {len(gaps['resolved'])}, new: {len(gaps['new'])}"
+        lines.append(f"gaps {counts_text}, changed: {len(gaps['changed'])}{note}")
     if "metadata_issues" in changes:
         issues = changes["metadata_issues"]
         resolved, new = ", ".join(issues["resolved"]) or "none", ", ".join(issues["new"]) or "none"

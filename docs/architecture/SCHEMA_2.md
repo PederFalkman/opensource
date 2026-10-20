@@ -1,7 +1,7 @@
 # Report schema 2: design (OSS-103)
 
 **Status:** accepted by the owner on 2026-10-20 (open questions answered
-below). Steps 1 to 4 are implemented in OSS-104 to OSS-107; step 5 is not yet. P-7 to P-10 were approved by the owner on 2026-10-20 (see
+below). All five steps are implemented, in OSS-104 to OSS-108. P-7 to P-10 were approved by the owner on 2026-10-20 (see
 `ROADMAP.md`); this note fixes what they change in the report format before
 any code is written, so the format changes once, in 0.2.0.
 
