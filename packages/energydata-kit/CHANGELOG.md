@@ -5,6 +5,8 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-20
+
 Report schema 2 and four opt-in refinements of the checks: gaps that stop
 comparisons (`max_gap`), a jump limit per unit of time (`jump_max_rate`),
 counter rollovers told apart from resets (`counter_rollover`), and

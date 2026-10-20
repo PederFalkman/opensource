@@ -154,10 +154,12 @@ def test_missing_package(tmp_path):
 
 
 def test_real_repository_is_not_release_ready():
-    # 0.1.0 is released (#87); main is 0.2.0 development with the upload guard
-    # back (OSS-97), so the real package must not look releasable.
+    # Release draft for 0.2.0 (OSS-133): the version is final and the changelog
+    # dated, but D6 is not recorded for 0.2.0, so the upload guard stays and the
+    # two G7 checks are exactly what fails. The release PR adds the owner's D6
+    # line and removes the guard, and then expects nothing to fail.
     failed = {c.name for c in crr.check_package(REPO, "energydata-kit") if not c.ok}
-    assert {"final version", "upload guard removed"} <= failed
+    assert failed == {"upload guard removed", "publication approved (D6)"}, sorted(failed)
     # The licence checks must keep passing: if a LICENSE or the declaration is
     # ever dropped, this fails instead of widening what may be broken.
     licensed = {"LICENSE file", "LICENSE shipped with package", "license declared"}

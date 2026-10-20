@@ -3,7 +3,10 @@
 ## 0.2.0 (prepared 2026-10-20, OSS-109)
 
 **Status:** engineering for 0.2.0 is complete (OSS-104 to OSS-108 on
-`main`, reviewed in OSS-110); nothing here is decided. `main` stays at
+`main`, reviewed in OSS-110); nothing here is decided. A release draft
+(OSS-133, branch `claude/oss-133-release-draft`) sets the version to
+`0.2.0` and dates the changelog, and keeps the upload guard; see "Finishing
+the release" below. `main` stays at
 `0.2.0.dev0` with the upload guard until the owner decides the items below.
 The 0.1.0 record follows further down and is unchanged.
 
@@ -35,6 +38,38 @@ The only `pyproject.toml` change is the restored upload guard (OSS-97).
 | G5 CI green | Green on every 0.2.0 PR; re-checked on the release commit | — |
 | G6 Documentation honest | README, changelog and guide updated with each step; the guide's new examples run in the test suite | Review on the release commit |
 | G7 Publication (D6) | The 0.1.0 approval names 0.1.0 only, so it does not cover 0.2.0 (OSS-98) | Publish 0.2.0 as a GitHub release only, like 0.1.0, or to an index? The owner records the answer as a new approval line under D6 naming `energydata-kit 0.2.0` |
+
+**For the G3 reviewer** (the technical lead). The package code to review
+is the diff from the 0.1.0 merge to the release commit:
+`git diff 827a2df <release commit> -- packages/energydata-kit/src`
+(8 files, about 1,100 added lines, more than half of them in
+`report_schema.json`).
+Points to confirm, each also checked by a tool:
+
+- Besides the standard library, the code imports only numpy, pandas and
+  Pint, plus Pandera in its optional extra (Parquet files are read through
+  pandas with the optional pyarrow). `python tools/check_ip_boundary.py`,
+  run in CI, refuses forbidden imports and any dependency off the reviewed
+  allowlist.
+- No domain limits ship: every threshold (`max_gap`, `jump_max_rate`,
+  `counter_rollover`) is a caller argument that is off unless given.
+- Tests and examples use synthetic series only (`make_synthetic_series` or
+  inline values); no customer data, endpoints or credentials.
+- Nothing forecasts, optimises, or computes grid, capacity or financial
+  quantities: the additions decide which consecutive readings to compare
+  and how to label a counter drop or a changed gap.
+
+**Finishing the release** once the four answers are in (the draft already
+has the version and the dated changelog):
+
+1. The owner's D6 line under D6 below, in the owner's words, naming
+   `energydata-kit 0.2.0`, and short notes under G1, G3 and G4 recording
+   the answers (confirmations held by the owner, not copied).
+2. Remove the `Private :: Do Not Upload` classifier, and make the
+   readiness test expect nothing to fail (`--strict` exits 0).
+3. Set the changelog date to the day the release PR merges.
+4. Update the status lines in both READMEs, `SECURITY.md`,
+   `CONTRIBUTING.md` and `RELEASE_GATES.md` for the chosen channel.
 
 **After the decisions:** a release PR built from `RELEASE_CHECKLIST.md`
 sets `__version__` to `0.2.0`, moves `[Unreleased]` under a dated
