@@ -961,7 +961,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 
 - [x] No new work by the owner's choice.
 
-### OSS-100: post-0.1.0 proposals — this change
+### OSS-100: post-0.1.0 proposals — merged in [#90](https://github.com/PederFalkman/opensource/pull/90)
 
 - [x] P-7 to P-11 drafted above for the owner to approve or reject one by
       one; nothing implemented. P-11 approved by the owner on 2026-10-19;
