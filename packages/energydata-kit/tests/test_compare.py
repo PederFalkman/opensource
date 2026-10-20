@@ -34,8 +34,11 @@ def test_fix_shows_deltas_resolved_gaps_and_is_not_worse():
     assert not result.same_data and not result.worse
     assert changes["counts"]["n_missing_intervals"] == {"before": 3, "after": 1, "delta": -2}
     assert changes["flag_counts"]["NON_FINITE"] == {"before": 1, "after": 0, "delta": -1}
-    assert changes["gaps"]["resolved"][0]["missing_count"] == 3
-    assert changes["gaps"]["new"][0]["missing_count"] == 1  # the remaining, smaller gap
+    # The gap shrank from three intervals to one: one changed pair, not resolved plus new.
+    assert changes["gaps"]["resolved"] == [] and changes["gaps"]["new"] == []
+    [pair] = changes["gaps"]["changed"]
+    assert (pair["before"]["missing_count"], pair["after"]["missing_count"]) == (3, 1)
+    assert pair["after"]["end"] == pair["before"]["end"]
     assert "parameters" not in changes
 
 
@@ -161,6 +164,65 @@ def test_schema_1_report_against_a_changed_schema_2_report():
     assert changes["flag_counts"] == {"JUMP": {"before": 0, "after": 1, "delta": 1}}
 
 
-def test_gap_section_lists_changed_gaps():
-    changes = compare_reports(report(drop=[3]), report(drop=[5])).changes[""]
-    assert changes["gaps"]["changed"] == []  # filled by overlap matching in a later step (P-10)
+def gaps(before_drop, after_drop):
+    return compare_reports(report(drop=before_drop), report(drop=after_drop)).changes[""]["gaps"]
+
+
+def counts(section):
+    return [len(section[k]) for k in ("resolved", "new", "changed")]
+
+
+def test_gaps_that_do_not_overlap_are_resolved_and_new():
+    # Overlap matching (P-10): gaps are compared as intervals of missing timestamps, both
+    # ends included. Disjoint gaps, even adjacent ones, are not the same gap.
+    assert counts(gaps([3], [5])) == [1, 1, 0]
+    assert counts(gaps([3], [4])) == [1, 1, 0]
+
+
+def test_a_gap_that_grew_shrank_or_moved_is_changed():
+    grew = gaps([10], [9, 10, 11])
+    assert counts(grew) == [0, 0, 1]
+    assert [grew["changed"][0][side]["missing_count"] for side in ("before", "after")] == [1, 3]
+    assert counts(gaps([9, 10, 11], [10])) == [0, 0, 1]
+    assert counts(gaps([9, 10], [10, 11])) == [0, 0, 1]
+
+
+def test_split_and_merged_gaps_list_each_overlapping_pair():
+    split = gaps([10, 11, 12, 13, 14], [10, 11, 13, 14])
+    assert counts(split) == [0, 0, 2]
+    assert len({json.dumps(pair["before"]) for pair in split["changed"]}) == 1  # one gap became two
+    merged = gaps([10, 11, 13, 14], [10, 11, 12, 13, 14])
+    assert counts(merged) == [0, 0, 2]
+    assert len({json.dumps(pair["after"]) for pair in merged["changed"]}) == 1
+    # Pairs are listed in time order, by the before gap and then the after gap.
+    starts = [(p["before"]["start"], p["after"]["start"]) for p in split["changed"] + merged["changed"]]
+    assert starts[:2] == sorted(starts[:2]) and starts[2:] == sorted(starts[2:])
+
+
+def test_exact_overlapping_and_disjoint_gaps_together():
+    section = gaps([2, 10, 11, 30, 50, 52], [2, 11, 12, 40, 50, 51, 52])
+    # 2: unchanged, not listed. 10-11 -> 11-12: changed. 30: resolved. 40: new.
+    # 50 and 52 -> 50-52: two pairs (merged).
+    assert counts(section) == [1, 1, 3]
+    assert section["resolved"][0]["missing_count"] == 1 and section["new"][0]["missing_count"] == 1
+    listed = [g["start"] for g in section["resolved"] + section["new"]]
+    listed += [p[side]["start"] for p in section["changed"] for side in ("before", "after")]
+    assert report(drop=[2]).gaps[0].start.isoformat() not in listed
+
+
+def test_overlap_matching_does_not_change_worse():
+    # worse is still decided by counts: more missing intervals is worse whatever the matching.
+    assert compare_reports(report(drop=[10]), report(drop=[9, 10, 11])).worse
+    assert not compare_reports(report(drop=[9, 10, 11]), report(drop=[10])).worse
+
+
+def test_only_listed_gaps_are_matched():
+    def capped(drop):
+        return assess_quality(make_synthetic_series(periods=96, drop=drop), freq="15min", max_listed=1)
+
+    # Only the first gap is listed on each side, and it is the same, so no gap is listed as
+    # changed although the unlisted third gap moved; the counts still show the data changed.
+    changes = compare_reports(capped([10, 20, 30]), capped([10, 20, 31])).changes[""]
+    assert "gaps" not in changes and changes["fingerprint"]
+    section = compare_reports(capped([10, 20, 30]), capped([9, 10, 20, 30])).changes[""]["gaps"]
+    assert counts(section) == [0, 0, 1] and section["lists_truncated"]

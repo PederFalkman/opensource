@@ -14,6 +14,12 @@ versioning: [SemVer](https://semver.org/).
 - `compare_reports` compares schema-1 (0.1.0) and schema-2 reports, also
   with each other, and writes schema 2. A flag count only one side reports
   is no longer compared as 0 against the other.
+- `compare_reports` matches gaps by overlap. A gap whose interval overlaps
+  one on the other side with different bounds (it shrank, grew or moved) is
+  listed in the new `gaps.changed` as a `{"before", "after"}` pair, once per
+  overlapping pair when a gap was split or merged; `resolved` and `new` now
+  hold only gaps that overlap nothing on the other side. `compare --format
+  text` and `markdown` count changed gaps. `worse` is unchanged.
 
 ### Added
 - `max_gap` for the stale, counter and jump checks (`--max-gap` on the

@@ -13,6 +13,8 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
+import pandas as pd
+
 from energydata_kit import __version__
 from energydata_kit.frame_report import FrameQualityReport
 from energydata_kit.report import REPORT_SCHEMA_VERSION, QualityReport
@@ -175,6 +177,46 @@ def _gap_key(gap: dict[str, Any]) -> tuple[str, str, int]:
     return (gap["start"], gap["end"], gap["missing_count"])
 
 
+def _gap(key: tuple[str, str, int]) -> dict[str, Any]:
+    return dict(zip(("start", "end", "missing_count"), key, strict=True))
+
+
+def _match_gaps(before: set[tuple[str, str, int]], after: set[tuple[str, str, int]]) -> dict[str, list[Any]]:
+    """Resolved, new and changed gaps (schema 2, P-10).
+
+    Exact matches are left out. Two remaining gaps whose intervals (both ends
+    included) overlap are a changed pair; a gap overlapping several on the
+    other side (one split in two, or two merged) is paired with each. Gaps
+    overlapping nothing on the other side are resolved or new.
+    """
+
+    def bounds(keys: set[tuple[str, str, int]]) -> list[tuple[int, int, tuple[str, str, int]]]:
+        return sorted((pd.Timestamp(k[0]).value, pd.Timestamp(k[1]).value, k) for k in keys)
+
+    b_list, a_list = bounds(before - after), bounds(after - before)
+    changed: list[dict[str, Any]] = []
+    paired_b: set[tuple[str, str, int]] = set()
+    paired_a: set[tuple[str, str, int]] = set()
+    # Gaps on one side never overlap each other, so sorted by start they are
+    # also sorted by end: a sweep finds every overlapping pair.
+    j = 0
+    for b_start, b_end, b_key in b_list:
+        while j < len(a_list) and a_list[j][1] < b_start:
+            j += 1
+        k = j
+        while k < len(a_list) and a_list[k][0] <= b_end:
+            a_key = a_list[k][2]
+            changed.append({"before": _gap(b_key), "after": _gap(a_key)})
+            paired_b.add(b_key)
+            paired_a.add(a_key)
+            k += 1
+    return {
+        "resolved": [_gap(k) for _, _, k in b_list if k not in paired_b],
+        "new": [_gap(k) for _, _, k in a_list if k not in paired_a],
+        "changed": changed,
+    }
+
+
 def _compare_series(before: dict[str, Any], after: dict[str, Any]) -> tuple[dict[str, Any], bool]:
     """Changes between two single-series report dicts, and whether ``after`` is worse."""
     changes: dict[str, Any] = {}
@@ -203,14 +245,7 @@ def _compare_series(before: dict[str, Any], after: dict[str, Any]) -> tuple[dict
     a_gaps = {_gap_key(g) for g in after.get("gaps", [])}
     if b_gaps != a_gaps:
         changes["gaps"] = {
-            "resolved": [
-                dict(zip(("start", "end", "missing_count"), g, strict=True)) for g in sorted(b_gaps - a_gaps)
-            ],
-            "new": [
-                dict(zip(("start", "end", "missing_count"), g, strict=True)) for g in sorted(a_gaps - b_gaps)
-            ],
-            # Gaps whose bounds changed (schema 2); filled by overlap matching (P-10).
-            "changed": [],
+            **_match_gaps(b_gaps, a_gaps),
             # Only listed gaps are compared; truncated lists may hide some.
             "lists_truncated": bool(
                 (before.get("truncated") or {}).get("gaps") or (after.get("truncated") or {}).get("gaps")
@@ -255,11 +290,15 @@ def compare_reports(before: ReportLike, after: ReportLike) -> ReportComparison:
 
     For each series, the result lists only what differs: fingerprint and time
     range, counts (rows, expected and missing intervals, gaps, duplicates,
-    completeness) with deltas, flag counts, listed gaps that were resolved or
-    are new, metadata issue codes, and changed parameters or metadata.
-    Gaps are matched exactly, so a gap that shrank appears once as resolved
-    and once (smaller) as new. Only listed gaps are compared; see
-    ``lists_truncated``.
+    completeness) with deltas, flag counts, listed gaps that were resolved,
+    are new or changed, metadata issue codes, and changed parameters or
+    metadata. Gaps are matched by overlap: identical gaps are unchanged and
+    not listed; a gap whose interval overlaps one on the other side with
+    different bounds (it shrank, grew or moved) is listed under ``changed``
+    as a ``{"before": ..., "after": ...}`` pair, once per overlapping pair
+    when a gap was split or merged; ``resolved`` and ``new`` hold only gaps
+    that overlap nothing on the other side. Only listed gaps are compared;
+    see ``lists_truncated``.
 
     ``worse`` is true if, for any series present in both reports, rows were
     flagged more often (``flag_counts["ANY"]``), more intervals are missing,
