@@ -2,8 +2,8 @@
 
 ## 0.2.0 (prepared 2026-10-20, OSS-109)
 
-**Status:** engineering for 0.2.0 is complete once OSS-107 (#99) and OSS-108
-(#100) are on `main`; nothing here is decided. `main` stays at
+**Status:** engineering for 0.2.0 is complete once OSS-108 (#101) is on
+`main`; nothing here is decided. `main` stays at
 `0.2.0.dev0` with the upload guard until the owner decides the items below.
 The 0.1.0 record follows further down and is unchanged.
 
@@ -14,7 +14,7 @@ The 0.1.0 record follows further down and is unchanged.
   keeps the schema-1 definitions unchanged and validates both.
 - `max_gap` (OSS-105, #96), `jump_max_rate` (OSS-106, #97),
   `counter_rollover` with the `COUNTER_ROLLOVER` flag (OSS-107, #99) and
-  overlap matching of gaps in `compare_reports` (OSS-108, #100).
+  overlap matching of gaps in `compare_reports` (OSS-108, #101).
 - New public names: `jump_rate_mask`, `counter_rollover_mask` and the
   Pandera `jump_rate_check`; new keyword-only options on existing functions.
   Nothing removed or renamed. The changelog's `[Unreleased]` section has
