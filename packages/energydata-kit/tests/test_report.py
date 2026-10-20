@@ -36,7 +36,10 @@ def test_report_json_is_deterministic():
     b = assess_quality(defective(), freq="15min").to_json()
     assert a == b
     data = json.loads(a)
-    assert data["schema_version"] == "1"
+    assert data["schema_version"] == "2"
+    # Schema 2 records the new options, off until their steps land (docs/architecture/SCHEMA_2.md).
+    assert {data["parameters"][k] for k in ("max_gap", "jump_max_rate", "counter_rollover")} == {None}
+    assert data["flag_counts"]["COUNTER_ROLLOVER"] == 0
     assert data["gaps"][0] == {
         "start": "2024-01-01T01:15:00+00:00",
         "end": "2024-01-01T01:45:00+00:00",

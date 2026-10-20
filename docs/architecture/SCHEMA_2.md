@@ -1,7 +1,7 @@
 # Report schema 2: design (OSS-103)
 
-**Status:** draft for the owner's review, 2026-10-20. Nothing here is
-implemented. P-7 to P-10 were approved by the owner on 2026-10-20 (see
+**Status:** accepted by the owner on 2026-10-20 (open questions answered
+below). Step 1 is implemented in OSS-104; steps 2 to 5 are not yet. P-7 to P-10 were approved by the owner on 2026-10-20 (see
 `ROADMAP.md`); this note fixes what they change in the report format before
 any code is written, so the format changes once, in 0.2.0.
 
@@ -105,12 +105,10 @@ the format changes only in the first:
 4. **P-9** `counter_rollover` and the new flag.
 5. **P-10** overlap matching in `compare_reports`.
 
-## Open questions for the owner
+## Decisions (owner, 2026-10-20)
 
-1. **Rate period**: `jump_max_rate` as `(delta, period)` (proposed), or a
-   fixed "per hour" number? The pair costs one more argument and avoids a
-   hidden unit.
-2. **Rollover rule**: is "implied increase below `m / 2`" right? A tighter
-   bound (e.g. the caller's `jump_max_delta`) would catch fewer false
-   rollovers but needs both options set.
-3. **Writing schema 1**: confirm that 0.2.0 writes only schema 2.
+1. **Rate period**: `jump_max_rate` is `(delta, period)`, recorded as
+   `[delta, ISO 8601 duration]`.
+2. **Rollover rule**: a rollover when the implied increase `cur + m − prev`
+   is at least `-counter_tolerance` and below `m / 2`.
+3. **Writing schema 1**: not offered; 0.2.0 writes only schema 2.

@@ -8,6 +8,7 @@
   "flag_counts": {
     "ANY": 69,
     "COUNTER_DECREASE": 1,
+    "COUNTER_ROLLOVER": 0,
     "DUPLICATE_TIMESTAMP": 0,
     "JUMP": 0,
     "MISSING_VALUE": 0,
@@ -32,11 +33,14 @@
   "package_version": "*",
   "parameters": {
     "bounds": null,
+    "counter_rollover": null,
     "counter_tolerance": 0.0,
     "cumulative": true,
     "freq": "D",
     "jump_max_delta": null,
+    "jump_max_rate": null,
     "known_outages": [],
+    "max_gap": null,
     "max_listed": 100,
     "origin": null,
     "stale_atol": 0.0,
@@ -44,7 +48,7 @@
     "stale_min_run": null,
     "tz": "Europe/Stockholm"
   },
-  "schema_version": "1",
+  "schema_version": "2",
   "series_name": "kwh",
   "truncated": {
     "duplicate_timestamps": false,

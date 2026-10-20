@@ -32,7 +32,7 @@ from energydata_kit.timestamps import infer_resolution, on_index, utc_ns
 
 __all__ = ["REPORT_SCHEMA_VERSION", "QualityReport", "assess_quality", "fingerprint_series"]
 
-REPORT_SCHEMA_VERSION = "1"
+REPORT_SCHEMA_VERSION = "2"
 
 
 def _iso(ts: pd.Timestamp | None) -> str | None:
@@ -355,6 +355,10 @@ def assess_quality(
             "counter_tolerance": _plain(counter_tolerance),
             "jump_max_delta": _plain(jump_max_delta),
             "known_outages": [[_iso_ns(lo), _iso_ns(hi)] for lo, hi in outages],
+            # Schema 2 (docs/architecture/SCHEMA_2.md); the options come in later steps.
+            "max_gap": None,
+            "jump_max_rate": None,
+            "counter_rollover": None,
         },
         metadata=None if metadata is None else metadata.to_dict(),
         truncated=truncated,

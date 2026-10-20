@@ -51,6 +51,7 @@ class QualityFlag(IntFlag):
     STALE_VALUE = 128  # part of a run of repeated values (opt-in)
     COUNTER_DECREASE = 256  # cumulative counter went down (opt-in)
     JUMP = 512  # change from the previous finite value exceeds a limit (opt-in)
+    COUNTER_ROLLOVER = 1024  # cumulative counter wrapped past its modulus (opt-in; report schema 2)
 
 
 _ALL_BITS = functools.reduce(operator.or_, (m.value for m in QualityFlag), 0)

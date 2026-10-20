@@ -14,6 +14,7 @@
       "flag_counts": {
         "ANY": 65,
         "COUNTER_DECREASE": 0,
+        "COUNTER_ROLLOVER": 0,
         "DUPLICATE_TIMESTAMP": 0,
         "JUMP": 0,
         "MISSING_VALUE": 1,
@@ -70,11 +71,14 @@
           0,
           110
         ],
+        "counter_rollover": null,
         "counter_tolerance": 0.0,
         "cumulative": false,
         "freq": "P0DT0H15M0S",
         "jump_max_delta": null,
+        "jump_max_rate": null,
         "known_outages": [],
+        "max_gap": null,
         "max_listed": 100,
         "origin": null,
         "stale_atol": 0.0,
@@ -82,7 +86,7 @@
         "stale_min_run": null,
         "tz": null
       },
-      "schema_version": "1",
+      "schema_version": "2",
       "series_name": "a",
       "truncated": {
         "duplicate_timestamps": false,
@@ -100,6 +104,7 @@
       "flag_counts": {
         "ANY": 0,
         "COUNTER_DECREASE": 0,
+        "COUNTER_ROLLOVER": 0,
         "DUPLICATE_TIMESTAMP": 0,
         "JUMP": 0,
         "MISSING_VALUE": 0,
@@ -153,11 +158,14 @@
       "package_version": "*",
       "parameters": {
         "bounds": null,
+        "counter_rollover": null,
         "counter_tolerance": 0.0,
         "cumulative": false,
         "freq": "P0DT0H15M0S",
         "jump_max_delta": null,
+        "jump_max_rate": null,
         "known_outages": [],
+        "max_gap": null,
         "max_listed": 100,
         "origin": null,
         "stale_atol": 0.0,
@@ -165,7 +173,7 @@
         "stale_min_run": null,
         "tz": null
       },
-      "schema_version": "1",
+      "schema_version": "2",
       "series_name": "b",
       "truncated": {
         "duplicate_timestamps": false,
@@ -176,7 +184,7 @@
   },
   "fingerprint": "67f30536966f543aefb8f7db8034b4777ebf1fc5d5bb6db238ff2355998ba3d9",
   "package_version": "*",
-  "schema_version": "1",
+  "schema_version": "2",
   "summary": {
     "a": {
       "completeness": 0.980263,

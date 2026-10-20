@@ -17,6 +17,9 @@ from energydata_kit import __version__
 from energydata_kit.frame_report import FrameQualityReport
 from energydata_kit.report import REPORT_SCHEMA_VERSION, QualityReport
 
+# Report schemas this package can read; comparisons are always written as the current one.
+_READABLE_SCHEMAS = ("1", REPORT_SCHEMA_VERSION)
+
 __all__ = ["ReportComparison", "compare_reports"]
 
 _COUNTS = (
@@ -186,10 +189,12 @@ def _compare_series(before: dict[str, Any], after: dict[str, Any]) -> tuple[dict
         changes["counts"] = counts
 
     b_flags, a_flags = before.get("flag_counts", {}), after.get("flag_counts", {})
+    # A flag one side does not report (a schema-1 report has no COUNTER_ROLLOVER) is not
+    # compared: a missing count is unknown, not zero.
     flags = {
-        name: _pair(b_flags.get(name, 0), a_flags.get(name, 0))
-        for name in sorted(set(b_flags) | set(a_flags))
-        if b_flags.get(name, 0) != a_flags.get(name, 0)
+        name: _pair(b_flags[name], a_flags[name])
+        for name in sorted(set(b_flags) & set(a_flags))
+        if b_flags[name] != a_flags[name]
     }
     if flags:
         changes["flag_counts"] = flags
@@ -204,6 +209,8 @@ def _compare_series(before: dict[str, Any], after: dict[str, Any]) -> tuple[dict
             "new": [
                 dict(zip(("start", "end", "missing_count"), g, strict=True)) for g in sorted(a_gaps - b_gaps)
             ],
+            # Gaps whose bounds changed (schema 2); filled by overlap matching (P-10).
+            "changed": [],
             # Only listed gaps are compared; truncated lists may hide some.
             "lists_truncated": bool(
                 (before.get("truncated") or {}).get("gaps") or (after.get("truncated") or {}).get("gaps")
@@ -236,7 +243,12 @@ def _compare_series(before: dict[str, Any], after: dict[str, Any]) -> tuple[dict
 
 
 def compare_reports(before: ReportLike, after: ReportLike) -> ReportComparison:
-    """Compare two reports of the same kind and report schema.
+    """Compare two reports of the same kind.
+
+    Reports of schema 1 (energydata-kit 0.1.0) and 2 can be compared, also
+    with each other; the comparison is written as schema 2. A flag count
+    only one side reports (``COUNTER_ROLLOVER`` is new in schema 2) is not
+    compared, and parameters a schema-1 report lacks read as ``None``.
 
     Single-series reports are compared directly. Frame reports are compared
     column by column; added and removed columns are listed.
@@ -254,17 +266,17 @@ def compare_reports(before: ReportLike, after: ReportLike) -> ReportComparison:
     or completeness fell. A removed column does not count as worse; check
     ``columns_removed``.
 
-    Raises ``ValueError`` for a different ``schema_version``, for a
+    Raises ``ValueError`` for another ``schema_version``, for a
     single-series report against a frame report, and for input that lacks
     the report fields the comparison reads (e.g. a saved comparison, or a
     hand-edited report); the message names the first bad field.
     """
     b, a = _as_dict(before), _as_dict(after)
     for side, data in (("before", b), ("after", a)):
-        if data.get("schema_version") != REPORT_SCHEMA_VERSION:
+        if data.get("schema_version") not in _READABLE_SCHEMAS:
             raise ValueError(
                 f"{side} report has schema_version {data.get('schema_version')!r}; "
-                f"this package compares schema {REPORT_SCHEMA_VERSION}"
+                f"this package compares schemas {', '.join(_READABLE_SCHEMAS)}"
             )
         _check_report(data, side)
     b_frame, a_frame = "columns" in b, "columns" in a

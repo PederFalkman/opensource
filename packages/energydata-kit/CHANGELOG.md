@@ -5,6 +5,20 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- **Report schema 2.** Reports, frame reports and comparisons now carry
+  `"schema_version": "2"`. Schema 2 only adds fields: the parameters
+  `max_gap`, `jump_max_rate` and `counter_rollover` (all `null` until their
+  options arrive), the flag count `COUNTER_ROLLOVER`, and `changed` in a
+  comparison's gap section. `report_schema.json` validates schemas 1 and 2.
+- `compare_reports` compares schema-1 (0.1.0) and schema-2 reports, also
+  with each other, and writes schema 2. A flag count only one side reports
+  is no longer compared as 0 against the other.
+
+### Added
+- `QualityFlag.COUNTER_ROLLOVER` (1024), reserved for counter rollovers; no
+  check sets it yet.
+
 ## [0.1.0] - 2026-10-19
 
 First release: quality checks for metered energy time series, on top of

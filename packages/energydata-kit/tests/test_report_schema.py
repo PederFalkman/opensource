@@ -28,15 +28,36 @@ def _errors(data):
     return [e.message for e in VALIDATOR.iter_errors(data)]
 
 
-def test_schema_is_valid_and_describes_schema_1():
+def test_schema_is_valid_and_describes_schemas_1_and_2():
     jsonschema.Draft202012Validator.check_schema(SCHEMA)
-    assert ek.QualityReport.__dataclass_fields__["schema_version"].default == "1"
-    assert SCHEMA["$id"].endswith("report-schema-1.json")
+    assert ek.QualityReport.__dataclass_fields__["schema_version"].default == "2"
+    assert SCHEMA["$id"].endswith("report-schema-2.json")
 
 
 @pytest.mark.parametrize("name", ["single.json", "counter_local_day.json", "frame.json", "compare.json"])
 def test_golden_reports_validate(name):
     assert _errors(json.loads((GOLDEN / name).read_text(encoding="utf-8"))) == []
+
+
+@pytest.mark.parametrize("name", ["single.json", "counter_local_day.json", "frame.json", "compare.json"])
+def test_schema_1_reports_still_validate(name):
+    # Written by energydata-kit 0.1.0 (tests/golden/schema1/): schema 1 is frozen.
+    assert _errors(json.loads((GOLDEN / "schema1" / name).read_text(encoding="utf-8"))) == []
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        lambda d: d.update(schema_version="1"),  # schema-2 fields under a schema-1 version
+        lambda d: d["parameters"].pop("max_gap"),
+        lambda d: d["flag_counts"].pop("COUNTER_ROLLOVER"),
+        lambda d: d["parameters"].update(jump_max_rate=[50.0]),
+    ],
+)
+def test_schema_2_fields_are_required_and_typed(change):
+    data = json.loads((GOLDEN / "single.json").read_text(encoding="utf-8"))
+    change(data)
+    assert _errors(data)
 
 
 def _variants():
@@ -90,7 +111,7 @@ def test_generated_reports_validate(name):
 @pytest.mark.parametrize(
     "change",
     [
-        lambda d: d.update(schema_version="2"),
+        lambda d: d.update(schema_version="3"),
         lambda d: d.update(flag_counts="many"),
         lambda d: d.update(unexpected=1),
         lambda d: d.pop("fingerprint"),

@@ -133,9 +133,10 @@ option.
 
 ## Report format
 
-Reports, frame reports and comparisons are JSON with `"schema_version": "1"`.
-The package ships a [JSON Schema](https://json-schema.org) (draft 2020-12)
-for all three, so tools in any language can validate them:
+Reports, frame reports and comparisons are JSON with `"schema_version": "2"`
+(energydata-kit 0.1.0 wrote `"1"`). The package ships a
+[JSON Schema](https://json-schema.org) (draft 2020-12) for all three, in both
+schema versions, so tools in any language can validate them:
 
 ```python
 import json
@@ -145,8 +146,11 @@ schema = json.loads(resources.files("energydata_kit").joinpath("report_schema.js
 ```
 
 The test suite validates every golden report against it, so the schema and
-the code cannot drift apart. Schema 1 is fixed from the 0.1.0 release on;
-after that, a new field or a changed one means schema 2.
+the code cannot drift apart. Schema 1 is frozen: 0.1.0 reports keep
+validating, and `compare_reports` compares them with schema-2 reports (a
+count only one side reports, such as `COUNTER_ROLLOVER`, is not compared).
+Schema 2 only adds fields; the repository's `docs/architecture/SCHEMA_2.md`
+lists them. A further change means schema 3.
 
 ## Design rules
 
@@ -181,6 +185,7 @@ after that, a new field or a changed one means schema 2.
 | 128 | `STALE_VALUE` | Part of a run of at least `stale_min_run` repeated values (opt-in; tune with `stale_atol`, `stale_exclude`) |
 | 256 | `COUNTER_DECREASE` | Cumulative counter fell below its previous value (`cumulative=True`, opt-in; tune with `counter_tolerance`) |
 | 512 | `JUMP` | Changed by more than `jump_max_delta` from the previous finite value (opt-in) |
+| 1024 | `COUNTER_ROLLOVER` | Cumulative counter wrapped past its modulus (reserved in 0.2.0 development; set once `counter_rollover` lands) |
 
 Flag values are part of the public API and will not be renumbered.
 

@@ -1,0 +1,224 @@
+{
+  "column_order": [
+    "a",
+    "b"
+  ],
+  "columns": {
+    "a": {
+      "completeness": 0.980263,
+      "completeness_excluding_outages": null,
+      "duplicate_timestamps": [],
+      "expected_resolution": "P0DT0H15M0S",
+      "fingerprint": "483721ec54abc67bc2fd83b5b5d63d1c7eee077a6d6e1f2055fd525df853a8e7",
+      "first_timestamp": "2024-03-30T00:00:00+00:00",
+      "flag_counts": {
+        "ANY": 65,
+        "COUNTER_DECREASE": 0,
+        "DUPLICATE_TIMESTAMP": 0,
+        "JUMP": 0,
+        "MISSING_VALUE": 1,
+        "NON_FINITE": 1,
+        "NON_NUMERIC": 0,
+        "OFF_GRID_TIMESTAMP": 0,
+        "OUT_OF_BOUNDS": 63,
+        "STALE_VALUE": 0
+      },
+      "gaps": [
+        {
+          "end": "2024-03-30T01:30:00+00:00",
+          "missing_count": 2,
+          "start": "2024-03-30T01:15:00+00:00"
+        },
+        {
+          "end": "2024-03-31T01:00:00+00:00",
+          "missing_count": 1,
+          "start": "2024-03-31T01:00:00+00:00"
+        }
+      ],
+      "inferred_resolution": "P0DT0H15M0S",
+      "last_timestamp": "2024-03-31T13:45:00+00:00",
+      "local_days": {
+        "incomplete_days": [
+          {
+            "date": "2024-03-30",
+            "expected": 96,
+            "present": 94
+          },
+          {
+            "date": "2024-03-31",
+            "expected": 96,
+            "present": 55
+          }
+        ],
+        "min_completeness": 0.572917,
+        "n_complete_days": 0,
+        "n_days": 2,
+        "n_incomplete_days": 2,
+        "timezone": "UTC"
+      },
+      "metadata": null,
+      "metadata_issues": [],
+      "n_duplicate_timestamps": 0,
+      "n_expected_intervals": 152,
+      "n_gaps": 2,
+      "n_missing_explained": 0,
+      "n_missing_intervals": 3,
+      "n_rows": 149,
+      "package_version": "*",
+      "parameters": {
+        "bounds": [
+          0,
+          110
+        ],
+        "counter_tolerance": 0.0,
+        "cumulative": false,
+        "freq": "P0DT0H15M0S",
+        "jump_max_delta": null,
+        "known_outages": [],
+        "max_listed": 100,
+        "origin": null,
+        "stale_atol": 0.0,
+        "stale_exclude": [],
+        "stale_min_run": null,
+        "tz": null
+      },
+      "schema_version": "1",
+      "series_name": "a",
+      "truncated": {
+        "duplicate_timestamps": false,
+        "gaps": false,
+        "incomplete_local_days": false
+      }
+    },
+    "b": {
+      "completeness": 0.980263,
+      "completeness_excluding_outages": null,
+      "duplicate_timestamps": [],
+      "expected_resolution": "P0DT0H15M0S",
+      "fingerprint": "366c043b674c27ffbcfb5c88a1968b60e3d716bd2587043643900abfd28e28fa",
+      "first_timestamp": "2024-03-30T00:00:00+00:00",
+      "flag_counts": {
+        "ANY": 0,
+        "COUNTER_DECREASE": 0,
+        "DUPLICATE_TIMESTAMP": 0,
+        "JUMP": 0,
+        "MISSING_VALUE": 0,
+        "NON_FINITE": 0,
+        "NON_NUMERIC": 0,
+        "OFF_GRID_TIMESTAMP": 0,
+        "OUT_OF_BOUNDS": 0,
+        "STALE_VALUE": 0
+      },
+      "gaps": [
+        {
+          "end": "2024-03-30T01:30:00+00:00",
+          "missing_count": 2,
+          "start": "2024-03-30T01:15:00+00:00"
+        },
+        {
+          "end": "2024-03-31T01:00:00+00:00",
+          "missing_count": 1,
+          "start": "2024-03-31T01:00:00+00:00"
+        }
+      ],
+      "inferred_resolution": "P0DT0H15M0S",
+      "last_timestamp": "2024-03-31T13:45:00+00:00",
+      "local_days": {
+        "incomplete_days": [
+          {
+            "date": "2024-03-30",
+            "expected": 96,
+            "present": 94
+          },
+          {
+            "date": "2024-03-31",
+            "expected": 96,
+            "present": 55
+          }
+        ],
+        "min_completeness": 0.572917,
+        "n_complete_days": 0,
+        "n_days": 2,
+        "n_incomplete_days": 2,
+        "timezone": "UTC"
+      },
+      "metadata": null,
+      "metadata_issues": [],
+      "n_duplicate_timestamps": 0,
+      "n_expected_intervals": 152,
+      "n_gaps": 2,
+      "n_missing_explained": 0,
+      "n_missing_intervals": 3,
+      "n_rows": 149,
+      "package_version": "*",
+      "parameters": {
+        "bounds": null,
+        "counter_tolerance": 0.0,
+        "cumulative": false,
+        "freq": "P0DT0H15M0S",
+        "jump_max_delta": null,
+        "known_outages": [],
+        "max_listed": 100,
+        "origin": null,
+        "stale_atol": 0.0,
+        "stale_exclude": [],
+        "stale_min_run": null,
+        "tz": null
+      },
+      "schema_version": "1",
+      "series_name": "b",
+      "truncated": {
+        "duplicate_timestamps": false,
+        "gaps": false,
+        "incomplete_local_days": false
+      }
+    }
+  },
+  "fingerprint": "67f30536966f543aefb8f7db8034b4777ebf1fc5d5bb6db238ff2355998ba3d9",
+  "package_version": "*",
+  "schema_version": "1",
+  "summary": {
+    "a": {
+      "completeness": 0.980263,
+      "n_flagged_rows": 65,
+      "n_metadata_issues": 0,
+      "n_missing_intervals": 3
+    },
+    "b": {
+      "completeness": 0.980263,
+      "n_flagged_rows": 0,
+      "n_metadata_issues": 0,
+      "n_missing_intervals": 3
+    }
+  },
+  "timestamps": {
+    "completeness": 0.980263,
+    "completeness_excluding_outages": null,
+    "duplicate_timestamps": [],
+    "expected_resolution": "P0DT0H15M0S",
+    "first_timestamp": "2024-03-30T00:00:00+00:00",
+    "gaps": [
+      {
+        "end": "2024-03-30T01:30:00+00:00",
+        "missing_count": 2,
+        "start": "2024-03-30T01:15:00+00:00"
+      },
+      {
+        "end": "2024-03-31T01:00:00+00:00",
+        "missing_count": 1,
+        "start": "2024-03-31T01:00:00+00:00"
+      }
+    ],
+    "last_timestamp": "2024-03-31T13:45:00+00:00",
+    "n_duplicate_timestamps": 0,
+    "n_expected_intervals": 152,
+    "n_gaps": 2,
+    "n_missing_explained": 0,
+    "n_missing_intervals": 3,
+    "n_rows": 149,
+    "truncated": {
+      "duplicate_timestamps": false,
+      "gaps": false
+    }
+  }
+}
