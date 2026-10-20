@@ -6,21 +6,21 @@ Merged items stay listed here as a record of what was agreed.
 
 ## Open decisions (owners required)
 
-Questions and evidence for each: `docs/governance/RELEASE_DECISIONS.md`.
-Engineering for 0.1.0 is complete; the release waits only on these.
+Questions and evidence for each: `docs/governance/RELEASE_DECISIONS.md`,
+section "0.2.0". 0.1.0 was released on 2026-10-19 as a GitHub release only
+(D1 to D4 and D6 decided; the record is kept there). Engineering for 0.2.0
+is complete once #101 merges; its release waits only on these.
 
-- [ ] **D1 Repository visibility.** The repo is public and, since #66,
-      Apache-2.0 licensed; decide whether it stays public while G1 and G3
-      are open.
-- [ ] **D2 Ownership (G1).** Counsel confirms the publishing entity owns the
-      code and can license it (and confirms the G4 licence table).
-- [x] **D3 Licence (G2).** Apache-2.0, granted 2026-10-18 (#66).
-- [ ] **D4 IP boundary review (G3).** A signed review on the release commit.
+- [ ] **G1 for 0.2.0.** Does counsel's ownership confirmation (D2) cover
+      the code added since 0.1.0?
+- [ ] **G3 for 0.2.0.** The technical lead's IP-boundary sign-off on the
+      diff from 0.1.0 (`827a2df`) to the release commit.
+- [ ] **G4 for 0.2.0.** No dependency changed; is the 0.1.0 position enough?
+- [ ] **D6 for 0.2.0 (G7).** GitHub release only again, or an index? The
+      owner's approval line must name `energydata-kit 0.2.0` (OSS-98).
 - [ ] **D5 Branch protection on `main`** (not a gate): require CI and
       code-owner review.
-- [ ] **D6 Publication (G7).** PyPI or GitHub-only, the name, the account
-      owner; approval removes the upload guard, the readiness check's only
-      remaining failure.
+- [x] **D3 Licence (G2).** Apache-2.0, granted 2026-10-18 (#66).
 - [x] **Pin GitHub Actions to commit SHAs.** Done in OSS-06.
 
 ## Deferred
@@ -1055,7 +1055,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `COUNTER_ROLLOVER`; off by default, so the golden reports are
       unchanged.
 
-### OSS-108: report schema 2, step 5 (P-10 overlap matching) — this change (reviewed in [#100](https://github.com/PederFalkman/opensource/pull/100), which merged into the OSS-107 branch instead of `main`)
+### OSS-108: report schema 2, step 5 (P-10 overlap matching) — in [#101](https://github.com/PederFalkman/opensource/pull/101) (reviewed in [#100](https://github.com/PederFalkman/opensource/pull/100), which merged into the OSS-107 branch instead of `main`)
 
 - [x] `compare_reports` matches listed gaps by overlap (intervals of
       missing timestamps, both ends included): exact matches stay
@@ -1068,6 +1068,19 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] The comparison golden file is regenerated: its two shrunk/grown
       gaps move from resolved + new to `changed`; nothing else differs.
       Report schema 2 is now complete (`SCHEMA_2.md`, steps 1 to 5).
+
+### OSS-109: prepare the 0.2.0 release — this change
+
+- [x] `RELEASE_DECISIONS.md` gains a 0.2.0 section: what the release
+      contains, what did not change since 0.1.0 (no dependency, extra or
+      data file), and the open questions per gate (G1, G3, G4, D6). It
+      decides nothing; the 0.1.0 record is kept below it.
+- [x] Changelog `[Unreleased]` reads as release notes: a summary and what
+      changes for 0.1.0 users (schema version, `gaps.changed`, the
+      summary line). Version stays `0.2.0.dev0`; the upload guard stays.
+- [x] `examples/GUIDE.md` shows `jump_max_rate`, `max_gap`,
+      `counter_rollover` and changed gaps, executed by the test suite.
+- [x] "Open decisions" above now lists the 0.2.0 questions.
 
 ## Explicitly not planned
 

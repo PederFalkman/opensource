@@ -203,7 +203,7 @@ assert [ek.decode_flags(f) for f in flags] == [
     ["STALE_VALUE"],
     ["OK"],
     ["OK"],
-    ["COUNTER_DECREASE"],  # a reset or a rollover; the caller decides which
+    ["COUNTER_DECREASE"],  # a reset or a rollover: see counter_rollover below
     ["OK"],
 ]
 ```
@@ -237,6 +237,73 @@ power = pd.Series(
 flags = ek.flag_series(power, jump_max_delta=50)[ek.FLAG_COLUMN]
 assert [ek.decode_flags(f) for f in flags] == [["OK"], ["OK"], ["JUMP"], ["JUMP"], ["OK"]]
 ```
+
+An absolute limit suits one resolution. `jump_max_rate=(delta, period)`
+scales the limit by the time since the previous valid value instead, so a
+normal ramp across a gap is not a jump. Here 20 kW per hour allows 5 kW
+between quarter-hours and 60 kW over three hours:
+
+```python
+ramp = pd.Series(
+    [0.0, 5.0, 10.0, 70.0, 95.0],
+    index=pd.DatetimeIndex(
+        [
+            "2024-01-01T00:00Z",
+            "2024-01-01T00:15Z",
+            "2024-01-01T00:30Z",
+            "2024-01-01T03:30Z",
+            "2024-01-01T03:45Z",
+        ]
+    ),
+)
+flags = ek.flag_series(ramp, jump_max_rate=(20, "1h"))[ek.FLAG_COLUMN]
+assert [ek.decode_flags(f) for f in flags] == [["OK"]] * 4 + [["JUMP"]]  # +25 in 15 minutes
+assert ek.flag_series(ramp, jump_max_delta=50)[ek.FLAG_COLUMN].tolist()[3] == ek.QualityFlag.JUMP
+```
+
+These checks compare consecutive rows however far apart they are. With
+`max_gap`, rows further apart are not compared: a flat line before and after
+an outage is two runs, and a counter drop or jump across it is not flagged.
+
+```python
+outage = pd.Series(
+    [5.0, 5.0, 5.0, 5.0, 5.0],
+    index=pd.DatetimeIndex(
+        [
+            "2024-01-01T00:00Z",
+            "2024-01-01T01:00Z",
+            "2024-01-01T02:00Z",
+            "2024-01-01T09:00Z",
+            "2024-01-01T10:00Z",
+        ]
+    ),
+)
+assert (ek.flag_series(outage, stale_min_run=4)[ek.FLAG_COLUMN] != 0).all()
+assert (ek.flag_series(outage, stale_min_run=4, max_gap="1h")[ek.FLAG_COLUMN] == 0).all()
+```
+
+A register that wraps past its size looks like a decrease. If you know the
+size (the modulus), pass it as `counter_rollover`: a drop that wraps past it,
+by less than half the modulus, is flagged `COUNTER_ROLLOVER` instead. A reset
+stays `COUNTER_DECREASE`. The package never guesses a modulus.
+
+```python
+register = pd.Series(
+    [999_980.0, 999_990.0, 10.0, 500_000.0, 0.0],
+    index=pd.date_range("2024-01-01", periods=5, freq="1h", tz="UTC"),
+)
+flags = ek.flag_series(register, cumulative=True, counter_rollover=1_000_000)[ek.FLAG_COLUMN]
+assert [ek.decode_flags(f) for f in flags] == [
+    ["OK"],
+    ["OK"],
+    ["COUNTER_ROLLOVER"],  # 999 990 -> 10 wraps: +20
+    ["OK"],
+    ["COUNTER_DECREASE"],  # 500 000 -> 0 is a reset
+]
+```
+
+Reports record these options (`max_gap` as an ISO 8601 duration,
+`jump_max_rate` as `[delta, duration]`), so a report states how it was made.
 
 ## 8. Reproducible reports
 
@@ -393,6 +460,21 @@ assert "NON_FINITE" not in changes["changes"][""].get("flag_counts", {})  # unch
 # The same comparison in Python, from saved files or report objects:
 again = ek.compare_reports(report, json.loads(Path("fixed.json").read_text()))
 assert again.to_dict() == changes
+```
+
+Gaps are matched by overlap: a gap that shrank, grew or moved is listed under
+`changed` with its bounds before and after, not as one resolved and one new
+gap.
+
+```python
+def gap_report(drop):
+    return ek.assess_quality(ek.make_synthetic_series(periods=24, drop=drop), freq="15min")
+
+
+gaps = ek.compare_reports(gap_report([10]), gap_report([9, 10, 11])).changes[""]["gaps"]
+assert gaps["resolved"] == [] and gaps["new"] == []
+[pair] = gaps["changed"]
+assert (pair["before"]["missing_count"], pair["after"]["missing_count"]) == (1, 3)
 ```
 
 For a person reading in a terminal, `--format text` prints a short summary
