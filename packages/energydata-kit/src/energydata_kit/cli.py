@@ -56,6 +56,17 @@ def _bound(text: str) -> float | None:
         raise argparse.ArgumentTypeError(f"bound must be a number or 'none', got {text!r}") from exc
 
 
+def _rate_option(pair: list[str] | None) -> tuple[float, str] | None:
+    # Only DELTA is read here; PERIOD is checked with the other options, with the same messages.
+    if pair is None:
+        return None
+    delta, period = pair
+    try:
+        return float(delta), period
+    except ValueError as exc:
+        raise CliError(f"--jump-max-rate DELTA must be a number, got {delta!r}") from exc
+
+
 def _positive_int(text: str) -> int:
     value = int(text)
     if value < 0:
@@ -152,6 +163,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     checks.add_argument(
         "--jump-max-delta", type=float, help="flag changes larger than this from the previous value"
+    )
+    checks.add_argument(
+        "--jump-max-rate",
+        nargs=2,
+        metavar=("DELTA", "PERIOD"),
+        help="flag changes faster than DELTA per PERIOD since the previous value, e.g. 50 1h",
     )
     checks.add_argument(
         "--max-gap",
@@ -408,6 +425,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
             "with --unit; pass --unit too (for the grid step alone, use --freq)"
         )
     args.schema_metadata = _load_schema(args.schema) if args.schema else {}
+    args.jump_max_rate = _rate_option(args.jump_max_rate)
 
     frame = _read_frame(args, stdin)
     origin = None if args.origin is None else pd.Timestamp(args.origin)
@@ -428,6 +446,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
         cumulative=args.cumulative,
         counter_tolerance=args.counter_tolerance,
         jump_max_delta=args.jump_max_delta,
+        jump_max_rate=args.jump_max_rate,
         max_gap=args.max_gap,
         origin=origin,
         tz=args.tz,
@@ -449,6 +468,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
             cumulative=args.cumulative,
             counter_tolerance=args.counter_tolerance,
             jump_max_delta=args.jump_max_delta,
+            jump_max_rate=args.jump_max_rate,
             max_gap=args.max_gap,
             origin=origin,
             tz=tz,
@@ -590,6 +610,7 @@ def _run_frame_report(
         "cumulative": args.cumulative,
         "counter_tolerance": args.counter_tolerance,
         "jump_max_delta": args.jump_max_delta,
+        "jump_max_rate": args.jump_max_rate,
         "max_gap": args.max_gap,
     }
     report = assess_frame(

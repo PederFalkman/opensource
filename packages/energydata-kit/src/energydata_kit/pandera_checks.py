@@ -29,8 +29,11 @@ except ImportError as exc:  # pragma: no cover - exercised only without the extr
 from energydata_kit.flags import (
     _bounds,
     _check_options,
+    _max_gap,
+    _rate,
     counter_decrease_mask,
     jump_mask,
+    jump_rate_mask,
     non_finite_mask,
     non_numeric_mask,
     out_of_bounds_mask,
@@ -44,6 +47,7 @@ __all__ = [
     "counter_check",
     "finite_check",
     "jump_check",
+    "jump_rate_check",
     "no_duplicate_timestamps_check",
     "no_missing_intervals_check",
     "on_grid_check",
@@ -231,6 +235,24 @@ def jump_check(max_delta: float, *, max_gap: str | pd.Timedelta | None = None) -
     )
 
 
+def jump_rate_check(
+    max_rate: tuple[float, str | pd.Timedelta], *, max_gap: str | pd.Timedelta | None = None
+) -> pa.Check:
+    """No change faster than ``max_rate`` = ``(delta, period)`` since the previous finite value.
+
+    See :func:`energydata_kit.jump_rate_mask`: the limit is ``delta`` per
+    ``period``, scaled by the time between the two values.
+    """
+    _rate(max_rate)  # validate now; the mask itself needs timestamps
+    _max_gap(max_gap)
+    return pa.Check(
+        lambda s: pd.Series(~jump_rate_mask(_in_time_order(s), max_rate, max_gap=max_gap), index=s.index),
+        name=_PREFIX + "no_jumps_by_rate",
+        error=f"changes faster than {max_rate[0]} per {max_rate[1]} between consecutive values",
+        ignore_na=False,
+    )
+
+
 def series_schema(
     *,
     metadata: MeasurementMetadata | None = None,
@@ -242,6 +264,7 @@ def series_schema(
     cumulative: bool = False,
     counter_tolerance: float = 0.0,
     jump_max_delta: float | None = None,
+    jump_max_rate: tuple[float, str | pd.Timedelta] | None = None,
     max_gap: str | pd.Timedelta | None = None,
     origin: pd.Timestamp | None = None,
     tz: str | None = None,
@@ -254,7 +277,14 @@ def series_schema(
     grid checks are left out. The schema name is ``metadata.name`` if given.
     """
     _check_options(
-        stale_min_run, stale_atol, stale_exclude, cumulative, counter_tolerance, jump_max_delta, max_gap
+        stale_min_run,
+        stale_atol,
+        stale_exclude,
+        cumulative,
+        counter_tolerance,
+        jump_max_delta,
+        max_gap,
+        jump_max_rate,
     )
     freq, tz = _grid_from_metadata(freq, tz, metadata)
     index_checks = [timezone_aware_check(), no_duplicate_timestamps_check()]
@@ -275,6 +305,8 @@ def series_schema(
         value_checks.append(counter_check(tolerance=counter_tolerance, max_gap=max_gap))
     if jump_max_delta is not None:
         value_checks.append(jump_check(jump_max_delta, max_gap=max_gap))
+    if jump_max_rate is not None:
+        value_checks.append(jump_rate_check(jump_max_rate, max_gap=max_gap))
     return pa.SeriesSchema(
         checks=index_checks + value_checks,
         nullable=nullable,

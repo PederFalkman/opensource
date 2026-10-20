@@ -27,6 +27,7 @@ __all__ = [
     "decode_flags",
     "flag_series",
     "jump_mask",
+    "jump_rate_mask",
     "missing_value_mask",
     "non_finite_mask",
     "non_numeric_mask",
@@ -115,19 +116,37 @@ def _bounds(bounds: object) -> tuple[Any, Any]:
     return lower, upper
 
 
-def _max_gap(max_gap: object) -> pd.Timedelta | None:
-    """``max_gap`` as a positive ``Timedelta``, or ``None``; a bare number is refused (no unit)."""
-    if max_gap is None:
-        return None
-    if isinstance(max_gap, bool | np.bool_ | numbers.Number):
-        raise TypeError(f"max_gap must be a duration such as '1h' or a Timedelta, got {max_gap!r}")
+def _duration(value: object, name: str) -> pd.Timedelta:
+    """``value`` as a positive ``Timedelta``; a bare number is refused (no unit)."""
+    if isinstance(value, bool | np.bool_ | numbers.Number):
+        raise TypeError(f"{name} must be a duration such as '1h' or a Timedelta, got {value!r}")
     try:
-        gap = pd.Timedelta(max_gap)  # type: ignore[arg-type]
+        td = pd.Timedelta(value)  # type: ignore[arg-type]
     except (TypeError, ValueError) as exc:
-        raise ValueError(f"max_gap must be a duration such as '1h', got {max_gap!r}") from exc
-    if pd.isna(gap) or gap <= pd.Timedelta(0):
-        raise ValueError(f"max_gap must be a positive duration, got {max_gap!r}")
-    return gap
+        raise ValueError(f"{name} must be a duration such as '1h', got {value!r}") from exc
+    if pd.isna(td) or td <= pd.Timedelta(0):
+        raise ValueError(f"{name} must be a positive duration, got {value!r}")
+    return td
+
+
+def _max_gap(max_gap: object) -> pd.Timedelta | None:
+    """``max_gap`` as a positive ``Timedelta``, or ``None``."""
+    return None if max_gap is None else _duration(max_gap, "max_gap")
+
+
+def _max_rate(max_rate: object) -> tuple[float, pd.Timedelta] | None:
+    """``jump_max_rate`` as ``(delta, period)``, or ``None``."""
+    return None if max_rate is None else _rate(max_rate)
+
+
+def _rate(max_rate: object) -> tuple[float, pd.Timedelta]:
+    """``max_rate`` as ``(delta, period)``: a finite ``delta > 0`` per a positive duration."""
+    if not isinstance(max_rate, tuple | list) or len(max_rate) != 2:
+        raise TypeError(f"max_rate must be a pair (delta, period) such as (50.0, '1h'), got {max_rate!r}")
+    delta, period = max_rate
+    if not np.isfinite(_number(delta, "max_rate delta")) or delta <= 0:
+        raise ValueError(f"max_rate delta must be a finite number > 0, got {delta!r}")
+    return float(delta), _duration(period, "max_rate period")
 
 
 def _times_ns(values: object, n: int) -> np.ndarray:
@@ -306,6 +325,48 @@ def jump_mask(
     return np.asarray(finite & previous.notna() & ((v - previous).abs() > max_delta) & near, dtype=bool)
 
 
+def jump_rate_mask(
+    values: pd.Series,
+    max_rate: tuple[float, str | pd.Timedelta],
+    *,
+    max_gap: str | pd.Timedelta | None = None,
+) -> np.ndarray:
+    """True where a value changes faster than ``max_rate`` since the previous finite value.
+
+    ``max_rate`` is ``(delta, period)``, e.g. ``(50.0, "1h")`` for 50 per
+    hour: a row is flagged when ``|change| > delta * elapsed / period``,
+    where ``elapsed`` is the time since the last finite value before it.
+    Unlike :func:`jump_mask`, the limit grows with the time between rows, so
+    a normal ramp across a gap is not a jump and one limit fits any
+    resolution. Missing and non-finite values are skipped, never flagged;
+    rows with the same timestamp as that value (duplicates) are not compared.
+    With ``max_gap``, a value is not compared with one more than ``max_gap``
+    earlier. The rate is supplied by the caller in the data's own unit; the
+    package ships no domain limits. ``values`` must be a Series with a
+    ``DatetimeIndex``.
+    """
+    delta, period = _rate(max_rate)
+    gap = _max_gap(max_gap)
+    v = _numeric(_as_series(values)).to_numpy()
+    if v.size == 0:
+        return np.zeros(0, dtype=bool)
+    times = _times_ns(values, v.size)
+    finite = np.isfinite(v)
+    filled = np.where(finite, v, 0.0)  # avoid inf - inf
+    # Position of the last finite value before each row (-1: none). Integer
+    # nanoseconds keep the elapsed time exact.
+    positions = np.where(finite, np.arange(v.size), -1)
+    previous = np.full(v.size, -1)
+    previous[1:] = np.maximum.accumulate(positions)[:-1]
+    compared = finite & (previous >= 0)
+    p = np.where(compared, previous, 0)
+    elapsed = times - times[p]
+    mask = compared & (elapsed > 0) & (np.abs(filled - filled[p]) > delta * (elapsed / period.value))
+    if gap is not None:
+        mask &= elapsed <= gap.value
+    return np.asarray(mask, dtype=bool)
+
+
 def _check_options(
     stale_min_run: int | None,
     stale_atol: float,
@@ -314,6 +375,7 @@ def _check_options(
     counter_tolerance: float,
     jump_max_delta: float | None = None,
     max_gap: object = None,
+    jump_max_rate: object = None,
 ) -> None:
     """Reject a non-boolean ``cumulative`` and fine-tuning options given without the check they tune."""
     if not isinstance(cumulative, bool | np.bool_):
@@ -322,8 +384,10 @@ def _check_options(
         raise ValueError("stale_atol and stale_exclude require stale_min_run")
     if not cumulative and counter_tolerance:
         raise ValueError("counter_tolerance requires cumulative=True")
-    if _max_gap(max_gap) is not None and stale_min_run is None and not cumulative and jump_max_delta is None:
-        raise ValueError("max_gap requires stale_min_run, cumulative=True or jump_max_delta")
+    _max_rate(jump_max_rate)
+    jumps = jump_max_delta is not None or jump_max_rate is not None
+    if _max_gap(max_gap) is not None and stale_min_run is None and not cumulative and not jumps:
+        raise ValueError("max_gap requires stale_min_run, cumulative=True, jump_max_delta or jump_max_rate")
 
 
 def flag_series(
@@ -338,6 +402,7 @@ def flag_series(
     cumulative: bool = False,
     counter_tolerance: float = 0.0,
     jump_max_delta: float | None = None,
+    jump_max_rate: tuple[float, str | pd.Timedelta] | None = None,
     max_gap: str | pd.Timedelta | None = None,
     origin: pd.Timestamp | None = None,
     tz: str | None = None,
@@ -375,6 +440,11 @@ def flag_series(
     jump_max_delta:
         If set, flag ``JUMP`` where a value differs from the previous finite
         value by more than this (see :func:`jump_mask`). Off by default.
+    jump_max_rate:
+        If set, ``(delta, period)``, e.g. ``(50.0, "1h")``: flag ``JUMP``
+        where a value changes faster than ``delta`` per ``period`` since the
+        previous finite value (see :func:`jump_rate_mask`). Off by default;
+        may be combined with ``jump_max_delta``.
     max_gap:
         Optional duration (e.g. ``"1h"``): the stale, counter and jump checks
         do not compare rows further apart than this, so an outage neither
@@ -397,9 +467,17 @@ def flag_series(
     if insert_missing and not index.is_monotonic_increasing:
         raise ValueError("insert_missing requires a sorted index so original row order is kept")
     _check_options(
-        stale_min_run, stale_atol, stale_exclude, cumulative, counter_tolerance, jump_max_delta, max_gap
+        stale_min_run,
+        stale_atol,
+        stale_exclude,
+        cumulative,
+        counter_tolerance,
+        jump_max_delta,
+        max_gap,
+        jump_max_rate,
     )
-    consecutive = stale_min_run is not None or cumulative or jump_max_delta is not None
+    jumps = jump_max_delta is not None or jump_max_rate is not None
+    consecutive = stale_min_run is not None or cumulative or jumps
     if consecutive and not index.is_monotonic_increasing:
         raise ValueError("stale, counter and jump checks compare consecutive rows and require a sorted index")
 
@@ -421,6 +499,8 @@ def flag_series(
         flags[decrease] |= np.uint16(QualityFlag.COUNTER_DECREASE)
     if jump_max_delta is not None:
         flags[jump_mask(series, jump_max_delta, max_gap=max_gap)] |= np.uint16(QualityFlag.JUMP)
+    if jump_max_rate is not None:
+        flags[jump_rate_mask(series, jump_max_rate, max_gap=max_gap)] |= np.uint16(QualityFlag.JUMP)
 
     frame = pd.DataFrame(
         {VALUE_COLUMN: series.to_numpy(copy=True), FLAG_COLUMN: flags},
