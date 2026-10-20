@@ -179,15 +179,23 @@ def within_bounds_check(*, lower: float | None = None, upper: float | None = Non
     )
 
 
-def stale_check(min_run: int, *, atol: float = 0.0, exclude: Collection[float] = ()) -> pa.Check:
+def stale_check(
+    min_run: int,
+    *,
+    atol: float = 0.0,
+    exclude: Collection[float] = (),
+    max_gap: str | pd.Timedelta | None = None,
+) -> pa.Check:
     """No run of ``min_run`` or more repeated values (see :func:`energydata_kit.stale_mask`).
 
     Runs ``ignore_na=False`` so that missing values still break runs.
     """
-    stale_mask([], min_run, atol=atol, exclude=exclude)  # validate arguments now, not at validation time
+    # Validate arguments now, not at validation time.
+    stale_mask([], min_run, atol=atol, exclude=exclude, max_gap=max_gap)
     return pa.Check(
         lambda s: pd.Series(
-            ~stale_mask(_in_time_order(s), min_run, atol=atol, exclude=exclude), index=s.index
+            ~stale_mask(_in_time_order(s), min_run, atol=atol, exclude=exclude, max_gap=max_gap),
+            index=s.index,
         ),
         name=_PREFIX + "no_stale_values",
         error=f"runs of {min_run} or more repeated values",
@@ -195,26 +203,28 @@ def stale_check(min_run: int, *, atol: float = 0.0, exclude: Collection[float] =
     )
 
 
-def counter_check(*, tolerance: float = 0.0) -> pa.Check:
+def counter_check(*, tolerance: float = 0.0, max_gap: str | pd.Timedelta | None = None) -> pa.Check:
     """A cumulative counter never decreases (see :func:`energydata_kit.counter_decrease_mask`)."""
-    counter_decrease_mask([], tolerance=tolerance)
+    counter_decrease_mask([], tolerance=tolerance, max_gap=max_gap)
     return pa.Check(
-        lambda s: pd.Series(~counter_decrease_mask(_in_time_order(s), tolerance=tolerance), index=s.index),
+        lambda s: pd.Series(
+            ~counter_decrease_mask(_in_time_order(s), tolerance=tolerance, max_gap=max_gap), index=s.index
+        ),
         name=_PREFIX + "counter_not_decreasing",
         error="cumulative counter decreased",
         ignore_na=False,
     )
 
 
-def jump_check(max_delta: float) -> pa.Check:
+def jump_check(max_delta: float, *, max_gap: str | pd.Timedelta | None = None) -> pa.Check:
     """No change larger than ``max_delta`` from the previous finite value.
 
     See :func:`energydata_kit.jump_mask`: missing and non-finite values pass and are
     skipped, so each value is compared with the last finite value before it.
     """
-    jump_mask([], max_delta)
+    jump_mask([], max_delta, max_gap=max_gap)
     return pa.Check(
-        lambda s: pd.Series(~jump_mask(_in_time_order(s), max_delta), index=s.index),
+        lambda s: pd.Series(~jump_mask(_in_time_order(s), max_delta, max_gap=max_gap), index=s.index),
         name=_PREFIX + "no_jumps",
         error=f"changes larger than {max_delta} between consecutive values",
         ignore_na=False,
@@ -232,6 +242,7 @@ def series_schema(
     cumulative: bool = False,
     counter_tolerance: float = 0.0,
     jump_max_delta: float | None = None,
+    max_gap: str | pd.Timedelta | None = None,
     origin: pd.Timestamp | None = None,
     tz: str | None = None,
     nullable: bool = True,
@@ -242,7 +253,9 @@ def series_schema(
     fixed length in ``metadata.timezone``, as in ``assess_quality``); without one,
     grid checks are left out. The schema name is ``metadata.name`` if given.
     """
-    _check_options(stale_min_run, stale_atol, stale_exclude, cumulative, counter_tolerance)
+    _check_options(
+        stale_min_run, stale_atol, stale_exclude, cumulative, counter_tolerance, jump_max_delta, max_gap
+    )
     freq, tz = _grid_from_metadata(freq, tz, metadata)
     index_checks = [timezone_aware_check(), no_duplicate_timestamps_check()]
     if freq is not None:
@@ -255,11 +268,13 @@ def series_schema(
         lower, upper = _bounds(bounds)  # rejects a third value instead of ignoring it
         value_checks.append(within_bounds_check(lower=lower, upper=upper))
     if stale_min_run is not None:
-        value_checks.append(stale_check(stale_min_run, atol=stale_atol, exclude=stale_exclude))
+        value_checks.append(
+            stale_check(stale_min_run, atol=stale_atol, exclude=stale_exclude, max_gap=max_gap)
+        )
     if cumulative:
-        value_checks.append(counter_check(tolerance=counter_tolerance))
+        value_checks.append(counter_check(tolerance=counter_tolerance, max_gap=max_gap))
     if jump_max_delta is not None:
-        value_checks.append(jump_check(jump_max_delta))
+        value_checks.append(jump_check(jump_max_delta, max_gap=max_gap))
     return pa.SeriesSchema(
         checks=index_checks + value_checks,
         nullable=nullable,

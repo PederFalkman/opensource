@@ -153,6 +153,11 @@ def build_parser() -> argparse.ArgumentParser:
     checks.add_argument(
         "--jump-max-delta", type=float, help="flag changes larger than this from the previous value"
     )
+    checks.add_argument(
+        "--max-gap",
+        metavar="DURATION",
+        help="stale, counter and jump checks skip rows further apart than this, e.g. 1h",
+    )
 
     meta = rep.add_argument_group("measurement metadata (--unit for one column, or --schema)")
     meta.add_argument(
@@ -423,6 +428,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
         cumulative=args.cumulative,
         counter_tolerance=args.counter_tolerance,
         jump_max_delta=args.jump_max_delta,
+        max_gap=args.max_gap,
         origin=origin,
         tz=args.tz,
         known_outages=args.known_outage,
@@ -443,6 +449,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
             cumulative=args.cumulative,
             counter_tolerance=args.counter_tolerance,
             jump_max_delta=args.jump_max_delta,
+            max_gap=args.max_gap,
             origin=origin,
             tz=tz,
         )
@@ -583,6 +590,7 @@ def _run_frame_report(
         "cumulative": args.cumulative,
         "counter_tolerance": args.counter_tolerance,
         "jump_max_delta": args.jump_max_delta,
+        "max_gap": args.max_gap,
     }
     report = assess_frame(
         frame,

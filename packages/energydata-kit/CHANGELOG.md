@@ -16,6 +16,13 @@ versioning: [SemVer](https://semver.org/).
   is no longer compared as 0 against the other.
 
 ### Added
+- `max_gap` for the stale, counter and jump checks (`--max-gap` on the
+  command line): rows further apart than this are not compared, so a stale
+  run ends at the gap and a counter drop or jump across it is not flagged.
+  Accepted by `stale_mask`, `counter_decrease_mask`, `jump_mask`,
+  `flag_series`, `assess_quality`, `assess_frame` and `flag_frame` (also
+  per column), and the Pandera checks; recorded in reports as an ISO 8601
+  duration. Off by default, so results without it are unchanged.
 - `QualityFlag.COUNTER_ROLLOVER` (1024), reserved for counter rollovers; no
   check sets it yet.
 

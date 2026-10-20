@@ -218,7 +218,9 @@ use Pint or pint-pandas directly, e.g. `series.astype(f"pint[{meta.unit}]")`.
   index and value failures together, and each gap is reported on the last row
   before it.
 - Stale, counter and jump checks compare consecutive rows and ignore time gaps
-  between them. A register reset and a rollover both appear as
+  between them unless you pass `max_gap` (`--max-gap`, e.g. `"1h"`): then rows
+  further apart than that are not compared, so a stale run ends at the gap
+  and a drop or jump across it is not flagged. A register reset and a rollover both appear as
   `COUNTER_DECREASE`; telling them apart is left to the caller.
 - The jump check uses an absolute limit per row, not a rate per unit of time,
   and flags the row where the change lands: a single outlier flags itself and

@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 
 from energydata_kit.intervals import duplicate_mask, missing_timestamps, off_grid_mask
+from energydata_kit.timestamps import utc_ns
 
 __all__ = [
     "FLAG_COLUMN",
@@ -114,6 +115,46 @@ def _bounds(bounds: object) -> tuple[Any, Any]:
     return lower, upper
 
 
+def _max_gap(max_gap: object) -> pd.Timedelta | None:
+    """``max_gap`` as a positive ``Timedelta``, or ``None``; a bare number is refused (no unit)."""
+    if max_gap is None:
+        return None
+    if isinstance(max_gap, bool | np.bool_ | numbers.Number):
+        raise TypeError(f"max_gap must be a duration such as '1h' or a Timedelta, got {max_gap!r}")
+    try:
+        gap = pd.Timedelta(max_gap)  # type: ignore[arg-type]
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"max_gap must be a duration such as '1h', got {max_gap!r}") from exc
+    if pd.isna(gap) or gap <= pd.Timedelta(0):
+        raise ValueError(f"max_gap must be a positive duration, got {max_gap!r}")
+    return gap
+
+
+def _times_ns(values: object, n: int) -> np.ndarray:
+    """Nanosecond timestamps of ``values``' index; ``max_gap`` needs to know when each value is."""
+    index = getattr(values, "index", None)
+    if not isinstance(index, pd.DatetimeIndex) or len(index) != n:
+        raise TypeError("max_gap needs values as a Series with a DatetimeIndex")
+    return utc_ns(index)
+
+
+def _with_index(values: object, numeric: pd.Series) -> pd.Series:
+    """``numeric`` carrying the original index when ``values`` had one (for ``max_gap``)."""
+    index = getattr(values, "index", None)
+    if isinstance(index, pd.Index) and len(index) == len(numeric):
+        return pd.Series(numeric.to_numpy(), index=index)
+    return numeric
+
+
+def _near_previous_finite(values: pd.Series, finite: pd.Series, gap: pd.Timedelta | None) -> np.ndarray:
+    """True where the last finite value before a row is at most ``gap`` earlier (all True without a gap)."""
+    if gap is None or len(values) == 0:
+        return np.ones(len(values), dtype=bool)
+    times = pd.Series(_times_ns(values, len(values)), dtype="float64")
+    previous = times.where(np.asarray(finite, dtype=bool)).ffill().shift(1)
+    return np.asarray((times - previous) <= gap.value, dtype=bool)
+
+
 def out_of_bounds_mask(
     values: pd.Series | np.ndarray | list[object],
     *,
@@ -147,6 +188,7 @@ def stale_mask(
     *,
     atol: float = 0.0,
     exclude: Collection[float] = (),
+    max_gap: str | pd.Timedelta | None = None,
 ) -> np.ndarray:
     """True for every value in a run of at least ``min_run`` consecutive repeated values.
 
@@ -154,8 +196,13 @@ def stale_mask(
     differs from the previous one by at most ``atol``. Missing or non-finite
     values end a run and are never flagged. Runs whose values all lie within
     ``atol`` of a value in ``exclude`` (e.g. ``0.0`` for generation at night)
-    are not flagged. Time
-    gaps between rows are not considered; check gaps separately.
+    are not flagged.
+
+    Time gaps between rows are not considered unless ``max_gap`` is given
+    (e.g. ``"1h"``): then a run also ends where two consecutive rows are more
+    than ``max_gap`` apart, so a flat line before and after an outage counts
+    as two runs. ``max_gap`` needs ``values`` as a Series with a
+    ``DatetimeIndex``.
     """
     if isinstance(min_run, bool | np.bool_):
         raise TypeError(f"min_run must be an integer, got {min_run!r}")
@@ -165,12 +212,15 @@ def stale_mask(
     if not np.isfinite(_number(atol, "atol")) or atol < 0:
         raise ValueError("atol must be a finite number >= 0")
     excluded = _excluded_values(exclude)
+    gap = _max_gap(max_gap)
     v = _numeric(_as_series(values)).to_numpy()
     if v.size == 0:
         return np.zeros(0, dtype=bool)
     finite = np.isfinite(v)
     filled = np.where(finite, v, 0.0)  # avoid inf - inf; non-finite never joins a run
     same = finite[1:] & finite[:-1] & (np.abs(np.diff(filled)) <= atol)
+    if gap is not None:
+        same &= np.diff(_times_ns(values, v.size)) <= gap.value
     run_start = np.ones(v.size, dtype=bool)
     run_start[1:] = ~same
     run_id = np.cumsum(run_start) - 1
@@ -207,6 +257,7 @@ def counter_decrease_mask(
     values: pd.Series | np.ndarray | list[object],
     *,
     tolerance: float = 0.0,
+    max_gap: str | pd.Timedelta | None = None,
 ) -> np.ndarray:
     """True where a cumulative counter falls below the previous finite value.
 
@@ -214,19 +265,25 @@ def counter_decrease_mask(
     readings). Each value is compared with the last finite value before it,
     so only the row where the drop happens is flagged. Resets and rollovers
     both show up as decreases; this function does not guess which one it is.
-    Drops of at most ``tolerance`` are ignored.
+    Drops of at most ``tolerance`` are ignored. With ``max_gap``, a value is
+    not compared with a previous finite value more than ``max_gap`` earlier
+    (``values`` must then be a Series with a ``DatetimeIndex``).
     """
     if not np.isfinite(_number(tolerance, "tolerance")) or tolerance < 0:
         raise ValueError("tolerance must be a finite number >= 0")
+    gap = _max_gap(max_gap)
     v = _numeric(_as_series(values))
     finite = pd.Series(np.isfinite(v.to_numpy()), index=v.index)
     previous = v.where(finite).ffill().shift(1)
-    return np.asarray(finite & previous.notna() & (v < previous - tolerance), dtype=bool)
+    near = _near_previous_finite(_with_index(values, v), finite, gap)
+    return np.asarray(finite & previous.notna() & (v < previous - tolerance) & near, dtype=bool)
 
 
 def jump_mask(
     values: pd.Series | np.ndarray | list[object],
     max_delta: float,
+    *,
+    max_gap: str | pd.Timedelta | None = None,
 ) -> np.ndarray:
     """True where a value differs from the previous finite value by more than ``max_delta``.
 
@@ -235,14 +292,18 @@ def jump_mask(
     where the change lands is flagged: a single outlier therefore flags
     itself and the row after it (the jump away and the jump back). The limit
     is supplied by the caller; the package ships no domain limits. Time gaps
-    between rows are not considered; check gaps separately.
+    between rows are not considered unless ``max_gap`` is given: then a value
+    is not compared with a previous finite value more than ``max_gap``
+    earlier (``values`` must be a Series with a ``DatetimeIndex``).
     """
     if not np.isfinite(_number(max_delta, "max_delta")) or max_delta <= 0:
         raise ValueError("max_delta must be a finite number > 0")
+    gap = _max_gap(max_gap)
     v = _numeric(_as_series(values))
     finite = pd.Series(np.isfinite(v.to_numpy()), index=v.index)
     previous = v.where(finite).ffill().shift(1)
-    return np.asarray(finite & previous.notna() & ((v - previous).abs() > max_delta), dtype=bool)
+    near = _near_previous_finite(_with_index(values, v), finite, gap)
+    return np.asarray(finite & previous.notna() & ((v - previous).abs() > max_delta) & near, dtype=bool)
 
 
 def _check_options(
@@ -251,6 +312,8 @@ def _check_options(
     stale_exclude: Collection[float],
     cumulative: bool,
     counter_tolerance: float,
+    jump_max_delta: float | None = None,
+    max_gap: object = None,
 ) -> None:
     """Reject a non-boolean ``cumulative`` and fine-tuning options given without the check they tune."""
     if not isinstance(cumulative, bool | np.bool_):
@@ -259,6 +322,8 @@ def _check_options(
         raise ValueError("stale_atol and stale_exclude require stale_min_run")
     if not cumulative and counter_tolerance:
         raise ValueError("counter_tolerance requires cumulative=True")
+    if _max_gap(max_gap) is not None and stale_min_run is None and not cumulative and jump_max_delta is None:
+        raise ValueError("max_gap requires stale_min_run, cumulative=True or jump_max_delta")
 
 
 def flag_series(
@@ -273,6 +338,7 @@ def flag_series(
     cumulative: bool = False,
     counter_tolerance: float = 0.0,
     jump_max_delta: float | None = None,
+    max_gap: str | pd.Timedelta | None = None,
     origin: pd.Timestamp | None = None,
     tz: str | None = None,
 ) -> pd.DataFrame:
@@ -309,6 +375,11 @@ def flag_series(
     jump_max_delta:
         If set, flag ``JUMP`` where a value differs from the previous finite
         value by more than this (see :func:`jump_mask`). Off by default.
+    max_gap:
+        Optional duration (e.g. ``"1h"``): the stale, counter and jump checks
+        do not compare rows further apart than this, so an outage neither
+        joins two flat stretches into one run nor makes the first value after
+        it a jump or a counter decrease. Requires one of those checks.
     origin:
         Timezone-aware timestamp the grid runs through (default: the first
         timestamp). See :func:`energydata_kit.expected_grid`.
@@ -325,7 +396,9 @@ def flag_series(
         raise ValueError("insert_missing requires freq")
     if insert_missing and not index.is_monotonic_increasing:
         raise ValueError("insert_missing requires a sorted index so original row order is kept")
-    _check_options(stale_min_run, stale_atol, stale_exclude, cumulative, counter_tolerance)
+    _check_options(
+        stale_min_run, stale_atol, stale_exclude, cumulative, counter_tolerance, jump_max_delta, max_gap
+    )
     consecutive = stale_min_run is not None or cumulative or jump_max_delta is not None
     if consecutive and not index.is_monotonic_increasing:
         raise ValueError("stale, counter and jump checks compare consecutive rows and require a sorted index")
@@ -341,13 +414,13 @@ def flag_series(
         lower, upper = _bounds(bounds)
         flags[out_of_bounds_mask(series, lower=lower, upper=upper)] |= np.uint16(QualityFlag.OUT_OF_BOUNDS)
     if stale_min_run is not None:
-        stale = stale_mask(series, stale_min_run, atol=stale_atol, exclude=stale_exclude)
+        stale = stale_mask(series, stale_min_run, atol=stale_atol, exclude=stale_exclude, max_gap=max_gap)
         flags[stale] |= np.uint16(QualityFlag.STALE_VALUE)
     if cumulative:
-        decrease = counter_decrease_mask(series, tolerance=counter_tolerance)
+        decrease = counter_decrease_mask(series, tolerance=counter_tolerance, max_gap=max_gap)
         flags[decrease] |= np.uint16(QualityFlag.COUNTER_DECREASE)
     if jump_max_delta is not None:
-        flags[jump_mask(series, jump_max_delta)] |= np.uint16(QualityFlag.JUMP)
+        flags[jump_mask(series, jump_max_delta, max_gap=max_gap)] |= np.uint16(QualityFlag.JUMP)
 
     frame = pd.DataFrame(
         {VALUE_COLUMN: series.to_numpy(copy=True), FLAG_COLUMN: flags},
