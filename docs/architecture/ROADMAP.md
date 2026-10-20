@@ -998,7 +998,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `compare_reports` reading schemas 1 and 2, and a five-step plan for
       0.2.0. Three open questions for the owner. Docs only.
 
-### OSS-104: report schema 2, step 1 (scaffolding) — in [#95](https://github.com/PederFalkman/opensource/pull/95)
+### OSS-104: report schema 2, step 1 (scaffolding) — merged in [#95](https://github.com/PederFalkman/opensource/pull/95)
 
 - [x] The owner's answers to the design's three questions recorded in
       `SCHEMA_2.md`: `(delta, period)` rates, the `m / 2` rollover rule,
