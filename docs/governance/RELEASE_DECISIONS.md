@@ -2,8 +2,8 @@
 
 ## 0.2.0 (prepared 2026-10-20, OSS-109)
 
-**Status:** engineering for 0.2.0 is complete once OSS-108 (#101) is on
-`main`; nothing here is decided. `main` stays at
+**Status:** engineering for 0.2.0 is complete (OSS-104 to OSS-108 on
+`main`, reviewed in OSS-110); nothing here is decided. `main` stays at
 `0.2.0.dev0` with the upload guard until the owner decides the items below.
 The 0.1.0 record follows further down and is unchanged.
 
