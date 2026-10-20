@@ -13,9 +13,11 @@ from energydata_kit import (
     assess_frame,
     assess_quality,
     counter_decrease_mask,
+    counter_rollover_mask,
     flag_frame,
     flag_series,
     jump_mask,
+    jump_rate_mask,
     stale_mask,
 )
 from energydata_kit.cli import main
@@ -136,3 +138,26 @@ def test_pandera_checks_take_max_gap():
         pc.series_schema(max_gap="1h")
     with pytest.raises(ValueError, match="max_gap must be"):
         pc.stale_check(3, max_gap="soon")
+
+
+def test_time_based_options_refuse_timestamps_out_of_order():
+    # OSS-110: the masks compare rows in row order, but max_gap and jump_max_rate measure the
+    # time between them; on unsorted timestamps that time is negative and the answer meaningless.
+    # flag_series and the Pandera checks already refuse such input; the masks now do too.
+    index = pd.DatetimeIndex(["2024-01-01T02:00Z", "2024-01-01T00:00Z", "2024-01-01T01:00Z"])
+    s = pd.Series([100.0, 0.0, 1.0], index=index)
+    calls = [
+        lambda: jump_rate_mask(s, (1, "1h")),
+        lambda: jump_mask(s, 5, max_gap="1h"),
+        lambda: counter_decrease_mask(s, max_gap="1h"),
+        lambda: counter_rollover_mask(s, 1000, max_gap="1h"),
+        lambda: stale_mask(s, 2, max_gap="1h"),
+    ]
+    for call in calls:
+        with pytest.raises(ValueError, match="time order"):
+            call()
+    # Without a time-based option the masks keep comparing in row order, as in 0.1.0.
+    assert jump_mask(s, 5).tolist() == [False, True, False]
+    # Duplicate timestamps are in order (zero apart).
+    dup = pd.Series([1.0, 9.0], index=pd.DatetimeIndex(["2024-01-01T00:00Z"] * 2))
+    assert jump_rate_mask(dup, (1, "1h")).tolist() == [False, False]

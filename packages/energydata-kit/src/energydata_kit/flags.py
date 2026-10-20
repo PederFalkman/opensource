@@ -151,11 +151,15 @@ def _rate(max_rate: object) -> tuple[float, pd.Timedelta]:
 
 
 def _times_ns(values: object, n: int) -> np.ndarray:
-    """Nanosecond timestamps of ``values``' index; ``max_gap`` needs to know when each value is."""
+    """Nanosecond timestamps of ``values``' index, for options that measure time between rows."""
     index = getattr(values, "index", None)
     if not isinstance(index, pd.DatetimeIndex) or len(index) != n:
-        raise TypeError("max_gap needs values as a Series with a DatetimeIndex")
-    return utc_ns(index)
+        raise TypeError("max_gap and jump_max_rate need values as a Series with a DatetimeIndex")
+    times = utc_ns(index)
+    if (np.diff(times) < 0).any():
+        # Rows are compared in row order; out of time order the elapsed time is negative.
+        raise ValueError("max_gap and jump_max_rate need values in time order (a sorted index)")
+    return times
 
 
 def _with_index(values: object, numeric: pd.Series) -> pd.Series:
@@ -221,7 +225,7 @@ def stale_mask(
     Time gaps between rows are not considered unless ``max_gap`` is given
     (e.g. ``"1h"``): then a run also ends where two consecutive rows are more
     than ``max_gap`` apart, so a flat line before and after an outage counts
-    as two runs. ``max_gap`` needs ``values`` as a Series with a
+    as two runs. ``max_gap`` needs ``values`` as a Series with a sorted
     ``DatetimeIndex``.
     """
     if isinstance(min_run, bool | np.bool_):
@@ -288,7 +292,7 @@ def counter_decrease_mask(
     (:func:`counter_rollover_mask` tells them apart given the modulus).
     Drops of at most ``tolerance`` are ignored. With ``max_gap``, a value is
     not compared with a previous finite value more than ``max_gap`` earlier
-    (``values`` must then be a Series with a ``DatetimeIndex``).
+    (``values`` must then be a Series with a sorted ``DatetimeIndex``).
     """
     if not np.isfinite(_number(tolerance, "tolerance")) or tolerance < 0:
         raise ValueError("tolerance must be a finite number >= 0")
@@ -349,7 +353,7 @@ def jump_mask(
     is supplied by the caller; the package ships no domain limits. Time gaps
     between rows are not considered unless ``max_gap`` is given: then a value
     is not compared with a previous finite value more than ``max_gap``
-    earlier (``values`` must be a Series with a ``DatetimeIndex``).
+    earlier (``values`` must be a Series with a sorted ``DatetimeIndex``).
     """
     if not np.isfinite(_number(max_delta, "max_delta")) or max_delta <= 0:
         raise ValueError("max_delta must be a finite number > 0")
@@ -379,7 +383,7 @@ def jump_rate_mask(
     With ``max_gap``, a value is not compared with one more than ``max_gap``
     earlier. The rate is supplied by the caller in the data's own unit; the
     package ships no domain limits. ``values`` must be a Series with a
-    ``DatetimeIndex``.
+    sorted ``DatetimeIndex``.
     """
     delta, period = _rate(max_rate)
     gap = _max_gap(max_gap)

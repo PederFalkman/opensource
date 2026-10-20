@@ -27,6 +27,7 @@ from energydata_kit import (  # noqa: E402
     MeasurementMetadata,
     QualityFlag,
     assess_quality,
+    compare_reports,
     counter_decrease_mask,
     duplicate_mask,
     expected_grid,
@@ -35,6 +36,7 @@ from energydata_kit import (  # noqa: E402
     flag_series,
     from_table_schema,
     jump_mask,
+    jump_rate_mask,
     local_day_completeness,
     missing_timestamps,
     missing_value_mask,
@@ -255,3 +257,59 @@ def test_jump_matches_brute_force(data, max_delta):
         if finite:
             last = v
     assert jump_mask(data, max_delta).tolist() == expected
+
+
+@DETERMINISTIC
+@given(
+    st.lists(
+        st.tuples(
+            st.sampled_from([0, 15, 15, 60, 360]),  # minutes since the previous row: duplicates and gaps
+            st.one_of(st.integers(-30, 30).map(float), st.just(np.nan), st.just(np.inf)),
+        ),
+        max_size=30,
+    ),
+    st.sampled_from([None, "1h", "2h"]),
+)
+def test_jump_rate_matches_brute_force(rows, max_gap):
+    # OSS-110: |change| > 20 * elapsed / 1h against the last finite value, within max_gap.
+    minutes = list(itertools.accumulate(step for step, _ in rows))
+    values = [v for _, v in rows]
+    series = pd.Series(values, index=START + pd.to_timedelta(minutes, unit="min"), dtype="float64")
+    gap = None if max_gap is None else pd.Timedelta(max_gap).total_seconds() / 60
+    expected, last = [], None
+    for t, v in zip(minutes, values, strict=True):
+        hit = False
+        if np.isfinite(v) and last is not None:
+            elapsed = t - last[0]
+            hit = elapsed > 0 and abs(v - last[1]) > 20 * elapsed / 60 and (gap is None or elapsed <= gap)
+        expected.append(hit)
+        if np.isfinite(v):
+            last = (t, v)
+    assert jump_rate_mask(series, (20, "1h"), max_gap=max_gap).tolist() == expected
+
+
+@DETERMINISTIC
+@given(st.sets(st.integers(1, 46), max_size=20), st.sets(st.integers(1, 46), max_size=20))
+def test_gap_overlap_matching_matches_brute_force(drop_before, drop_after):
+    # OSS-110: every listed gap is unchanged, in one or more changed pairs, or resolved/new.
+    def report(drop):
+        index = pd.date_range(START, periods=48, freq=STEP).delete(sorted(drop))
+        return assess_quality(pd.Series(1.0, index=index), freq=STEP)
+
+    before, after = report(drop_before), report(drop_after)
+    changes = compare_reports(before, after).changes[""]
+    as_key = lambda g: (g.start.isoformat(), g.end.isoformat(), g.missing_count)  # noqa: E731
+    b = {as_key(g) for g in before.gaps} - {as_key(g) for g in after.gaps}
+    a = {as_key(g) for g in after.gaps} - {as_key(g) for g in before.gaps}
+    overlaps = lambda x, y: x[0] <= y[1] and y[0] <= x[1]  # noqa: E731 - same-format UTC ISO strings sort by time
+    pairs = sorted((x, y) for x in b for y in a if overlaps(x, y))
+    if not (b or a):
+        assert "gaps" not in changes
+        return
+    gaps = changes["gaps"]
+    as_tuple = lambda g: (g["start"], g["end"], g["missing_count"])  # noqa: E731
+    assert [(as_tuple(p["before"]), as_tuple(p["after"])) for p in gaps["changed"]] == pairs
+    assert [as_tuple(g) for g in gaps["resolved"]] == sorted(
+        x for x in b if not any(overlaps(x, y) for y in a)
+    )
+    assert [as_tuple(g) for g in gaps["new"]] == sorted(y for y in a if not any(overlaps(x, y) for x in b))

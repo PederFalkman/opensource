@@ -46,7 +46,9 @@ only by the schema version and the new fields (`null` parameters,
   Accepted by `stale_mask`, `counter_decrease_mask`, `jump_mask`,
   `flag_series`, `assess_quality`, `assess_frame` and `flag_frame` (also
   per column), and the Pandera checks; recorded in reports as an ISO 8601
-  duration. Off by default, so results without it are unchanged.
+  duration. Off by default, so results without it are unchanged. Like
+  `jump_max_rate`, it measures time between rows, so it needs a sorted
+  index and refuses timestamps out of order.
 - `jump_max_rate=(delta, period)`, e.g. `(50.0, "1h")` (`--jump-max-rate 50
   1h`): flag `JUMP` where a value changes faster than `delta` per `period`
   since the previous finite value, so the limit scales with the time between

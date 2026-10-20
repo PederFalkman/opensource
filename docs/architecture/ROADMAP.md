@@ -1082,6 +1082,28 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `counter_rollover` and changed gaps, executed by the test suite.
 - [x] "Open decisions" above now lists the 0.2.0 questions.
 
+### OSS-110: pre-release review of the 0.2.0 code — this change
+
+- [x] Compared `jump_mask`, `jump_rate_mask`, `counter_decrease_mask`,
+      `counter_rollover_mask` and `stale_mask` (with and without
+      `max_gap`) with plain-Python references on 15,000 random series
+      (NaN, ±inf, duplicates, gaps; s/us/ns units; three time zones), and
+      overlap matching with brute force on 3,000 random gap sets, on the
+      current and the lowest supported dependencies: no mismatch. Two of
+      these comparisons are kept as property tests.
+- [x] Fixed: on timestamps out of order, `jump_rate_mask` silently flagged
+      nothing and `max_gap` treated earlier rows as near. The time-based
+      options now refuse unsorted input (`ValueError`), as `flag_series`
+      and the Pandera checks already did; without them the masks still
+      compare in row order, as in 0.1.0.
+- [x] Checked and fine: Pandera 0.24 and current in a `DataFrameSchema`;
+      command-line refusal of negative, infinite and NaN values (exit 2);
+      numpy values recorded as plain numbers; with every check on, a year
+      of one-minute data takes about 0.6 s (0.3 s with the 0.1.0 checks);
+      nothing is slower with the new options off.
+- [x] Left as is: a `max_gap` beyond pandas' range (about 292 years) is
+      reported as not a duration rather than out of range.
+
 ## Explicitly not planned
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
