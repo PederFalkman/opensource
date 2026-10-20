@@ -8,7 +8,7 @@ opensource/
 ├── ruff.toml                    # lint config for tools/ only
 ├── docs/
 │   ├── architecture/            # this file, audit, duplication register, roadmap,
-│   │                            # API review, performance
+│   │                            # API review, performance, report schema 2 design
 │   └── governance/              # IP boundary, release gates, checklist and
 │                                # open decisions, third-party licences
 ├── packages/
