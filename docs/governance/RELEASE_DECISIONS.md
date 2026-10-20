@@ -2,11 +2,21 @@
 
 ## 0.2.0 (prepared 2026-10-20, OSS-109)
 
-**Status:** engineering for 0.2.0 is complete (OSS-104 to OSS-108 on
-`main`, reviewed in OSS-110); nothing here is decided. A release draft
-(OSS-133, branch `claude/oss-133-release-draft`) sets the version to
-`0.2.0` and dates the changelog, and keeps the upload guard; see "Finishing
-the release" below. `main` stays at
+**Status:** decided 2026-10-20. The repository owner recorded the answers
+for G1, G3, G4 and D6 on 2026-10-20 (below; the written confirmations are
+held by the owner and not copied here). The release PR (OSS-133) sets the
+version to `0.2.0`, dates the changelog and removes the upload guard
+together with the D6 line for 0.2.0 under D6 further down.
+
+**Decisions for 0.2.0, as recorded by the repository owner on 2026-10-20:**
+
+- **G1 Ownership:** counsel confirmed in writing that the publishing entity
+  owns the code added since 0.1.0 and can license it.
+- **G3 IP boundary review:** signed off by the technical lead.
+- **G4 Third-party licences:** the 0.1.0 position is enough; no dependency
+  changed.
+- **D6 Publication (G7):** a GitHub release only, like 0.1.0; no package
+  index. `main` stays at
 `0.2.0.dev0` with the upload guard until the owner decides the items below.
 The 0.1.0 record follows further down and is unchanged.
 
@@ -31,13 +41,13 @@ The only `pyproject.toml` change is the restored upload guard (OSS-97).
 
 | Gate | State for 0.2.0 | Open question |
 |---|---|---|
-| G1 Ownership | Counsel confirmed ownership of the repository's code for 0.1.0 (D2). Commits since then fall in the same categories: on `main` at `67a74aa`, 26 commits after the 0.1.0 merge (`827a2df`): 15 by the AI coding assistant in the owner's sessions (12 with changes, 3 merging `main` into a pull-request branch) and 11 by the owner (9 pull-request merges and 2 own commits adding the browser prototype in `apps/workbench/`, which is outside the package and not shipped); no external contributor | Does the D2 confirmation cover code added since 0.1.0, or should counsel confirm again? |
+| G1 Ownership | **Passed 2026-10-20**: counsel confirmed in writing (held by the owner). Counsel confirmed ownership of the repository's code for 0.1.0 (D2). Commits since then fall in the same categories: on `main` at `67a74aa`, 26 commits after the 0.1.0 merge (`827a2df`): 15 by the AI coding assistant in the owner's sessions (12 with changes, 3 merging `main` into a pull-request branch) and 11 by the owner (9 pull-request merges and 2 own commits adding the browser prototype in `apps/workbench/`, which is outside the package and not shipped); no external contributor | — |
 | G2 Licence | Passed: Apache-2.0, unchanged | — |
-| G3 IP boundary review | Not yet done for the 0.2.0 diff. Evidence: the `IP boundary` CI job on every PR; P-7 to P-10 are generic data-quality checks designed in the public `SCHEMA_2.md` | Technical lead to review and sign off the diff from `827a2df` to the release commit |
-| G4 Third-party licences | Unchanged since 0.1.0 (no dependency change) | Is the 0.1.0 position enough, or is legal confirmation needed for this release? |
+| G3 IP boundary review | **Passed 2026-10-20**: signed off by the technical lead (held by the owner). Evidence: the `IP boundary` CI job on every PR; P-7 to P-10 are generic data-quality checks designed in the public `SCHEMA_2.md` | — |
+| G4 Third-party licences | **Passed 2026-10-20**: the 0.1.0 position stands; unchanged since 0.1.0 (no dependency change) | — |
 | G5 CI green | Green on every 0.2.0 PR; re-checked on the release commit | — |
 | G6 Documentation honest | README, changelog and guide updated with each step; the guide's new examples run in the test suite | Review on the release commit |
-| G7 Publication (D6) | The 0.1.0 approval names 0.1.0 only, so it does not cover 0.2.0 (OSS-98) | Publish 0.2.0 as a GitHub release only, like 0.1.0, or to an index? The owner records the answer as a new approval line under D6 naming `energydata-kit 0.2.0` |
+| G7 Publication (D6) | **Passed 2026-10-20**: GitHub release only; approval line under D6 below | — |
 
 **For the G3 reviewer** (the technical lead). The package code to review
 is the diff from the 0.1.0 merge to the release commit:
@@ -59,8 +69,7 @@ Points to confirm, each also checked by a tool:
   quantities: the additions decide which consecutive readings to compare
   and how to label a counter drop or a changed gap.
 
-**Finishing the release** once the four answers are in (the draft already
-has the version and the dated changelog):
+**Finishing the release** (done in the release PR, OSS-133):
 
 1. The owner's D6 line under D6 below, in the owner's words, naming
    `energydata-kit 0.2.0`, and short notes under G1, G3 and G4 recording
@@ -311,6 +320,8 @@ Not a release gate, but it protects the release commit.
 ### D6. Publication, G7 (owner: management) — DECIDED 2026-10-19
 
 **D6 approved:** 2026-10-19, energydata-kit 0.1.0 as a GitHub release only (built wheel and sdist attached to the tagged release; no package index), recorded by the repository owner.
+
+**D6 approved:** 2026-10-20, energydata-kit 0.2.0 as a GitHub release only (built wheel and sdist attached to the tagged release; no package index), recorded by the repository owner.
 
 Nothing is uploaded to PyPI or any other index; publishing there would need
 a new D6 decision and trusted publishing set up in a separate, reviewed

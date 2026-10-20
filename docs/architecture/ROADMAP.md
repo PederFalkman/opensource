@@ -9,16 +9,17 @@ Merged items stay listed here as a record of what was agreed.
 Questions and evidence for each: `docs/governance/RELEASE_DECISIONS.md`,
 section "0.2.0". 0.1.0 was released on 2026-10-19 as a GitHub release only
 (D1 to D4 and D6 decided; the record is kept there). Engineering for 0.2.0
-is complete (OSS-104 to OSS-110), and a release draft (OSS-133) is
-ready; the release waits only on these.
+is complete (OSS-104 to OSS-110), and the owner recorded the answers
+below on 2026-10-20; the release PR is OSS-133.
 
-- [ ] **G1 for 0.2.0.** Does counsel's ownership confirmation (D2) cover
-      the code added since 0.1.0?
-- [ ] **G3 for 0.2.0.** The technical lead's IP-boundary sign-off on the
-      diff from 0.1.0 (`827a2df`) to the release commit.
-- [ ] **G4 for 0.2.0.** No dependency changed; is the 0.1.0 position enough?
-- [ ] **D6 for 0.2.0 (G7).** GitHub release only again, or an index? The
-      owner's approval line must name `energydata-kit 0.2.0` (OSS-98).
+- [x] **G1 for 0.2.0.** Counsel confirmed in writing that the code added
+      since 0.1.0 is covered (recorded 2026-10-20).
+- [x] **G3 for 0.2.0.** The technical lead signed off the IP-boundary review
+      of the diff from 0.1.0 (`827a2df`) (recorded 2026-10-20).
+- [x] **G4 for 0.2.0.** No dependency changed; the 0.1.0 position stands
+      (recorded 2026-10-20).
+- [x] **D6 for 0.2.0 (G7).** GitHub release only, like 0.1.0 (recorded
+      2026-10-20).
 - [ ] **D5 Branch protection on `main`** (not a gate): require CI and
       code-owner review.
 - [x] **D3 Licence (G2).** Apache-2.0, granted 2026-10-18 (#66).
@@ -1114,7 +1115,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 
 - [x] No new work by the owner's choice while the 0.2.0 decisions were open.
 
-### OSS-133: 0.2.0 release draft — this change
+### OSS-133: release energydata-kit 0.2.0 — this change
 
 - [x] `__version__` is `0.2.0`; the changelog's notes move under
       `## [0.2.0] - 2026-10-20` (date to set on release day) with an empty
@@ -1123,7 +1124,18 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `--guard` passes.
 - [x] `RELEASE_DECISIONS.md`: a guide for the G3 reviewer (what to diff and
       what to confirm, each backed by a tool) and the remaining release
-      steps once the four answers are in. Nothing is decided here.
+      steps.
+- [x] Decisions recorded by the owner on 2026-10-20: G1 counsel confirmed,
+      G3 signed off, G4 the 0.1.0 position stands, D6 GitHub release only,
+      with the `**D6 approved:**` line naming `energydata-kit 0.2.0`.
+- [x] Release edits: `Private :: Do Not Upload` removed, the readiness test
+      expects nothing to fail (`--strict` exits 0, `--guard` passes), and the
+      status lines in both READMEs, `SECURITY.md`, `CONTRIBUTING.md` and
+      `RELEASE_GATES.md` name 0.2.0 as a GitHub release.
+- [ ] After merge (owner): tag the merge commit `energydata-kit-v0.2.0`,
+      check the digests and publish the draft GitHub release the *Release
+      build* workflow creates. Then the next development cycle restores the
+      upload guard.
 
 ## Explicitly not planned
 
