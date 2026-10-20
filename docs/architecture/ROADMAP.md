@@ -9,7 +9,7 @@ Merged items stay listed here as a record of what was agreed.
 Questions and evidence for each: `docs/governance/RELEASE_DECISIONS.md`,
 section "0.2.0". 0.1.0 was released on 2026-10-19 as a GitHub release only
 (D1 to D4 and D6 decided; the record is kept there). Engineering for 0.2.0
-is complete once #101 merges; its release waits only on these.
+is complete (OSS-104 to OSS-110); its release waits only on these.
 
 - [ ] **G1 for 0.2.0.** Does counsel's ownership confirmation (D2) cover
       the code added since 0.1.0?
@@ -1055,7 +1055,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `COUNTER_ROLLOVER`; off by default, so the golden reports are
       unchanged.
 
-### OSS-108: report schema 2, step 5 (P-10 overlap matching) — in [#101](https://github.com/PederFalkman/opensource/pull/101) (reviewed in [#100](https://github.com/PederFalkman/opensource/pull/100), which merged into the OSS-107 branch instead of `main`)
+### OSS-108: report schema 2, step 5 (P-10 overlap matching) — merged in [#101](https://github.com/PederFalkman/opensource/pull/101) (reviewed in [#100](https://github.com/PederFalkman/opensource/pull/100), which merged into the OSS-107 branch instead of `main`)
 
 - [x] `compare_reports` matches listed gaps by overlap (intervals of
       missing timestamps, both ends included): exact matches stay
@@ -1069,7 +1069,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       gaps move from resolved + new to `changed`; nothing else differs.
       Report schema 2 is now complete (`SCHEMA_2.md`, steps 1 to 5).
 
-### OSS-109: prepare the 0.2.0 release — this change
+### OSS-109: prepare the 0.2.0 release — merged in [#102](https://github.com/PederFalkman/opensource/pull/102)
 
 - [x] `RELEASE_DECISIONS.md` gains a 0.2.0 section: what the release
       contains, what did not change since 0.1.0 (no dependency, extra or
@@ -1081,6 +1081,28 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] `examples/GUIDE.md` shows `jump_max_rate`, `max_gap`,
       `counter_rollover` and changed gaps, executed by the test suite.
 - [x] "Open decisions" above now lists the 0.2.0 questions.
+
+### OSS-110: pre-release review of the 0.2.0 code — this change
+
+- [x] Compared `jump_mask`, `jump_rate_mask`, `counter_decrease_mask`,
+      `counter_rollover_mask` and `stale_mask` (with and without
+      `max_gap`) with plain-Python references on 15,000 random series
+      (NaN, ±inf, duplicates, gaps; s/us/ns units; three time zones), and
+      overlap matching with brute force on 3,000 random gap sets, on the
+      current and the lowest supported dependencies: no mismatch. Two of
+      these comparisons are kept as property tests.
+- [x] Fixed: on timestamps out of order, `jump_rate_mask` silently flagged
+      nothing and `max_gap` treated earlier rows as near. The time-based
+      options now refuse unsorted input (`ValueError`), as `flag_series`
+      and the Pandera checks already did; without them the masks still
+      compare in row order, as in 0.1.0.
+- [x] Checked and fine: Pandera 0.24 and current in a `DataFrameSchema`;
+      command-line refusal of negative, infinite and NaN values (exit 2);
+      numpy values recorded as plain numbers; with every check on, a year
+      of one-minute data takes about 0.6 s (0.3 s with the 0.1.0 checks);
+      nothing is slower with the new options off.
+- [x] Left as is: a `max_gap` beyond pandas' range (about 292 years) is
+      reported as not a duration rather than out of range.
 
 ## Explicitly not planned
 
