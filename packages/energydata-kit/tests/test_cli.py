@@ -340,7 +340,7 @@ def test_compare_text_summary(tmp_path):
         "kwh:",
         "  rows 4 -> 6 (+2); missing intervals 2 -> 0 (-2); gaps 1 -> 0 (-1); completeness 66.67% -> 100.00%",
         "  flagged rows 2 -> 1 (-1): MISSING_VALUE 1 -> 0 (-1)",
-        "  gaps resolved: 1, new: 0",
+        "  gaps resolved: 1, new: 0, changed: 0",
     ]
     code, out, _ = run("compare", str(after), str(before), "--format", "text", "--fail-if-worse")
     assert code == 1 and out.startswith("data changed; worse:")
@@ -743,3 +743,15 @@ def test_python_dash_m(tmp_path):
         check=False,
     )
     assert result.returncode == 0 and json.loads(result.stdout)["n_rows"] == 8
+
+
+def test_compare_summary_counts_changed_gaps(tmp_path):
+    # A gap that grew from one interval to three is one changed gap (P-10), in both formats.
+    before, after = tmp_path / "before.json", tmp_path / "after.json"
+    for path, drop in ((before, [10]), (after, [9, 10, 11])):
+        series = ek.make_synthetic_series(periods=24, drop=drop)
+        path.write_text(ek.assess_quality(series, freq="15min").to_json())
+    for fmt in ("text", "markdown"):
+        code, out, err = run("compare", str(before), str(after), "--format", fmt)
+        assert (code, err) == (0, "")
+        assert "gaps resolved: 0, new: 0, changed: 1" in out

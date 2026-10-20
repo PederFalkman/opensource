@@ -104,7 +104,7 @@ schema change.
 | P-7 | *Approved by the owner on 2026-10-20, as part of report schema 2 (design in `SCHEMA_2.md`, OSS-103); implemented in OSS-106.* **Rate-based jump limit.** An opt-in `jump_max_rate` (change per unit of time, e.g. kW per hour) next to the absolute `jump_max_delta`, dividing each change by the time since the previous finite value. | Known limitation: the jump check uses an absolute limit per row, so a gap followed by a normal ramp looks like a jump, and the same limit can't fit two resolutions. | S | Schema 2 if recorded in reports. The caller picks the rate; units stay the caller's (no Pint conversion of limits). Must define behaviour across duplicates and off-grid rows. |
 | P-8 | *Approved by the owner on 2026-10-20, as part of report schema 2 (design in `SCHEMA_2.md`, OSS-103); implemented in OSS-105.* **Runs and comparisons that stop at gaps.** An opt-in `max_gap` for the stale, counter and jump checks: consecutive rows further apart than this are not compared, and a stale run does not continue across the gap. | Known limitation: these checks compare consecutive rows and ignore time gaps, so a flat line before and after an outage counts as one run and a jump across a long gap is flagged. | S–M | Schema 2 if recorded. Default off, so 0.1.0 results stay identical. Interacts with P-7; worth designing together. |
 | P-9 | *Approved by the owner on 2026-10-20, as part of report schema 2 (design in `SCHEMA_2.md`, OSS-103); implemented in OSS-107.* **Counter rollover (wrap-around) separated from resets.** An opt-in `counter_rollover` (the register's modulus, e.g. 10**6 kWh, supplied by the caller): a drop consistent with wrapping past the modulus gets a new `COUNTER_ROLLOVER` flag (bit 1024) instead of `COUNTER_DECREASE`. | Known limitation: a register reset and a rollover both appear as `COUNTER_DECREASE`; a caller who knows the register size can tell them apart. | S | Adds a flag bit (public contract: never renumbered) and a flag count, so schema 2. No modulus is shipped or guessed. |
-| P-10 | *Approved by the owner on 2026-10-20, as part of report schema 2 (design in `SCHEMA_2.md`, OSS-103).* **Overlap-aware gap comparison.** `compare_reports` matches gaps by overlap, so a gap that shrank or grew shows as *changed* (with before/after bounds) instead of one resolved and one new gap. | Known limitation in the README; the before/after view of a fix is the main use of `compare`. | M | Changes the comparison output (a new `changed` list): comparisons are schema-versioned with reports, so this rides on schema 2 too. Only listed gaps can be compared, as today (`max_listed`). |
+| P-10 | *Approved by the owner on 2026-10-20, as part of report schema 2 (design in `SCHEMA_2.md`, OSS-103); implemented in OSS-108.* **Overlap-aware gap comparison.** `compare_reports` matches gaps by overlap, so a gap that shrank or grew shows as *changed* (with before/after bounds) instead of one resolved and one new gap. | Known limitation in the README; the before/after view of a fix is the main use of `compare`. | M | Changes the comparison output (a new `changed` list): comparisons are schema-versioned with reports, so this rides on schema 2 too. Only listed gaps can be compared, as today (`max_listed`). |
 | P-11 | *Approved by the owner on 2026-10-19; done in OSS-101, as a **draft** release the owner publishes.* **Attach the built files to the GitHub release.** The *Release build* workflow, on an `energydata-kit-v*` tag, also creates (or updates) the GitHub release and uploads the wheel, sdist and their SHA-256 sums. Still never uploads to an index. | D6 chose GitHub releases only; today the owner attaches the files by hand after the workflow builds them, which is error-prone and leaves the attested files and the attached files separate. | S | Needs `contents: write` for that job only, a pinned action or `gh`, and a test in the dry run. Gated by the strict readiness check (D6 line for that version) already in the workflow. No package change. |
 
 Considered and not proposed:
@@ -1040,7 +1040,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Reports record `parameters.jump_max_rate` as `[delta, duration]`;
       `null` when off, so the golden reports are unchanged.
 
-### OSS-107: report schema 2, step 4 (P-9 `counter_rollover`) — this change (reviewed in [#98](https://github.com/PederFalkman/opensource/pull/98), which merged into the OSS-106 branch instead of `main`)
+### OSS-107: report schema 2, step 4 (P-9 `counter_rollover`) — merged in [#99](https://github.com/PederFalkman/opensource/pull/99) (reviewed in [#98](https://github.com/PederFalkman/opensource/pull/98), which merged into the OSS-106 branch instead of `main`)
 
 - [x] `counter_rollover_mask(values, modulus)`: of the rows
       `counter_decrease_mask` flags (same `tolerance` and `max_gap`), those
@@ -1054,6 +1054,20 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Reports record `parameters.counter_rollover` and count
       `COUNTER_ROLLOVER`; off by default, so the golden reports are
       unchanged.
+
+### OSS-108: report schema 2, step 5 (P-10 overlap matching) — this change (reviewed in [#100](https://github.com/PederFalkman/opensource/pull/100), which merged into the OSS-107 branch instead of `main`)
+
+- [x] `compare_reports` matches listed gaps by overlap (intervals of
+      missing timestamps, both ends included): exact matches stay
+      unlisted, overlapping gaps with different bounds go to
+      `gaps.changed` as before/after pairs (each pair for a split or a
+      merge), and `resolved` / `new` keep only gaps overlapping nothing.
+      A sweep over the sorted lists, so long lists stay linear.
+- [x] `compare --format text` and `markdown` count changed gaps. `worse`
+      is still decided by counts.
+- [x] The comparison golden file is regenerated: its two shrunk/grown
+      gaps move from resolved + new to `changed`; nothing else differs.
+      Report schema 2 is now complete (`SCHEMA_2.md`, steps 1 to 5).
 
 ## Explicitly not planned
 
