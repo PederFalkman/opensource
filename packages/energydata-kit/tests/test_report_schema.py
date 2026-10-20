@@ -80,6 +80,12 @@ def _variants():
             counter_tolerance=0.1,
             jump_max_delta=np.float32(5),
         ),
+        "schema 2 options": ek.assess_quality(
+            s, freq="15min", jump_max_rate=(np.int64(50), "1h"), max_gap=pd.Timedelta("1h")
+        ),
+        "frame, schema 2 options per column": ek.assess_frame(
+            frame, per_column={"a": {"jump_max_rate": (5.0, "15min"), "max_gap": "30min"}}
+        ),
         "calendar": ek.assess_quality(daily.tz_convert("UTC"), freq="D", tz="Europe/Stockholm"),
         "step longer than a day": ek.assess_quality(s, freq="2D"),
         "known outages": ek.assess_quality(

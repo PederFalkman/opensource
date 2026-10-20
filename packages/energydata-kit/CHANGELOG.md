@@ -23,6 +23,13 @@ versioning: [SemVer](https://semver.org/).
   `flag_series`, `assess_quality`, `assess_frame` and `flag_frame` (also
   per column), and the Pandera checks; recorded in reports as an ISO 8601
   duration. Off by default, so results without it are unchanged.
+- `jump_max_rate=(delta, period)`, e.g. `(50.0, "1h")` (`--jump-max-rate 50
+  1h`): flag `JUMP` where a value changes faster than `delta` per `period`
+  since the previous finite value, so the limit scales with the time between
+  rows. Combines with `jump_max_delta` and `max_gap`. New `jump_rate_mask`
+  and Pandera `jump_rate_check`; accepted by `flag_series`,
+  `assess_quality`, `assess_frame` and `flag_frame` (also per column) and
+  `series_schema`; recorded in reports as `[delta, ISO 8601 duration]`.
 - `QualityFlag.COUNTER_ROLLOVER` (1024), reserved for counter rollovers; no
   check sets it yet.
 
