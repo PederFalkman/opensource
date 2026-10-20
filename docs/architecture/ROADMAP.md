@@ -989,7 +989,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 
 - [x] No new work by the owner's choice while #93 was open.
 
-### OSS-103: report schema 2 design — this change
+### OSS-103: report schema 2 design — merged in [#94](https://github.com/PederFalkman/opensource/pull/94)
 
 - [x] P-7 to P-10 approved by the owner on 2026-10-20. `SCHEMA_2.md`
       fixes what they change in the format before any code: new
@@ -997,6 +997,22 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `COUNTER_ROLLOVER` flag (bit 1024), `changed` gaps in comparisons,
       `compare_reports` reading schemas 1 and 2, and a five-step plan for
       0.2.0. Three open questions for the owner. Docs only.
+
+### OSS-104: report schema 2, step 1 (scaffolding) — this change
+
+- [x] The owner's answers to the design's three questions recorded in
+      `SCHEMA_2.md`: `(delta, period)` rates, the `m / 2` rollover rule,
+      schema 2 only.
+- [x] Reports, frame reports and comparisons write `"schema_version": "2"`
+      with the new fields, all off: parameters `max_gap`, `jump_max_rate`,
+      `counter_rollover` (`null`), flag count `COUNTER_ROLLOVER` (0, new
+      `QualityFlag` bit 1024, reserved), comparison `gaps.changed` (empty).
+      No check behaves differently yet.
+- [x] `report_schema.json` validates schemas 1 and 2; the schema-1
+      definitions are unchanged byte for byte. `compare_reports` reads
+      both and no longer counts a flag one side lacks as 0. The 0.1.0
+      golden reports are kept in `tests/golden/schema1/` and compared
+      with their schema-2 counterparts (no changes listed).
 
 ## Explicitly not planned
 

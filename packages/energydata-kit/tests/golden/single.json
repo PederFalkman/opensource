@@ -10,6 +10,7 @@
   "flag_counts": {
     "ANY": 67,
     "COUNTER_DECREASE": 0,
+    "COUNTER_ROLLOVER": 0,
     "DUPLICATE_TIMESTAMP": 2,
     "JUMP": 0,
     "MISSING_VALUE": 1,
@@ -80,11 +81,14 @@
       0,
       110
     ],
+    "counter_rollover": null,
     "counter_tolerance": 0.0,
     "cumulative": false,
     "freq": "P0DT0H15M0S",
     "jump_max_delta": 15,
+    "jump_max_rate": null,
     "known_outages": [],
+    "max_gap": null,
     "max_listed": 100,
     "origin": null,
     "stale_atol": 0.0,
@@ -92,7 +96,7 @@
     "stale_min_run": 4,
     "tz": null
   },
-  "schema_version": "1",
+  "schema_version": "2",
   "series_name": "synthetic_power",
   "truncated": {
     "duplicate_timestamps": false,

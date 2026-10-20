@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 
@@ -99,7 +100,7 @@ def test_rejects_mismatched_inputs():
 
 def test_rejects_a_comparison_or_a_hand_edited_report():
     a, b = report(drop=[3]), report()
-    saved_comparison = json.loads(compare_reports(a, b).to_json())  # also schema "1"
+    saved_comparison = json.loads(compare_reports(a, b).to_json())  # carries a schema_version too
     with pytest.raises(ValueError, match="before is not a quality report: fingerprint"):
         compare_reports(saved_comparison, b)
 
@@ -132,3 +133,34 @@ def test_known_outages_appear_in_the_comparison():
     assert counts["n_missing_explained"] == {"before": 0, "after": 2, "delta": 2}
     assert counts["completeness_excluding_outages"] == {"before": None, "after": 1.0}
     assert not compare_reports(before, after).worse
+
+
+GOLDEN = Path(__file__).parent / "golden"
+
+
+@pytest.mark.parametrize("name", ["single.json", "frame.json", "counter_local_day.json"])
+def test_schema_1_reports_compare_with_schema_2_reports(name):
+    # A 0.1.0 report (schema 1) against the same data reported by this version (schema 2):
+    # nothing changed, so nothing is listed. In particular the new COUNTER_ROLLOVER count is
+    # not reported as appearing, and the new parameters are not reported as changed (OSS-104).
+    old = json.loads((GOLDEN / "schema1" / name).read_text(encoding="utf-8"))
+    new = json.loads((GOLDEN / name).read_text(encoding="utf-8"))
+    assert old["schema_version"] == "1" and new["schema_version"] == "2"
+    for before, after in ((old, new), (new, old), (old, old)):
+        result = compare_reports(before, after)
+        assert result.schema_version == "2"
+        assert all(changes == {} for changes in result.changes.values()), result.changes
+
+
+def test_schema_1_report_against_a_changed_schema_2_report():
+    old = json.loads((GOLDEN / "schema1" / "single.json").read_text(encoding="utf-8"))
+    new = json.loads((GOLDEN / "single.json").read_text(encoding="utf-8"))
+    new["flag_counts"]["JUMP"] += 1
+    new["flag_counts"]["COUNTER_ROLLOVER"] = 3  # one side only: not compared
+    changes = compare_reports(old, new).changes[""]
+    assert changes["flag_counts"] == {"JUMP": {"before": 0, "after": 1, "delta": 1}}
+
+
+def test_gap_section_lists_changed_gaps():
+    changes = compare_reports(report(drop=[3]), report(drop=[5])).changes[""]
+    assert changes["gaps"]["changed"] == []  # filled by overlap matching in a later step (P-10)

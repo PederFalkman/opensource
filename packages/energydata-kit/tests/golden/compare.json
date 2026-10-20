@@ -40,6 +40,7 @@
         }
       },
       "gaps": {
+        "changed": [],
         "lists_truncated": false,
         "new": [
           {
@@ -464,6 +465,7 @@
         "before": "366c043b674c27ffbcfb5c88a1968b60e3d716bd2587043643900abfd28e28fa"
       },
       "gaps": {
+        "changed": [],
         "lists_truncated": false,
         "new": [
           {
@@ -856,6 +858,6 @@
   "columns_removed": [],
   "package_version": "*",
   "same_data": false,
-  "schema_version": "1",
+  "schema_version": "2",
   "worse": true
 }
