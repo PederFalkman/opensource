@@ -43,6 +43,7 @@ COLUMN_OPTIONS = frozenset(
         "cumulative",
         "counter_tolerance",
         "jump_max_delta",
+        "max_gap",
     }
 )
 
@@ -143,6 +144,7 @@ def assess_frame(
     cumulative: bool = False,
     counter_tolerance: float = 0.0,
     jump_max_delta: float | None = None,
+    max_gap: str | pd.Timedelta | None = None,
     origin: pd.Timestamp | None = None,
     tz: str | None = None,
     per_column: Mapping[str, Mapping[str, Any]] | None = None,
@@ -166,7 +168,7 @@ def assess_frame(
         Shared by all columns, as in :func:`energydata_kit.assess_quality`.
         Without ``freq``, each column uses its own ``metadata.resolution``
         (one with no fixed length, such as ``"MS"``, in its own ``metadata.timezone``).
-    bounds, stale_min_run, stale_atol, stale_exclude, cumulative, counter_tolerance, jump_max_delta:
+    bounds, stale_min_run, stale_atol, stale_exclude, cumulative, counter_tolerance, jump_max_delta, max_gap:
         Check options applied to every column. Columns usually differ in
         unit and meaning, so set them per column with ``per_column`` unless
         they really apply to all.
@@ -193,6 +195,7 @@ def assess_frame(
         "cumulative": cumulative,
         "counter_tolerance": counter_tolerance,
         "jump_max_delta": jump_max_delta,
+        "max_gap": max_gap,
     }
     reports: dict[str, QualityReport] = {}
     for name in names:
@@ -282,6 +285,7 @@ def flag_frame(
     cumulative: bool = False,
     counter_tolerance: float = 0.0,
     jump_max_delta: float | None = None,
+    max_gap: str | pd.Timedelta | None = None,
     origin: pd.Timestamp | None = None,
     tz: str | None = None,
     per_column: Mapping[str, Mapping[str, Any]] | None = None,
@@ -310,6 +314,7 @@ def flag_frame(
         "cumulative": cumulative,
         "counter_tolerance": counter_tolerance,
         "jump_max_delta": jump_max_delta,
+        "max_gap": max_gap,
     }
     parts: dict[str, pd.Series] = {}
     index: pd.Index | None = None

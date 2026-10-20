@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 
 from energydata_kit import __version__
-from energydata_kit.flags import FLAG_COLUMN, QualityFlag, flag_series
+from energydata_kit.flags import FLAG_COLUMN, QualityFlag, _max_gap, flag_series
 from energydata_kit.intervals import (
     Gap,
     _gaps,
@@ -199,6 +199,7 @@ def assess_quality(
     cumulative: bool = False,
     counter_tolerance: float = 0.0,
     jump_max_delta: float | None = None,
+    max_gap: str | pd.Timedelta | None = None,
     origin: pd.Timestamp | None = None,
     tz: str | None = None,
     known_outages: Iterable[tuple[pd.Timestamp | str, pd.Timestamp | str]] = (),
@@ -238,8 +239,10 @@ def assess_quality(
 
     ``stale_min_run``, ``cumulative`` and ``jump_max_delta`` enable the opt-in
     stale-value, counter-decrease and jump checks; ``stale_atol``,
-    ``stale_exclude`` and ``counter_tolerance`` tune them (see
-    :func:`energydata_kit.flag_series`).
+    ``stale_exclude`` and ``counter_tolerance`` tune them, and ``max_gap``
+    (e.g. ``"1h"``) stops them comparing rows further apart than that (see
+    :func:`energydata_kit.flag_series`). ``max_gap`` is recorded as an ISO
+    8601 duration.
 
     Options may be numpy scalars (e.g. bounds from ``series.quantile()``);
     the report stores them as plain Python numbers.
@@ -271,6 +274,7 @@ def assess_quality(
         cumulative=cumulative,
         counter_tolerance=counter_tolerance,
         jump_max_delta=jump_max_delta,
+        max_gap=max_gap,
         origin=origin,
         tz=tz,
     )
@@ -355,8 +359,8 @@ def assess_quality(
             "counter_tolerance": _plain(counter_tolerance),
             "jump_max_delta": _plain(jump_max_delta),
             "known_outages": [[_iso_ns(lo), _iso_ns(hi)] for lo, hi in outages],
-            # Schema 2 (docs/architecture/SCHEMA_2.md); the options come in later steps.
-            "max_gap": None,
+            # Schema 2 (docs/architecture/SCHEMA_2.md); the other options come in later steps.
+            "max_gap": _iso_duration(_max_gap(max_gap)),
             "jump_max_rate": None,
             "counter_rollover": None,
         },
