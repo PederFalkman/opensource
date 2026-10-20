@@ -53,9 +53,10 @@ advisories).
 | Version | Security fixes |
 |---|---|
 | `main` | Yes |
+| 0.2.0 | GitHub release only; fixes go to `main` and a later release |
 | 0.1.0 | GitHub release only; fixes go to `main` and a later release |
 
-Version 0.1.0 is a GitHub release (not on PyPI). Fixes go to `main` and ship
+Versions 0.1.0 and 0.2.0 are GitHub releases (not on PyPI). Fixes go to `main` and ship
 in the next release; no support policy for older versions (for example,
 patch releases of 0.1.x) has been set, so nothing here promises patches for
 a particular version.
