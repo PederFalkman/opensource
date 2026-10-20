@@ -1040,7 +1040,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Reports record `parameters.jump_max_rate` as `[delta, duration]`;
       `null` when off, so the golden reports are unchanged.
 
-### OSS-107: report schema 2, step 4 (P-9 `counter_rollover`) — in [#99](https://github.com/PederFalkman/opensource/pull/99) (reviewed in [#98](https://github.com/PederFalkman/opensource/pull/98), which merged into the OSS-106 branch instead of `main`)
+### OSS-107: report schema 2, step 4 (P-9 `counter_rollover`) — merged in [#99](https://github.com/PederFalkman/opensource/pull/99) (reviewed in [#98](https://github.com/PederFalkman/opensource/pull/98), which merged into the OSS-106 branch instead of `main`)
 
 - [x] `counter_rollover_mask(values, modulus)`: of the rows
       `counter_decrease_mask` flags (same `tolerance` and `max_gap`), those
@@ -1055,7 +1055,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `COUNTER_ROLLOVER`; off by default, so the golden reports are
       unchanged.
 
-### OSS-108: report schema 2, step 5 (P-10 overlap matching) — this change
+### OSS-108: report schema 2, step 5 (P-10 overlap matching) — this change (reviewed in [#100](https://github.com/PederFalkman/opensource/pull/100), which merged into the OSS-107 branch instead of `main`)
 
 - [x] `compare_reports` matches listed gaps by overlap (intervals of
       missing timestamps, both ends included): exact matches stay
