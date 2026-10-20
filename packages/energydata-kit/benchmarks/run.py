@@ -31,15 +31,17 @@ def series(n: int, freq: str, seed: int = 0, defects: bool = True) -> pd.Series:
 
 
 def measure(label: str, fn: Callable[[], object], repeat: int = 3) -> None:
+    # Time without tracemalloc, which slows Python-level code many times over and
+    # would distort the timings (OSS-136); trace memory in one extra run.
     times = []
-    peak = 0
     for _ in range(repeat):
-        tracemalloc.start()
         start = time.perf_counter()
         fn()
         times.append(time.perf_counter() - start)
-        peak = max(peak, tracemalloc.get_traced_memory()[1])
-        tracemalloc.stop()
+    tracemalloc.start()
+    fn()
+    peak = tracemalloc.get_traced_memory()[1]
+    tracemalloc.stop()
     print(f"| {label} | {min(times):.2f} | {peak / 2**20:.0f} |", flush=True)
 
 
@@ -52,12 +54,18 @@ def main() -> None:
     quarter = series(350_640, "15min")  # ten years at 15 min
     frame = pd.DataFrame({f"c{i}": series(350_640, "15min", seed=i, defects=False) for i in range(5)})
     strings = pd.Series(pd.date_range("2020-01-01", periods=350_640, freq="15min").astype(str))
+    local = pd.date_range("2020-01-01", periods=350_640, freq="15min", tz="Europe/Stockholm")
+    offset_strings = pd.Series([t.isoformat() for t in local])  # +01:00 / +02:00 across DST
     every_check = {"bounds": (0, 200), "stale_min_run": 5, "cumulative": True, "jump_max_delta": 50}
 
     print("\n| Case (best of 3) | Time (s) | Peak traced memory (MiB) |\n|---|---|---|")
     measure(
         "`normalize_timestamps`, 350k naive ISO strings",
         lambda: ek.normalize_timestamps(strings, assume_tz="UTC"),
+    )
+    measure(
+        "`normalize_timestamps`, 350k ISO strings with DST offsets",
+        lambda: ek.normalize_timestamps(offset_strings),
     )
     measure("`flag_series`, 1 year at 1 min", lambda: ek.flag_series(minute, freq="1min"))
     measure(

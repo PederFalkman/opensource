@@ -313,3 +313,58 @@ def test_gap_overlap_matching_matches_brute_force(drop_before, drop_after):
         x for x in b if not any(overlaps(x, y) for y in a)
     )
     assert [as_tuple(g) for g in gaps["new"]] == sorted(y for y in a if not any(overlaps(x, y) for x in b))
+
+
+_OFFSETS = st.sampled_from(
+    ["Z", "+00:00", "+01:00", "+02:00", "-05:00", "+05:30", "+05:45", "-03:30", "+14:00", "-12:00"]
+)
+_NEAR_MISSES = st.sampled_from(["+0100", "+01", "z", "+15:00", " +01:00", "+01:00 ", "UTC", ""])
+
+
+@DETERMINISTIC
+@given(
+    st.lists(
+        st.tuples(
+            st.datetimes(
+                min_value=pd.Timestamp("1970-01-02").to_pydatetime(),
+                max_value=pd.Timestamp("2200-01-01").to_pydatetime(),
+            ),
+            st.integers(0, 9),
+            st.sampled_from(["T", " "]),
+            st.booleans(),
+            _OFFSETS,
+        ),
+        min_size=1,
+        max_size=30,
+    ),
+    st.one_of(st.none(), _NEAR_MISSES),
+)
+def test_offset_fast_path_matches_pandas(rows, near_miss):
+    # OSS-136 (P-16): strings with UTC offsets are split and parsed on pandas' fast naive
+    # path. The result must equal pandas' own ISO 8601 parse; anything outside the strict
+    # form (the near misses) falls back to that parse, so the outcome is identical either way.
+    strings = []
+    for when, digits, sep, with_seconds, offset in rows:
+        text = when.strftime(f"%Y-%m-%d{sep}%H:%M")
+        if with_seconds:
+            text += when.strftime(":%S")
+            if digits:
+                text += "." + f"{when.microsecond:06d}{when.microsecond % 1000:03d}"[:digits]
+        strings.append(text + offset)
+    if near_miss is not None:
+        strings[-1] = (
+            strings[-1].rstrip("Z+-:0123456789") + near_miss if near_miss.strip() else strings[-1] + near_miss
+        )
+    try:
+        expected = pd.DatetimeIndex(pd.to_datetime(strings, utc=True, format="ISO8601")).as_unit("ns")
+    except (ValueError, TypeError):
+        expected = None
+    try:
+        got = normalize_timestamps(strings)
+    except (ValueError, TypeError):
+        got = None
+    if near_miss is None:
+        # The strict form always takes the fast path, and must give pandas' result.
+        assert expected is not None and got is not None and got.equals(expected), (strings, got, expected)
+    elif expected is not None and got is not None:
+        assert got.equals(expected), (strings, got, expected)
