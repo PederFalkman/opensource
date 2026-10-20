@@ -1,4 +1,50 @@
-# Release decisions for energydata-kit 0.1.0
+# Release decisions for energydata-kit
+
+## 0.2.0 (prepared 2026-10-20, OSS-109)
+
+**Status:** engineering for 0.2.0 is complete once OSS-107 (#99) and OSS-108
+(#100) are on `main`; nothing here is decided. `main` stays at
+`0.2.0.dev0` with the upload guard until the owner decides the items below.
+The 0.1.0 record follows further down and is unchanged.
+
+**What 0.2.0 contains** (approved as P-7 to P-10 by the owner on
+2026-10-20; design in `docs/architecture/SCHEMA_2.md`):
+
+- Report schema 2 (OSS-104, #95): additive fields only; `report_schema.json`
+  keeps the schema-1 definitions unchanged and validates both.
+- `max_gap` (OSS-105, #96), `jump_max_rate` (OSS-106, #97),
+  `counter_rollover` with the `COUNTER_ROLLOVER` flag (OSS-107, #99) and
+  overlap matching of gaps in `compare_reports` (OSS-108, #100).
+- New public names: `jump_rate_mask`, `counter_rollover_mask` and the
+  Pandera `jump_rate_check`; new keyword-only options on existing functions.
+  Nothing removed or renamed. The changelog's `[Unreleased]` section has
+  the release notes, including what changes for 0.1.0 users.
+
+**What did not change since 0.1.0** (`git diff 827a2df` on `pyproject.toml`,
+2026-10-20): no runtime dependency, optional extra or version range was
+added or changed, and no data file was added (`report_schema.json` grew).
+The only `pyproject.toml` change is the restored upload guard (OSS-97).
+`THIRD_PARTY_LICENSES.md` is unchanged.
+
+| Gate | State for 0.2.0 | Open question |
+|---|---|---|
+| G1 Ownership | Counsel confirmed ownership of the repository's code for 0.1.0 (D2). Commits since then fall in the same categories: on `main` at `67a74aa`, 26 commits after the 0.1.0 merge (`827a2df`): 15 by the AI coding assistant in the owner's sessions (12 with changes, 3 merging `main` into a pull-request branch) and 11 by the owner (9 pull-request merges and 2 own commits adding the browser prototype in `apps/workbench/`, which is outside the package and not shipped); no external contributor | Does the D2 confirmation cover code added since 0.1.0, or should counsel confirm again? |
+| G2 Licence | Passed: Apache-2.0, unchanged | — |
+| G3 IP boundary review | Not yet done for the 0.2.0 diff. Evidence: the `IP boundary` CI job on every PR; P-7 to P-10 are generic data-quality checks designed in the public `SCHEMA_2.md` | Technical lead to review and sign off the diff from `827a2df` to the release commit |
+| G4 Third-party licences | Unchanged since 0.1.0 (no dependency change) | Is the 0.1.0 position enough, or is legal confirmation needed for this release? |
+| G5 CI green | Green on every 0.2.0 PR; re-checked on the release commit | — |
+| G6 Documentation honest | README, changelog and guide updated with each step; the guide's new examples run in the test suite | Review on the release commit |
+| G7 Publication (D6) | The 0.1.0 approval names 0.1.0 only, so it does not cover 0.2.0 (OSS-98) | Publish 0.2.0 as a GitHub release only, like 0.1.0, or to an index? The owner records the answer as a new approval line under D6 naming `energydata-kit 0.2.0` |
+
+**After the decisions:** a release PR built from `RELEASE_CHECKLIST.md`
+sets `__version__` to `0.2.0`, moves `[Unreleased]` under a dated
+`## [0.2.0]` heading, removes the upload guard together with the owner's
+D6 line for 0.2.0, and passes `check_release_readiness.py --strict`; the
+tag `energydata-kit-v0.2.0` then runs the *Release build* workflow, which
+now also creates the draft GitHub release (P-11, OSS-101). None of this is
+done before the owner's decisions.
+
+## 0.1.0 (released 2026-10-19)
 
 **Status:** prepared 2026-10-16 (OSS-22), facts refreshed 2026-10-17
 (OSS-48) and 2026-10-18 (OSS-60, OSS-69, OSS-77, OSS-85) · **For:** management, legal counsel

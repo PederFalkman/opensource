@@ -5,6 +5,24 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+Report schema 2 and four opt-in refinements of the checks: gaps that stop
+comparisons (`max_gap`), a jump limit per unit of time (`jump_max_rate`),
+counter rollovers told apart from resets (`counter_rollover`), and
+comparisons that match gaps by overlap. Every new option is off by default:
+with the 0.1.0 options, masks and flags are unchanged, and reports differ
+only by the schema version and the new fields (`null` parameters,
+`COUNTER_ROLLOVER: 0`).
+
+**Upgrading from 0.1.0.**
+- Code that requires `"schema_version": "1"` must accept `"2"`. The shipped
+  `report_schema.json` validates both, and `compare_reports` reads both.
+- In comparisons, a gap whose bounds changed is now listed under
+  `gaps.changed`, no longer as one resolved and one new gap, so `resolved`
+  and `new` can be shorter than before for the same reports.
+- The text and Markdown comparison summaries add `changed: N` to the gap
+  line; JSON remains the format for automation.
+- Nothing was removed or renamed; the new options are keyword-only.
+
 ### Changed
 - **Report schema 2.** Reports, frame reports and comparisons now carry
   `"schema_version": "2"`. Schema 2 only adds fields: the parameters
@@ -44,6 +62,8 @@ versioning: [SemVer](https://semver.org/).
   accepted by `flag_series`, `assess_quality`, `assess_frame` and
   `flag_frame` (also per column), Pandera `counter_check(rollover=...)` and
   `series_schema`; recorded in reports. The modulus is never guessed.
+- `examples/GUIDE.md` shows the new options and changed gaps, executed by
+  the test suite like the rest of the guide.
 
 ## [0.1.0] - 2026-10-19
 
