@@ -81,6 +81,46 @@ and anything that downloads data.
 **Suggested order if approved:** P-3 and P-4 first (small, no schema change),
 then P-2 with P-6 as one schema-2 change, then P-5 if users ask for it.
 
+### P-7 to P-11: candidates after 0.1.0 (OSS-100)
+
+*Prepared by the assistant in OSS-100 for the owner to approve or reject one
+by one. Nothing here is authorized; none of it starts without approval.*
+Each item is generic data-quality or release tooling as defined in
+`IP_BOUNDARY.md` ("What *is* in scope"), ships no domain thresholds (every
+limit stays caller-supplied) and touches nothing on the out-of-scope list.
+Most come from the package README's "Known limitations".
+
+**The constraint that shapes all of them:** report schema 1 is fixed since
+0.1.0, and its `parameters` object allows no extra fields. Any new check
+option that a report records (P-7, P-8, P-9) therefore needs **report
+schema 2**, which `compare_reports` and `report_schema.json` must support
+alongside schema 1. If more than one is approved, they should ship together
+as one schema-2 change, not one schema bump each. Options used only by
+`flag_series` and the Pandera checks, and not recorded in reports, need no
+schema change.
+
+| ID | Candidate | Why | Effort | Risk and cost |
+|---|---|---|---|---|
+| P-7 | **Rate-based jump limit.** An opt-in `jump_max_rate` (change per unit of time, e.g. kW per hour) next to the absolute `jump_max_delta`, dividing each change by the time since the previous finite value. | Known limitation: the jump check uses an absolute limit per row, so a gap followed by a normal ramp looks like a jump, and the same limit can't fit two resolutions. | S | Schema 2 if recorded in reports. The caller picks the rate; units stay the caller's (no Pint conversion of limits). Must define behaviour across duplicates and off-grid rows. |
+| P-8 | **Runs and comparisons that stop at gaps.** An opt-in `max_gap` for the stale, counter and jump checks: consecutive rows further apart than this are not compared, and a stale run does not continue across the gap. | Known limitation: these checks compare consecutive rows and ignore time gaps, so a flat line before and after an outage counts as one run and a jump across a long gap is flagged. | S–M | Schema 2 if recorded. Default off, so 0.1.0 results stay identical. Interacts with P-7; worth designing together. |
+| P-9 | **Counter rollover (wrap-around) separated from resets.** An opt-in `counter_rollover` (the register's modulus, e.g. 10**6 kWh, supplied by the caller): a drop consistent with wrapping past the modulus gets a new `COUNTER_ROLLOVER` flag (bit 1024) instead of `COUNTER_DECREASE`. | Known limitation: a register reset and a rollover both appear as `COUNTER_DECREASE`; a caller who knows the register size can tell them apart. | S | Adds a flag bit (public contract: never renumbered) and a flag count, so schema 2. No modulus is shipped or guessed. |
+| P-10 | **Overlap-aware gap comparison.** `compare_reports` matches gaps by overlap, so a gap that shrank or grew shows as *changed* (with before/after bounds) instead of one resolved and one new gap. | Known limitation in the README; the before/after view of a fix is the main use of `compare`. | M | Changes the comparison output (a new `changed` list): comparisons are schema-versioned with reports, so this rides on schema 2 too. Only listed gaps can be compared, as today (`max_listed`). |
+| P-11 | *Approved by the owner on 2026-10-19; not started.* **Attach the built files to the GitHub release.** The *Release build* workflow, on an `energydata-kit-v*` tag, also creates (or updates) the GitHub release and uploads the wheel, sdist and their SHA-256 sums. Still never uploads to an index. | D6 chose GitHub releases only; today the owner attaches the files by hand after the workflow builds them, which is error-prone and leaves the attested files and the attached files separate. | S | Needs `contents: write` for that job only, a pinned action or `gh`, and a test in the dry run. Gated by the strict readiness check (D6 line for that version) already in the workflow. No package change. |
+
+Considered and not proposed:
+- **Automatic or statistical limits** (outlier scores, learned thresholds):
+  they edge towards forecasting or anomaly models and would ship implied
+  domain limits.
+- **Gap filling or resampling:** changes data, against the non-destructive
+  rule.
+- **Publishing to PyPI:** a D6 decision, not engineering.
+- **A second package:** not authorized.
+
+**Suggested order if approved:** P-11 first (no schema change, removes a
+manual release step). Then P-8 with P-7, and P-9 if wanted, as one
+schema-2 change together with P-10, because they all change what reports
+and comparisons contain. Each needs its own approval.
+
 ## Done
 
 ### Pre-release hardening at a glance (OSS-40 to OSS-65)
@@ -895,7 +935,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 
 - [x] No new work while the release PR was open.
 
-### OSS-97: open 0.2.0 development — this change
+### OSS-97: open 0.2.0 development — merged in [#88](https://github.com/PederFalkman/opensource/pull/88)
 
 - [x] `__version__` is `0.2.0.dev0`; `[Unreleased]` takes the changes
       after 0.1.0; CONTRIBUTING says so. The 0.1.0 section stays as
@@ -906,7 +946,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] The next release needs a new D6 approval; since OSS-98 the guard
       check enforces it, as the 0.1.0 line names its version.
 
-### OSS-98: D6 approval tied to the version — this change
+### OSS-98: D6 approval tied to the version — merged in [#89](https://github.com/PederFalkman/opensource/pull/89)
 
 - [x] The guard check (and the strict readiness check) accept only a
       `**D6 approved:** YYYY-MM-DD` line that names the package and the
@@ -916,6 +956,17 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `827a2df` still passes; `b9444a6` (#82) still fails.
 - [x] The release dry run writes its placeholder line with the version;
       D6, the checklist and the gates show the format.
+
+### OSS-99: pause while #88 and #89 were open
+
+- [x] No new work by the owner's choice.
+
+### OSS-100: post-0.1.0 proposals — this change
+
+- [x] P-7 to P-11 drafted above for the owner to approve or reject one by
+      one; nothing implemented. P-11 approved by the owner on 2026-10-19;
+      P-7 to P-10 not decided. The schema-2 constraint is spelled out,
+      since four of the five change what reports record.
 
 ## Explicitly not planned
 
