@@ -162,6 +162,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--counter-tolerance", type=float, default=0.0, help="ignore counter decreases up to this size"
     )
     checks.add_argument(
+        "--counter-rollover",
+        type=float,
+        metavar="M",
+        help="the counter's register modulus: drops that wrap past it are rollovers, not decreases",
+    )
+    checks.add_argument(
         "--jump-max-delta", type=float, help="flag changes larger than this from the previous value"
     )
     checks.add_argument(
@@ -445,6 +451,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
         stale_exclude=args.stale_exclude,
         cumulative=args.cumulative,
         counter_tolerance=args.counter_tolerance,
+        counter_rollover=args.counter_rollover,
         jump_max_delta=args.jump_max_delta,
         jump_max_rate=args.jump_max_rate,
         max_gap=args.max_gap,
@@ -467,6 +474,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
             stale_exclude=args.stale_exclude,
             cumulative=args.cumulative,
             counter_tolerance=args.counter_tolerance,
+            counter_rollover=args.counter_rollover,
             jump_max_delta=args.jump_max_delta,
             jump_max_rate=args.jump_max_rate,
             max_gap=args.max_gap,
@@ -609,6 +617,7 @@ def _run_frame_report(
         "stale_exclude": args.stale_exclude,
         "cumulative": args.cumulative,
         "counter_tolerance": args.counter_tolerance,
+        "counter_rollover": args.counter_rollover,
         "jump_max_delta": args.jump_max_delta,
         "jump_max_rate": args.jump_max_rate,
         "max_gap": args.max_gap,

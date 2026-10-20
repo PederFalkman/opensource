@@ -24,6 +24,7 @@ __all__ = [
     "VALUE_COLUMN",
     "QualityFlag",
     "counter_decrease_mask",
+    "counter_rollover_mask",
     "decode_flags",
     "flag_series",
     "jump_mask",
@@ -283,7 +284,8 @@ def counter_decrease_mask(
     Meant for monotonically non-decreasing registers (e.g. energy meter
     readings). Each value is compared with the last finite value before it,
     so only the row where the drop happens is flagged. Resets and rollovers
-    both show up as decreases; this function does not guess which one it is.
+    both show up as decreases; this function does not guess which one it is
+    (:func:`counter_rollover_mask` tells them apart given the modulus).
     Drops of at most ``tolerance`` are ignored. With ``max_gap``, a value is
     not compared with a previous finite value more than ``max_gap`` earlier
     (``values`` must then be a Series with a ``DatetimeIndex``).
@@ -296,6 +298,40 @@ def counter_decrease_mask(
     previous = v.where(finite).ffill().shift(1)
     near = _near_previous_finite(_with_index(values, v), finite, gap)
     return np.asarray(finite & previous.notna() & (v < previous - tolerance) & near, dtype=bool)
+
+
+def _modulus(modulus: object, name: str) -> float:
+    """A register modulus: a finite number > 0, supplied by the caller and never guessed."""
+    value = _number(modulus, name)
+    if not np.isfinite(value) or value <= 0:
+        raise ValueError(f"{name} must be a finite number > 0, got {modulus!r}")
+    return value
+
+
+def counter_rollover_mask(
+    values: pd.Series | np.ndarray | list[object],
+    modulus: float,
+    *,
+    tolerance: float = 0.0,
+    max_gap: str | pd.Timedelta | None = None,
+) -> np.ndarray:
+    """True where a counter decrease is consistent with a register wrapping past ``modulus``.
+
+    Only rows :func:`counter_decrease_mask` flags (with the same
+    ``tolerance`` and ``max_gap``) are candidates. A drop from the previous
+    finite value ``prev`` to ``cur`` is a rollover when the increase implied
+    by wrapping, ``cur + modulus - prev``, is at least ``-tolerance`` and
+    less than ``modulus / 2``; any other drop stays a plain decrease (a reset,
+    or a drop too large to be a wrap). With ``modulus=1e6``, 999 990 → 10 is
+    a rollover (implied +20) and 500 000 → 0 is not. The modulus is the
+    register size, supplied by the caller; the package never guesses one.
+    """
+    m = _modulus(modulus, "modulus")
+    decrease = counter_decrease_mask(values, tolerance=tolerance, max_gap=max_gap)
+    v = _numeric(_as_series(values)).to_numpy()
+    previous = pd.Series(np.where(np.isfinite(v), v, np.nan)).ffill().shift(1).to_numpy()
+    implied = v + m - previous  # NaN where there is no previous value; those are not decreases
+    return np.asarray(decrease & (implied >= -tolerance) & (implied < m / 2), dtype=bool)
 
 
 def jump_mask(
@@ -376,6 +412,7 @@ def _check_options(
     jump_max_delta: float | None = None,
     max_gap: object = None,
     jump_max_rate: object = None,
+    counter_rollover: object = None,
 ) -> None:
     """Reject a non-boolean ``cumulative`` and fine-tuning options given without the check they tune."""
     if not isinstance(cumulative, bool | np.bool_):
@@ -384,6 +421,10 @@ def _check_options(
         raise ValueError("stale_atol and stale_exclude require stale_min_run")
     if not cumulative and counter_tolerance:
         raise ValueError("counter_tolerance requires cumulative=True")
+    if counter_rollover is not None:
+        _modulus(counter_rollover, "counter_rollover")
+        if not cumulative:
+            raise ValueError("counter_rollover requires cumulative=True")
     _max_rate(jump_max_rate)
     jumps = jump_max_delta is not None or jump_max_rate is not None
     if _max_gap(max_gap) is not None and stale_min_run is None and not cumulative and not jumps:
@@ -401,6 +442,7 @@ def flag_series(
     stale_exclude: Collection[float] = (),
     cumulative: bool = False,
     counter_tolerance: float = 0.0,
+    counter_rollover: float | None = None,
     jump_max_delta: float | None = None,
     jump_max_rate: tuple[float, str | pd.Timedelta] | None = None,
     max_gap: str | pd.Timedelta | None = None,
@@ -437,6 +479,11 @@ def flag_series(
     counter_tolerance:
         Passed to :func:`counter_decrease_mask` as ``tolerance``. Requires
         ``cumulative``.
+    counter_rollover:
+        The counter's register modulus (e.g. ``1e6``), if known. A decrease
+        consistent with wrapping past it is flagged ``COUNTER_ROLLOVER``
+        instead of ``COUNTER_DECREASE`` (see :func:`counter_rollover_mask`).
+        Requires ``cumulative``; never guessed.
     jump_max_delta:
         If set, flag ``JUMP`` where a value differs from the previous finite
         value by more than this (see :func:`jump_mask`). Off by default.
@@ -475,6 +522,7 @@ def flag_series(
         jump_max_delta,
         max_gap,
         jump_max_rate,
+        counter_rollover,
     )
     jumps = jump_max_delta is not None or jump_max_rate is not None
     consecutive = stale_min_run is not None or cumulative or jumps
@@ -496,6 +544,12 @@ def flag_series(
         flags[stale] |= np.uint16(QualityFlag.STALE_VALUE)
     if cumulative:
         decrease = counter_decrease_mask(series, tolerance=counter_tolerance, max_gap=max_gap)
+        if counter_rollover is not None:
+            rollover = counter_rollover_mask(
+                series, counter_rollover, tolerance=counter_tolerance, max_gap=max_gap
+            )
+            flags[rollover] |= np.uint16(QualityFlag.COUNTER_ROLLOVER)
+            decrease = decrease & ~rollover
         flags[decrease] |= np.uint16(QualityFlag.COUNTER_DECREASE)
     if jump_max_delta is not None:
         flags[jump_mask(series, jump_max_delta, max_gap=max_gap)] |= np.uint16(QualityFlag.JUMP)

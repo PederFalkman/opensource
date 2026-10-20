@@ -42,6 +42,7 @@ COLUMN_OPTIONS = frozenset(
         "stale_exclude",
         "cumulative",
         "counter_tolerance",
+        "counter_rollover",
         "jump_max_delta",
         "jump_max_rate",
         "max_gap",
@@ -144,6 +145,7 @@ def assess_frame(
     stale_exclude: Collection[float] = (),
     cumulative: bool = False,
     counter_tolerance: float = 0.0,
+    counter_rollover: float | None = None,
     jump_max_delta: float | None = None,
     jump_max_rate: tuple[float, str | pd.Timedelta] | None = None,
     max_gap: str | pd.Timedelta | None = None,
@@ -170,8 +172,8 @@ def assess_frame(
         Shared by all columns, as in :func:`energydata_kit.assess_quality`.
         Without ``freq``, each column uses its own ``metadata.resolution``
         (one with no fixed length, such as ``"MS"``, in its own ``metadata.timezone``).
-    bounds, stale_min_run, stale_atol, stale_exclude, cumulative, counter_tolerance, jump_max_delta,
-    jump_max_rate, max_gap:
+    bounds, stale_min_run, stale_atol, stale_exclude, cumulative, counter_tolerance, counter_rollover,
+    jump_max_delta, jump_max_rate, max_gap:
         Check options applied to every column. Columns usually differ in
         unit and meaning, so set them per column with ``per_column`` unless
         they really apply to all.
@@ -197,6 +199,7 @@ def assess_frame(
         "stale_exclude": stale_exclude,
         "cumulative": cumulative,
         "counter_tolerance": counter_tolerance,
+        "counter_rollover": counter_rollover,
         "jump_max_delta": jump_max_delta,
         "jump_max_rate": jump_max_rate,
         "max_gap": max_gap,
@@ -288,6 +291,7 @@ def flag_frame(
     stale_exclude: Collection[float] = (),
     cumulative: bool = False,
     counter_tolerance: float = 0.0,
+    counter_rollover: float | None = None,
     jump_max_delta: float | None = None,
     jump_max_rate: tuple[float, str | pd.Timedelta] | None = None,
     max_gap: str | pd.Timedelta | None = None,
@@ -318,6 +322,7 @@ def flag_frame(
         "stale_exclude": stale_exclude,
         "cumulative": cumulative,
         "counter_tolerance": counter_tolerance,
+        "counter_rollover": counter_rollover,
         "jump_max_delta": jump_max_delta,
         "jump_max_rate": jump_max_rate,
         "max_gap": max_gap,
