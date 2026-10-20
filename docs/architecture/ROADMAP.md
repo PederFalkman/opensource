@@ -1014,7 +1014,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       golden reports are kept in `tests/golden/schema1/` and compared
       with their schema-2 counterparts (no changes listed).
 
-### OSS-105: report schema 2, step 2 (P-8 `max_gap`) — in [#96](https://github.com/PederFalkman/opensource/pull/96)
+### OSS-105: report schema 2, step 2 (P-8 `max_gap`) — merged in [#96](https://github.com/PederFalkman/opensource/pull/96)
 
 - [x] `max_gap` on `stale_mask`, `counter_decrease_mask` and `jump_mask`:
       rows further apart are not compared (a counter or jump value is
