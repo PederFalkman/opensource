@@ -152,6 +152,31 @@ def test_unit_per_column(tmp_path):
         assert code == 2 and out == "" and message in err, (extra, err)
 
 
+def test_unit_per_column_names_the_value_columns(tmp_path):
+    # P-17: without --value-col, the --unit COLUMN=UNIT columns are assessed, in --unit order.
+    rows = [f"2024-01-01T{h:02d}:00Z,{h},{10 - h},{h}" for h in range(4)]
+    path = str(write(tmp_path, "timestamp,kwh,pv,other\n" + "\n".join(rows) + "\n"))
+    units = ["--unit", "pv=kW", "--unit", "kwh=kWh", "--resolution", "1h"]
+    code, out, err = run("report", path, *units)
+    assert (code, err) == (0, "")
+    data = json.loads(out)
+    assert data["column_order"] == ["pv", "kwh"]  # "other" has no unit and is not assessed
+    assert data["columns"]["pv"]["metadata"]["unit"] == "kW"
+    # The same report as naming the columns twice.
+    assert run("report", path, "--value-col", "pv", "--value-col", "kwh", *units)[1] == out
+    # An explicit --value-col still decides; --unit may then name a subset.
+    code, out, _ = run("report", path, "--value-col", "kwh", "--value-col", "other", "--unit", "kwh=kWh")
+    assert code == 0 and json.loads(out)["column_order"] == ["kwh", "other"]
+    # One named column gives a single-series report.
+    code, out, _ = run("report", path, "--unit", "kwh=kWh", "--resolution", "1h")
+    assert code == 0 and json.loads(out)["metadata"]["unit"] == "kWh"
+    # A plain unit still needs a single value column.
+    code, out, err = run("report", path, "--unit", "kWh")
+    assert code == 2 and out == "" and "pass --value-col" in err
+    code, out, err = run("report", path, "--unit", "kwh=kWh", "--unit", "nope=kW")
+    assert code == 2 and out == "" and "--unit names columns that are not in the file: ['nope']" in err
+
+
 def test_unit_per_column_with_schema_is_refused(tmp_path):
     path = str(write(tmp_path, "timestamp,kwh\n2024-01-01T00:00Z,1\n"))
     schema = ek.to_table_schema(ek.MeasurementMetadata(name="kwh", unit="kWh"))

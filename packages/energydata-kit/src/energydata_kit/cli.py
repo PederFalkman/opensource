@@ -124,7 +124,8 @@ def build_parser() -> argparse.ArgumentParser:
     cols.add_argument(
         "--value-col",
         action="append",
-        help="value column; repeat for a multi-column report (default: the only other column)",
+        help="value column; repeat for a multi-column report (default: the columns named by --schema "
+        "or --unit COLUMN=UNIT, else the only other column)",
     )
 
     ts = rep.add_argument_group("timestamps")
@@ -336,6 +337,14 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
             raise CliError(
                 f"none of the --schema columns {list(args.schema_metadata)} are in the file; "
                 f"columns: {list(frame.columns)}"
+            )
+    if value_cols is None and args.unit_by_column:
+        # --unit COLUMN=UNIT names the columns, in the order given (P-17).
+        value_cols = list(args.unit_by_column)
+        missing = [c for c in value_cols if c not in frame.columns]
+        if missing:
+            raise CliError(
+                f"--unit names columns that are not in the file: {missing}; columns: {list(frame.columns)}"
             )
     if value_cols is None:
         others = [c for c in frame.columns if c != args.timestamp_col]

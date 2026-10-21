@@ -445,15 +445,15 @@ assert len(flagged) == 96 - 2 + 2  # original rows plus the two inserted ones
 
 For several value columns, `--unit COLUMN=UNIT` gives each one its unit,
 without writing a Table Schema; the other metadata options apply to every
-named column:
+named column, and without `--value-col` the named columns are the ones
+assessed:
 
 ```python
 channels.to_csv("channels.csv", index_label="timestamp")
 ```
 
 ```bash
-energydata-kit report channels.csv --value-col power_kw --value-col energy_kwh \
-    --unit power_kw=kW --unit energy_kwh=kWh --resolution 15min -o channels.json
+energydata-kit report channels.csv --unit power_kw=kW --unit energy_kwh=kWh --resolution 15min -o channels.json
 ```
 
 ```python
