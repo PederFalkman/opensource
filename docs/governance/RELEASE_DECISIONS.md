@@ -1,11 +1,23 @@
 # Release decisions for energydata-kit
 
-## 0.3.0 (in preparation)
+## 0.3.0 (prepared 2026-10-21, OSS-139)
 
-**Status:** open. Engineering for 0.3.0 is complete (OSS-136 to OSS-138)
-and nothing is decided here. `main` stays at `0.3.0.dev0` with the upload
-guard until the owner answers the questions below. The 0.2.0 and 0.1.0
-records follow and are unchanged.
+**Status:** decided 2026-10-21. The repository owner recorded the answers for G1,
+G3, G4 and D6 on 2026-10-21 (below; the written confirmations are held by the
+owner and not copied here). The release PR (OSS-140) sets the version to
+`0.3.0`, dates the changelog and removes the upload guard together with the
+D6 line for 0.3.0 under D6 further down. The 0.2.0 and 0.1.0 records
+follow and are unchanged.
+
+**Decisions for 0.3.0, as recorded by the repository owner on 2026-10-21:**
+
+- **G1 Ownership:** counsel confirmed that the publishing entity owns the
+  code added since 0.2.0 and can license it.
+- **G3 IP boundary review:** signed off by the technical lead.
+- **G4 Third-party licences:** the 0.2.0 position is enough; no dependency
+  changed.
+- **D6 Publication (G7):** a GitHub release only, like 0.1.0 and 0.2.0; no
+  package index.
 
 **What 0.3.0 contains** (approved as P-14 to P-16 by the owner on
 2026-10-20; proposals in `docs/architecture/ROADMAP.md`, OSS-135):
@@ -30,13 +42,13 @@ unchanged.
 
 | Gate | State for 0.3.0 | Open question |
 |---|---|---|
-| G1 Ownership | Counsel confirmed ownership for 0.1.0 (D2) and for the code added up to 0.2.0. Commits since the 0.2.0 release commit (`344c862`), on `main` at `ef01c86`: 15, of which 10 by the AI coding assistant in the owner's sessions (7 with changes, 3 merging `main` into a pull-request branch) and 5 by the owner (pull-request merges #105 to #109); no external contributor | Does counsel's confirmation cover the code added since 0.2.0, or should counsel confirm again? |
+| G1 Ownership | **Passed 2026-10-21**: counsel confirmed (held by the owner). Counsel confirmed ownership for 0.1.0 (D2) and for the code added up to 0.2.0. Commits since the 0.2.0 release commit (`344c862`), on `main` at `ef01c86`: 15, of which 10 by the AI coding assistant in the owner's sessions (7 with changes, 3 merging `main` into a pull-request branch) and 5 by the owner (pull-request merges #105 to #109); no external contributor | — |
 | G2 Licence | Passed: Apache-2.0, unchanged | — |
-| G3 IP boundary review | The `IP boundary` CI job passed on every 0.3.0 PR. P-14 and P-15 are command-line options over checks the package already has; P-16 changes how timestamp strings are parsed, not what they mean | Will the technical lead review and sign off the diff from 0.2.0? |
-| G4 Third-party licences | Unchanged since 0.2.0 (no dependency change) | Is the 0.2.0 position enough? |
+| G3 IP boundary review | **Passed 2026-10-21**: signed off by the technical lead (held by the owner). The `IP boundary` CI job passed on every 0.3.0 PR. P-14 and P-15 are command-line options over checks the package already has; P-16 changes how timestamp strings are parsed, not what they mean | — |
+| G4 Third-party licences | **Passed 2026-10-21**: the 0.2.0 position stands; unchanged since 0.2.0 (no dependency change) | — |
 | G5 CI green | Green on every 0.3.0 PR; re-checked on the release commit | — |
 | G6 Documentation honest | README, changelog and guide updated with each step; the guide's examples of both new options run in the test suite | Review on the release commit |
-| G7 Publication (D6) | D6 approved 0.2.0 only; it does not carry over | GitHub release only, like 0.1.0 and 0.2.0, or also a package index? |
+| G7 Publication (D6) | **Passed 2026-10-21**: GitHub release only; approval line under D6 below | — |
 
 **For the G3 reviewer** (the technical lead). The package code to review
 is the diff from the 0.2.0 release commit to the 0.3.0 release commit:
@@ -63,7 +75,7 @@ owner's D6 line naming `energydata-kit 0.3.0`; only with that line does it
 remove the upload guard. It passes `check_release_readiness.py --strict`.
 The owner then tags the merged commit `energydata-kit-v0.3.0`, the
 *Release build* workflow prepares the draft GitHub release, and the owner
-publishes it. None of this is done before the owner's decisions.
+publishes it. The release PR is OSS-140.
 
 ## 0.2.0 (released 2026-10-20)
 
@@ -387,6 +399,8 @@ Not a release gate, but it protects the release commit.
 **D6 approved:** 2026-10-19, energydata-kit 0.1.0 as a GitHub release only (built wheel and sdist attached to the tagged release; no package index), recorded by the repository owner.
 
 **D6 approved:** 2026-10-20, energydata-kit 0.2.0 as a GitHub release only (built wheel and sdist attached to the tagged release; no package index), recorded by the repository owner.
+
+**D6 approved:** 2026-10-21, energydata-kit 0.3.0 as a GitHub release only (built wheel and sdist attached to the tagged release; no package index), recorded by the repository owner.
 
 Nothing is uploaded to PyPI or any other index; publishing there would need
 a new D6 decision and trusted publishing set up in a separate, reviewed

@@ -5,6 +5,8 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-21
+
 Two command-line additions and faster timestamp parsing (approved as P-14
 to P-16): `report --gaps-csv` writes the full gap list, `report --unit
 COLUMN=UNIT` gives several columns their units without a Table Schema, and
