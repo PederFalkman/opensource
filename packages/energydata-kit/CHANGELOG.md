@@ -5,6 +5,8 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-21
+
 Two command-line changes for pipelines, approved as P-21 and P-23: gaps
 inside `--known-outage` periods no longer fail `--fail-on-issues`, and
 `--fail-on NAME` chooses which issues fail the exit status. The report

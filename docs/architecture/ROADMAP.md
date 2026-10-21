@@ -10,17 +10,19 @@ Questions and evidence for each: `docs/governance/RELEASE_DECISIONS.md`,
 section "0.5.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 and 0.4.0
 (both 2026-10-21) were released as GitHub releases only; their records are
 kept there. Engineering for 0.5.0 is complete (OSS-149 and OSS-150, P-21
-and P-23); it waits on the questions below. The other candidates (P-22,
+and P-23), and the owner recorded the answers below on 2026-10-21; the release PR
+is OSS-152. The other candidates (P-22,
 and P-12, P-13, P-18 and P-20 carried over) are under "Proposed" below
 (OSS-148) and not approved.
 
-- [ ] **G1 for 0.5.0.** Does counsel's confirmation cover the code added
-      since 0.4.0 (`6cc79fd`), or should counsel confirm again?
-- [ ] **G3 for 0.5.0.** Technical-lead sign-off of the IP-boundary review
-      of the diff from 0.4.0 (2 source files, about 55 added lines).
-- [ ] **G4 for 0.5.0.** No dependency changed; is the 0.4.0 position enough?
-- [ ] **D6 for 0.5.0 (G7).** GitHub release only, like 0.4.0, or also a
-      package index?
+- [x] **G1 for 0.5.0.** Counsel confirmed that the code added since 0.4.0
+      (`6cc79fd`) is covered (recorded 2026-10-21).
+- [x] **G3 for 0.5.0.** The technical lead signed off the IP-boundary review
+      of the diff from 0.4.0 (recorded 2026-10-21).
+- [x] **G4 for 0.5.0.** No dependency changed; the 0.4.0 position stands
+      (recorded 2026-10-21).
+- [x] **D6 for 0.5.0 (G7).** GitHub release only, like 0.4.0 (recorded
+      2026-10-21).
 
 Recorded for 0.4.0:
 
@@ -1482,7 +1484,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       run, explained and unexplained gaps, a multi-column report and the
       refusals. Guide (executed), README exit status and changelog updated.
 
-### OSS-151: prepare the 0.5.0 release — this change
+### OSS-151: prepare the 0.5.0 release — merged in [#122](https://github.com/PederFalkman/opensource/pull/122)
 
 - [x] `RELEASE_DECISIONS.md` gains a 0.5.0 section: what the release
       contains (P-21, P-23), what did not change since 0.4.0 (no
@@ -1493,6 +1495,22 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       one exit-status change for 0.4.0 users, with how to keep the old
       behaviour. Version stays `0.5.0.dev0`; the upload guard stays.
 - [x] "Open decisions" above lists the 0.5.0 questions.
+
+### OSS-152: release energydata-kit 0.5.0 — this change
+
+- [x] Decisions recorded by the owner on 2026-10-21: G1 counsel confirmed, G3
+      signed off, G4 the 0.4.0 position stands, D6 GitHub release only,
+      with the `**D6 approved:**` line naming `energydata-kit 0.5.0`.
+- [x] `__version__` is `0.5.0`; the changelog's notes move under
+      `## [0.5.0] - 2026-10-21` with an empty `[Unreleased]` above.
+- [x] Release edits: `Private :: Do Not Upload` removed, the readiness test
+      expects nothing to fail (`--strict` exits 0, `--guard` passes), and the
+      status lines in both READMEs, `SECURITY.md`, `CONTRIBUTING.md` and
+      `RELEASE_GATES.md` name 0.5.0 as a GitHub release.
+- [ ] After merge (owner): tag the merge commit `energydata-kit-v0.5.0`,
+      check the digests and publish the draft GitHub release the *Release
+      build* workflow creates. Then the next development cycle restores the
+      upload guard.
 
 ## Explicitly not planned
 
