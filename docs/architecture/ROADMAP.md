@@ -1185,7 +1185,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Status lines: 0.2.0 is the GitHub release, `main` is 0.3.0
       development.
 
-### OSS-135: 0.3.0 proposals — this change
+### OSS-135: 0.3.0 proposals — merged in [#106](https://github.com/PederFalkman/opensource/pull/106)
 
 - [x] P-12 to P-16 written up for the owner to approve one by one, each from
       a README "Known limitation", with effort, risk and whether it needs
