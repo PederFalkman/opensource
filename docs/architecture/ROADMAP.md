@@ -11,7 +11,8 @@ section "0.3.0". 0.1.0 (2026-10-19) and 0.2.0 (2026-10-20) were released as
 GitHub releases only; their records are kept there. Engineering for 0.3.0
 is complete (OSS-136 to OSS-138, P-14 to P-16), and the owner recorded the
 answers below on 2026-10-21; 0.3.0 was released the same day (OSS-140,
-#111). No 0.4.0 work is approved yet.
+#111). No 0.4.0 work is approved yet; candidates P-17 to P-20 (with
+P-12 and P-13 carried over) are under "Proposed" below (OSS-142).
 
 - [x] **G1 for 0.3.0.** Counsel confirmed that the code added since 0.2.0
       (`344c862`) is covered (recorded 2026-10-21).
@@ -94,6 +95,45 @@ and anything that downloads data.
 
 **Suggested order if approved:** P-3 and P-4 first (small, no schema change),
 then P-2 with P-6 as one schema-2 change, then P-5 if users ask for it.
+
+### P-17 to P-20: candidates for 0.4.0 (OSS-142)
+
+*Prepared by the assistant in OSS-142 for the owner to approve or reject one
+by one. Nothing here is authorized; none of it starts without approval.*
+Each item is generic data-quality or command-line tooling as defined in
+`IP_BOUNDARY.md` ("What *is* in scope"), ships no domain thresholds and
+touches nothing on the out-of-scope list. P-12 and P-13 from 0.3.0 were not
+approved and stay open; they are ranked again below with the new items.
+
+**The constraint that shapes them:** report schema 2 has closed
+`parameters` and `flag_counts` objects (`additionalProperties: false` in
+`report_schema.json`), so any new recorded option or flag needs **report
+schema 3**, with `compare_reports` reading 1, 2 and 3. P-12 and P-20 need
+it; P-13, P-17, P-18 and P-19 do not. If both P-12 and P-20 are approved,
+they should ship as one schema-3 change.
+
+| ID | Candidate | Why | Effort | Risk and cost |
+|---|---|---|---|---|
+| P-17 | **`--unit COLUMN=UNIT` names the value columns.** When `--value-col` is not given, the columns named by `--unit COLUMN=UNIT` become the assessed columns, as `--schema` columns already do. | Found while writing the 0.3.0 guide example (OSS-139): naming each column twice (`--value-col kwh --unit kwh=kWh`) is easy to get wrong, and the single-column form needs no `--value-col` when the file has one value column. Today the command stops with "pass --value-col". | S | No format change. Must keep an explicit `--value-col` authoritative (then `--unit` may name a subset), and keep the order of `--unit` options as the column order so reports stay deterministic. |
+| P-18 | **Compare full gap lists.** `compare before.json after.json --gaps before.csv after.csv` reads the `--gaps-csv` files and compares every gap, not only the first `max_listed`. | Known limitation: "Only listed gaps are compared"; long outage histories set `lists_truncated`, and the comparison then misses gaps. P-14 made the full list available but nothing reads it. | S–M | No report change. The comparison output keeps its fields; `lists_truncated` becomes `false` when full lists are read, which consumers must be told. Must refuse CSVs that do not match their report (columns, gap counts). |
+| P-19 | **Fast parsing of the other offset forms.** Extend the OSS-136 fast path to `+0200` and `+02` offsets. | Known limitation and `PERFORMANCE.md`: measured on 2026-10-21, 350,000 strings take 1.6–1.7 s in these forms against 0.5 s for `+02:00`. | S | No format change. Same rule as P-16: results and errors must match the general parser on the lowest and current pandas, checked by a property test, or the proposal is dropped. |
+| P-20 | **Single-row spikes.** An opt-in `spike_max_delta` flags a row that differs from both neighbours by more than the limit, in opposite directions, with a new `SPIKE` flag (bit 2048), so one outlier is flagged once. | Known limitation: the jump check flags the row where a change lands, so a single outlier flags itself and the row after it; callers cannot tell a spike from a step. | M | New flag bit and recorded option, so schema 3 (pair with P-12). The caller picks the limit in the data's unit; no limit shipped. Must define behaviour at gaps (`max_gap`), missing values and the first and last rows. |
+| P-12 | *Carried over from 0.3.0, not approved.* **DST policy for calendar grids.** As described for 0.3.0 below. | Known limitation: a daily grid at 02:30 in Europe/Stockholm raises. | S–M | Schema 3 (pair with P-20). |
+| P-13 | *Carried over from 0.3.0, not approved.* **Grid anchored at the step boundary** (`origin="epoch"`). As described for 0.3.0 below. | Known limitation: a leading off-grid timestamp shifts the grid. | S | Fits schema 2; `origin` may then hold a keyword instead of a timestamp, documented as such. |
+
+Considered and not proposed:
+- **`"D"` in metadata as a local day when a timezone is set:** it would
+  silently change the result of existing metadata; `--tz` already covers it.
+- **Per-step groups in the frame `timestamps` section:** a schema change for
+  the rare case of columns with different steps.
+- **Flags from Pandera:** Pandera's model is pass or fail; `flag_series`
+  already gives the flags.
+- **Automatic or statistical limits, gap filling, resampling, pint-pandas:**
+  out of scope or deferred, as before.
+
+**Suggested order if approved:** P-17 and P-19 first (small, no format
+change), then P-13, then P-18. P-12 and P-20 only if a schema-3 change is
+wanted, and then together. Each needs its own approval.
 
 ### P-12 to P-16: candidates for 0.3.0 (OSS-135)
 
@@ -1276,7 +1316,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       check`, provenance attestation) and created the draft release, which
       the owner published on 2026-10-21 (marked pre-release).
 
-### OSS-141: open 0.4.0 development — this change
+### OSS-141: open 0.4.0 development — merged in [#112](https://github.com/PederFalkman/opensource/pull/112)
 
 - [x] `__version__` is `0.4.0.dev0`; new changelog entries go under
       `[Unreleased]`, and the released sections are not edited.
@@ -1285,6 +1325,14 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       is not release-ready, with the licence checks and `--guard` passing.
 - [x] Status lines: 0.3.0 is the GitHub release, `main` is 0.4.0
       development.
+
+### OSS-142: 0.4.0 proposals — this change
+
+- [x] P-17 to P-20 written up for the owner to approve one by one, ranked
+      with P-12 and P-13 carried over from 0.3.0: effort, risk, and
+      whether each needs report schema 3 (P-12 and P-20). The two measured
+      claims (the `--unit` refusal, the offset-form parse times) were
+      checked on 2026-10-21. Docs only; nothing is authorized.
 
 ## Explicitly not planned
 
