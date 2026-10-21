@@ -907,3 +907,23 @@ def test_gaps_csv_matches_the_report_grid(tmp_path, options):
         and [(pd.Timestamp(s).isoformat(), pd.Timestamp(e).isoformat(), int(n)) for _, s, e, n in rows]
         == listed
     )
+
+
+def test_fail_on_issues_ignores_explained_gaps(tmp_path):
+    # P-21: a missing interval inside a --known-outage period is explained, not an issue.
+    rows = ["2024-01-01T00:00Z,1,1", "2024-01-01T01:00Z,1,1", "2024-01-01T04:00Z,1,1"]  # 02:00, 03:00 missing
+    path = str(write(tmp_path, "timestamp,a,b\n" + "\n".join(rows) + "\n"))
+    one = ["report", path, "--value-col", "a", "--freq", "1h", "--fail-on-issues"]
+    both = ["report", path, "--value-col", "a", "--value-col", "b", "--freq", "1h", "--fail-on-issues"]
+    whole = ["--known-outage", "2024-01-01T02:00Z", "2024-01-01T03:00Z"]
+    code, out, _ = run(*one, *whole)
+    data = json.loads(out)
+    assert code == 0 and data["n_missing_intervals"] == data["n_missing_explained"] == 2
+    assert run(*both, *whole)[0] == 0
+    # Without the outage, or with one covering only part of the gap, the exit status is 1.
+    assert run(*one)[0] == 1
+    assert run(*one, "--known-outage", "2024-01-01T02:00Z", "2024-01-01T02:00Z")[0] == 1
+    # Flagged rows still fail even when every gap is explained.
+    flagged = str(write(tmp_path, "timestamp,a\n" + "\n".join(r.rsplit(",", 1)[0] for r in rows[:2]) + "\n"
+                        "2024-01-01T04:00Z,inf\n", "flagged.csv"))  # fmt: skip
+    assert run("report", flagged, "--freq", "1h", "--fail-on-issues", *whole)[0] == 1

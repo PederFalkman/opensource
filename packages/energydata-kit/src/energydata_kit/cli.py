@@ -233,7 +233,8 @@ def build_parser() -> argparse.ArgumentParser:
     out.add_argument(
         "--fail-on-issues",
         action="store_true",
-        help="exit with status 1 if any row is flagged or any interval is missing",
+        help="exit with status 1 if any row is flagged or any interval is missing outside the "
+        "--known-outage periods",
     )
 
     cmp = sub.add_parser(
@@ -437,7 +438,11 @@ def _metadata(args: argparse.Namespace, name: str) -> MeasurementMetadata | None
 
 
 def _has_issues(report: QualityReport | FrameQualityReport) -> bool:
-    return report.n_flagged_rows > 0 or report.n_missing_intervals > 0
+    """Flagged rows or missing intervals; those inside a --known-outage are explained (P-21)."""
+    reports = report.columns.values() if isinstance(report, FrameQualityReport) else [report]
+    return any(
+        r.n_flagged_rows > 0 or r.n_missing_intervals - (r.n_missing_explained or 0) > 0 for r in reports
+    )
 
 
 def _write_flags(args: argparse.Namespace, flagged: pd.DataFrame) -> None:

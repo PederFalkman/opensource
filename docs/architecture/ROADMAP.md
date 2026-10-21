@@ -11,9 +11,10 @@ section "0.4.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20) and 0.3.0
 (2026-10-21) were released as GitHub releases only; their records are kept
 there. Engineering for 0.4.0 is complete (OSS-143 and OSS-144, P-17 and
 P-19), and the owner recorded the answers below on 2026-10-21; 0.4.0 was
-released the same day (OSS-146, #117). No 0.5.0 work is approved yet;
-candidates P-21 to P-23, with P-12, P-13, P-18 and P-20 carried over, are
-under "Proposed" below (OSS-148) and not approved.
+released the same day (OSS-146, #117). For 0.5.0 the owner approved P-21
+and P-23 on 2026-10-21; the other candidates (P-22, and P-12, P-13, P-18
+and P-20 carried over) are under "Proposed" below (OSS-148) and not
+approved.
 
 - [x] **G1 for 0.4.0.** Counsel confirmed that the code added since 0.3.0
       (`afa6974`) is covered (recorded 2026-10-21).
@@ -121,9 +122,9 @@ changes the report format.
 
 | ID | Candidate | Why | Effort | Risk and cost |
 |---|---|---|---|---|
-| P-21 | **Explained gaps do not fail `--fail-on-issues`.** A missing interval inside a `--known-outage` period no longer counts as an issue for the exit status; unexplained gaps and flagged rows still do. | Checked on 2026-10-21: a report whose only gap lies wholly inside `--known-outage` has `n_missing_explained` equal to `n_missing_intervals` and `completeness_excluding_outages` 1.0, yet `--fail-on-issues` exits 1. A pipeline that declares planned maintenance still fails on it. | S | No format change, but the exit status changes for callers that combine both options (1 → 0 when every gap is explained); documented in the changelog. If that is not wanted, the same behaviour can sit behind an opt-in flag instead. |
+| P-21 | *Approved by the owner on 2026-10-21, as the default behaviour; done in OSS-149.* **Explained gaps do not fail `--fail-on-issues`.** A missing interval inside a `--known-outage` period no longer counts as an issue for the exit status; unexplained gaps and flagged rows still do. | Checked on 2026-10-21: a report whose only gap lies wholly inside `--known-outage` has `n_missing_explained` equal to `n_missing_intervals` and `completeness_excluding_outages` 1.0, yet `--fail-on-issues` exits 1. A pipeline that declares planned maintenance still fails on it. | S | No format change, but the exit status changes for callers that combine both options (1 → 0 when every gap is explained); documented in the changelog. If that is not wanted, the same behaviour can sit behind an opt-in flag instead. |
 | P-22 | **Known outages from a file** (`report --known-outages-csv FILE` with `start,end` columns). | Today each period is a repeated `--known-outage START END`; a maintenance log with dozens of periods makes a long, fragile command. A file can also be a `--gaps-csv` from an earlier run, to accept the gaps found once as known. | S | No format change: the report records the periods as it does now. Must define how a `column` column (as `--gaps-csv` writes) applies a period to one column only in multi-column reports, and refuse malformed rows (exit 2). |
-| P-23 | **Choose what fails the exit status** (`report --fail-on FLAG`, repeatable, e.g. `--fail-on NON_FINITE --fail-on gaps`). | `--fail-on-issues` is all or nothing: any flag or any missing interval. A pipeline that tolerates stale values but not gaps cannot express that and ends up ignoring the exit status. | S | No format change; `--fail-on-issues` keeps its meaning. The accepted names are the `QualityFlag` names plus `gaps` (and `unexplained-gaps` if P-21 is approved); unknown names are refused. Designing it together with P-21 keeps the two consistent. |
+| P-23 | *Approved by the owner on 2026-10-21; to be built in OSS-150.* **Choose what fails the exit status** (`report --fail-on FLAG`, repeatable, e.g. `--fail-on NON_FINITE --fail-on gaps`). | `--fail-on-issues` is all or nothing: any flag or any missing interval. A pipeline that tolerates stale values but not gaps cannot express that and ends up ignoring the exit status. | S | No format change; `--fail-on-issues` keeps its meaning. The accepted names are the `QualityFlag` names plus `gaps` (and `unexplained-gaps` if P-21 is approved); unknown names are refused. Designing it together with P-21 keeps the two consistent. |
 | P-13 | *Carried over, not approved.* **Grid anchored at the step boundary** (`origin="epoch"`). As described for 0.3.0 below. | Known limitation: a leading off-grid timestamp shifts the grid. | S | Fits schema 2. |
 | P-18 | *Carried over, not approved.* **Compare full gap lists** from `--gaps-csv` files. As described for 0.4.0 below. | Known limitation: only listed gaps are compared. | S–M | No report change. |
 | P-12, P-20 | *Carried over, not approved.* **DST policy for calendar grids** and **single-row spikes.** As described below. | Known limitations. | S–M, M | Both need report schema 3; only worth doing together. |
@@ -1439,13 +1440,27 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Status lines: 0.4.0 is the GitHub release, `main` is 0.5.0
       development.
 
-### OSS-148: 0.5.0 proposals — this change
+### OSS-148: 0.5.0 proposals — merged in [#119](https://github.com/PederFalkman/opensource/pull/119)
 
 - [x] P-21 to P-23 written up for the owner to approve one by one, ranked
       with P-12, P-13, P-18 and P-20 carried over: effort, risk, and that
       none of the new items changes the report format. The behaviour behind
       P-21 (an explained gap still failing `--fail-on-issues`) was checked
       on 2026-10-21. Docs only; nothing is authorized.
+- [x] The owner approved P-21 and P-23 on 2026-10-21, to be built one PR
+      each (P-21 first, as proposed: the default behaviour, not opt-in).
+      P-12, P-13, P-18, P-20 and P-22 are not approved.
+
+### OSS-149: explained gaps do not fail `--fail-on-issues` (P-21) — this change
+
+- [x] `--fail-on-issues` counts a missing interval as an issue only when it
+      lies outside every `--known-outage` period (per column in
+      multi-column reports); flagged rows still always count. The report
+      is unchanged.
+- [x] Tests: a gap wholly inside an outage exits 0 (one and two columns);
+      no outage, or one covering part of the gap, exits 1; a flagged row
+      exits 1 even with every gap explained. Help text, README exit
+      status, guide and changelog updated.
 
 ## Explicitly not planned
 

@@ -5,6 +5,14 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- `report --fail-on-issues` no longer fails on missing intervals that lie
+  inside `--known-outage` periods: such gaps are reported as explained
+  (`n_missing_explained`) and are not issues. Flagged rows and missing
+  intervals outside the periods still give exit status 1. A command that
+  combines both options and whose only gaps are explained now exits 0
+  instead of 1. The report is unchanged.
+
 ## [0.4.0] - 2026-10-21
 
 Two refinements approved as P-17 and P-19: `report --unit COLUMN=UNIT`
