@@ -22,7 +22,7 @@ import argparse
 import json
 import re
 import sys
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, TextIO
 
@@ -32,7 +32,7 @@ from energydata_kit import __version__
 from energydata_kit.compare import compare_reports
 from energydata_kit.flags import VALUE_COLUMN, flag_series
 from energydata_kit.frame_report import FrameQualityReport, assess_frame, flag_frame
-from energydata_kit.intervals import to_step
+from energydata_kit.intervals import find_missing_intervals, to_step
 from energydata_kit.metadata import Aggregation, IntervalLabel, MeasurementMetadata, _grid_from_metadata
 from energydata_kit.report import QualityReport, assess_quality
 from energydata_kit.table_schema import NAMESPACE, from_table_schema
@@ -221,6 +221,11 @@ def build_parser() -> argparse.ArgumentParser:
     out.add_argument(
         "--flags-csv",
         help="also write values and quality flags to this CSV (quality_flag_<col> per column with several)",
+    )
+    out.add_argument(
+        "--gaps-csv",
+        help="also write every gap (not only the first --max-listed) to this CSV: "
+        "column, start, end, missing_count",
     )
     out.add_argument("--insert-missing", action="store_true", help="add rows for absent grid timestamps")
     out.add_argument("--max-listed", type=_positive_int, default=100, help="cap on listed gaps/duplicates")
@@ -440,6 +445,53 @@ def _write_flags(args: argparse.Namespace, flagged: pd.DataFrame) -> None:
     )
 
 
+def _gap_grids(
+    args: argparse.Namespace, metadata: Mapping[str, MeasurementMetadata | None], columns: list[str]
+) -> dict[str, tuple[str | pd.Timedelta, str | None]]:
+    """The grid each column's report uses, for --gaps-csv; refused before anything is written."""
+    grids: dict[str, tuple[str | pd.Timedelta, str | None]] = {}
+    no_step = []
+    for column in columns:
+        freq, tz = _grid_from_metadata(args.freq, args.tz, metadata.get(column))
+        if freq is None:
+            no_step.append(column)
+        else:
+            grids[column] = (freq, tz)
+    if no_step:
+        raise CliError(
+            f"--gaps-csv needs a step for every column; {no_step} have none: pass --freq or a resolution"
+        )
+    return grids
+
+
+def _write_gaps(
+    args: argparse.Namespace,
+    index: pd.Index,
+    grids: dict[str, tuple[str | pd.Timedelta, str | None]],
+    origin: pd.Timestamp | None,
+) -> None:
+    """Every gap per column, on the column's report grid, in the input's CSV format.
+
+    Lines end in ``\n`` on every platform, as in :func:`_write_flags`.
+    """
+    assert isinstance(index, pd.DatetimeIndex)  # _read_frame normalizes the timestamps
+    rows = [
+        (column, gap.start, gap.end, gap.missing_count)
+        for column, (freq, tz) in grids.items()
+        for gap in (find_missing_intervals(index, freq, origin=origin, tz=tz) if len(index) else [])
+    ]
+    table = pd.DataFrame(rows, columns=["column", "start", "end", "missing_count"])
+    for name in ("start", "end"):
+        table[name] = pd.to_datetime(table[name], utc=True)
+    table.to_csv(
+        args.gaps_csv,
+        sep=_delimiter(args),
+        index=False,
+        date_format="%Y-%m-%dT%H:%M:%S%z",
+        lineterminator="\n",
+    )
+
+
 def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
     if args.tz and not args.freq:
         raise CliError("--tz needs --freq")
@@ -493,7 +545,10 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
         known_outages=args.known_outage,
         max_listed=args.max_listed,
     )
+    gap_grids = _gap_grids(args, {str(series.name): metadata}, [str(series.name)]) if args.gaps_csv else {}
     _write_report(args, report, stdout)
+    if args.gaps_csv:
+        _write_gaps(args, series.index, gap_grids, origin)
 
     if args.flags_csv:
         freq, tz = _grid_from_metadata(args.freq, args.tz, metadata)  # the report's grid
@@ -693,7 +748,10 @@ def _run_frame_report(
                 "give each column a resolution, or pass --freq"
             )
         freq, tz = next(iter(grids.values()), (None, None))
+    gap_grids = _gap_grids(args, metadata, [str(c) for c in frame.columns]) if args.gaps_csv else {}
     _write_report(args, report, stdout)
+    if args.gaps_csv:
+        _write_gaps(args, frame.index, gap_grids, origin)
     if args.flags_csv:
         flagged = flag_frame(
             frame, freq=freq, insert_missing=args.insert_missing, origin=origin, tz=tz, **checks

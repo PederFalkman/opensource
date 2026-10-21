@@ -796,3 +796,89 @@ def test_compare_summary_counts_changed_gaps(tmp_path):
         code, out, err = run("compare", str(before), str(after), "--format", fmt)
         assert (code, err) == (0, "")
         assert "gaps resolved: 0, new: 0, changed: 1" in out
+
+
+GAPPY_TWO = (
+    "timestamp,kwh,pv\n"
+    "2024-01-01T00:00Z,1,5\n2024-01-01T00:15Z,2,5\n"  # 00:30 and 00:45 missing
+    "2024-01-01T01:00Z,3,5\n2024-01-01T01:15Z,4,5\n"  # 01:30 and 01:45 missing
+    "2024-01-01T02:00Z,5,5\n"
+)
+
+
+def test_gaps_csv_lists_every_gap_beyond_max_listed(tmp_path):
+    # OSS-137 (P-14): the CSV holds every gap; the JSON report keeps its --max-listed cap.
+    path, gaps, report = write(tmp_path, GAPPY_TWO), tmp_path / "gaps.csv", tmp_path / "report.json"
+    args = ("report", str(path), "--value-col", "kwh", "--freq", "15min", "-o", str(report))
+    assert run(*args, "--max-listed", "1", "--gaps-csv", str(gaps))[0] == 0
+    data = json.loads(report.read_text())
+    assert data["n_gaps"] == 2 and len(data["gaps"]) == 1 and data["truncated"]["gaps"]
+    assert gaps.read_bytes() == (
+        b"column,start,end,missing_count\n"
+        b"kwh,2024-01-01T00:30:00+0000,2024-01-01T00:45:00+0000,2\n"
+        b"kwh,2024-01-01T01:30:00+0000,2024-01-01T01:45:00+0000,2\n"
+    )
+    # Uncapped, the report lists the same gaps as the CSV.
+    assert run(*args, "--gaps-csv", str(gaps))[0] == 0
+    listed = [(g["start"], g["end"], g["missing_count"]) for g in json.loads(report.read_text())["gaps"]]
+    rows = [line.split(",") for line in gaps.read_text().splitlines()[1:]]
+    as_report = [(pd.Timestamp(s).isoformat(), pd.Timestamp(e).isoformat(), int(n)) for _, s, e, n in rows]
+    assert as_report == listed
+
+
+def test_gaps_csv_per_column_grid_and_input_format(tmp_path):
+    # Each column on its own report grid: kwh at 15 min has two gaps, pv at 1 h none.
+    kwh = ek.MeasurementMetadata(name="kwh", unit="kWh", resolution="15min", aggregation="sum")
+    pv = ek.MeasurementMetadata(name="pv", unit="kW", resolution="1h")
+    schema = _schema(tmp_path, kwh, pv)
+    text = GAPPY_TWO.replace(",", ";")
+    path, gaps = write(tmp_path, text), tmp_path / "gaps.csv"
+    code, _, err = run("report", str(path), "--delimiter", ";", "--schema", schema, "--gaps-csv", str(gaps))
+    assert (code, err) == (0, "")
+    assert gaps.read_text().splitlines() == [
+        "column;start;end;missing_count",
+        "kwh;2024-01-01T00:30:00+0000;2024-01-01T00:45:00+0000;2",
+        "kwh;2024-01-01T01:30:00+0000;2024-01-01T01:45:00+0000;2",
+    ]
+
+
+def test_gaps_csv_without_a_step_is_refused_before_writing(tmp_path):
+    path, gaps, report = write(tmp_path, GAPPY_TWO), tmp_path / "gaps.csv", tmp_path / "report.json"
+    code, out, err = run(
+        "report", str(path), "--value-col", "kwh", "-o", str(report), "--gaps-csv", str(gaps)
+    )
+    assert code == 2 and out == "" and "--gaps-csv needs a step" in err
+    assert not report.exists() and not gaps.exists()
+
+
+def test_gaps_csv_with_no_gaps_has_only_the_header(tmp_path):
+    gaps = tmp_path / "gaps.csv"
+    assert run("report", str(write(tmp_path, CLEAN)), "--freq", "15min", "--gaps-csv", str(gaps))[0] == 0
+    assert gaps.read_text() == "column,start,end,missing_count\n"
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        ("--freq", "D", "--tz", "Europe/Stockholm"),  # 23- and 25-hour days across DST
+        ("--freq", "1h", "--origin", "2024-03-29T00:30:00Z"),  # grid shifted by origin
+    ],
+)
+def test_gaps_csv_matches_the_report_grid(tmp_path, options):
+    days = pd.date_range("2024-03-29", periods=10, freq="D", tz="Europe/Stockholm").delete([2, 3, 6])
+    hours = pd.date_range("2024-03-29T00:30Z", periods=40, freq="1h").delete([4, 5, 20])
+    index = days.tz_convert("UTC") if "D" in options else hours
+    lines = "".join(f"{t.isoformat()},1\n" for t in index)
+    path, gaps, report = (
+        write(tmp_path, "timestamp,kwh\n" + lines),
+        tmp_path / "gaps.csv",
+        tmp_path / "r.json",
+    )
+    assert run("report", str(path), *options, "-o", str(report), "--gaps-csv", str(gaps))[0] == 0
+    listed = [(g["start"], g["end"], g["missing_count"]) for g in json.loads(report.read_text())["gaps"]]
+    rows = [line.split(",") for line in gaps.read_text().splitlines()[1:]]
+    assert (
+        listed
+        and [(pd.Timestamp(s).isoformat(), pd.Timestamp(e).isoformat(), int(n)) for _, s, e, n in rows]
+        == listed
+    )

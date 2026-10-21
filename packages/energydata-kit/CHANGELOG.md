@@ -14,6 +14,11 @@ versioning: [SemVer](https://semver.org/).
   as before.
 
 ### Added
+- `report --gaps-csv FILE` writes every gap, also those beyond
+  `--max-listed`, as `column,start,end,missing_count`: one row per gap,
+  per column, on the grid that column's report uses, in the input's
+  delimiter and with `\n` line endings. Refused (exit status 2, nothing
+  written) when a column has no step. The JSON report is unchanged.
 - `report --unit COLUMN=UNIT`, repeatable, gives several value columns
   metadata without a Table Schema; `--resolution`, `--aggregation` and
   `--interval-label` apply to each named column, and columns not named get
