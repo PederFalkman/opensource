@@ -7,13 +7,22 @@ Merged items stay listed here as a record of what was agreed.
 ## Open decisions (owners required)
 
 Questions and evidence for each: `docs/governance/RELEASE_DECISIONS.md`,
-section "0.3.0". 0.1.0 (2026-10-19) and 0.2.0 (2026-10-20) were released as
-GitHub releases only; their records are kept there. Engineering for 0.3.0
-is complete (OSS-136 to OSS-138, P-14 to P-16), and the owner recorded the
-answers below on 2026-10-21; 0.3.0 was released the same day (OSS-140,
-#111). For 0.4.0 the owner approved P-17 and P-19 on 2026-10-21; the other
-candidates (P-18, P-20, and P-12 and P-13 carried over) are under
-"Proposed" below (OSS-142) and not approved.
+section "0.4.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20) and 0.3.0
+(2026-10-21) were released as GitHub releases only; their records are kept
+there. Engineering for 0.4.0 is complete (OSS-143 and OSS-144, P-17 and
+P-19); it waits on the questions below. The other 0.4.0 candidates (P-18,
+P-20, and P-12 and P-13 carried over) are under "Proposed" below (OSS-142)
+and not approved.
+
+- [ ] **G1 for 0.4.0.** Does counsel's confirmation cover the code added
+      since 0.3.0 (`afa6974`), or should counsel confirm again?
+- [ ] **G3 for 0.4.0.** Technical-lead sign-off of the IP-boundary review
+      of the diff from 0.3.0 (3 source files, about 35 added lines).
+- [ ] **G4 for 0.4.0.** No dependency changed; is the 0.3.0 position enough?
+- [ ] **D6 for 0.4.0 (G7).** GitHub release only, like 0.3.0, or also a
+      package index?
+
+Recorded for 0.3.0:
 
 - [x] **G1 for 0.3.0.** Counsel confirmed that the code added since 0.2.0
       (`344c862`) is covered (recorded 2026-10-21).
@@ -1347,7 +1356,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       a subset with `--value-col`; one named column; the refusals. The
       guide's example drops the repeated `--value-col` (executed).
 
-### OSS-144: fast parsing of `±HHMM` and `±HH` offsets (P-19) — this change
+### OSS-144: fast parsing of `±HHMM` and `±HH` offsets (P-19) — merged in [#115](https://github.com/PederFalkman/opensource/pull/115)
 
 - [x] The OSS-136 split covers `±HHMM` and `±HH` as well as `±HH:MM` and
       `Z`: 350k strings take 0.34–0.47 s instead of 2.1–2.5 s. The last
@@ -1359,6 +1368,18 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       batches matched on pandas 3.0.6 and 2.1.4.
 - [x] Benchmark case for `+0100` strings; `PERFORMANCE.md`, the README
       limitation and the changelog updated.
+
+### OSS-145: prepare the 0.4.0 release — this change
+
+- [x] `RELEASE_DECISIONS.md` gains a 0.4.0 section: what the release
+      contains (P-17, P-19), what did not change since 0.3.0 (no
+      dependency, extra or data file), the open questions per gate (G1,
+      G3, G4, D6) and a guide for the G3 reviewer. It decides nothing;
+      earlier records are kept.
+- [x] Changelog `[Unreleased]` reads as release notes: a summary and what
+      changes for 0.3.0 users. Version stays `0.4.0.dev0`; the upload
+      guard stays.
+- [x] "Open decisions" above lists the 0.4.0 questions.
 
 ## Explicitly not planned
 

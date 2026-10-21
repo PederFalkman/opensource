@@ -5,6 +5,16 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+Two refinements approved as P-17 and P-19: `report --unit COLUMN=UNIT`
+now also chooses the columns to assess, and timestamp strings with
+`±HHMM` or `±HH` offsets parse about five times faster, like `±HH:MM`.
+The report format is unchanged (schema 2), no public Python name is added
+or changed, and parsed timestamps are identical.
+
+**Upgrading from 0.3.0.** Nothing to change. A `report` command that gave
+`--unit COLUMN=UNIT` without `--value-col` used to stop with "pass
+--value-col" (exit status 2); it now assesses the named columns.
+
 ### Changed
 - `report --unit COLUMN=UNIT` without `--value-col` assesses the named
   columns, in the order given, as `--schema` already does; until now the
