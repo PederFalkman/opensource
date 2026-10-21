@@ -5,6 +5,13 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- `report --unit COLUMN=UNIT` without `--value-col` assesses the named
+  columns, in the order given, as `--schema` already does; until now the
+  command stopped with "pass --value-col". An explicit `--value-col` still
+  decides which columns are assessed. A column named by `--unit` that is
+  not in the file is refused (exit status 2).
+
 ## [0.3.0] - 2026-10-21
 
 Two command-line additions and faster timestamp parsing (approved as P-14

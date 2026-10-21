@@ -120,7 +120,8 @@ Calendar steps work as in the library: `--freq D --tz Europe/Stockholm`.
 Repeat `--value-col` for one report covering several columns (check options
 then apply to every column). `--unit kWh` describes a single column; for
 several, repeat `--unit kwh=kWh --unit pv=kW` (`--resolution`,
-`--aggregation` and `--interval-label` apply to each named column). With several
+`--aggregation` and `--interval-label` apply to each named column; without
+`--value-col`, the named columns are the ones assessed). With several
 columns, `--flags-csv` writes each value column followed by its
 `quality_flag_<column>`. `--schema data.schema.json` reads unit, resolution and
 other metadata per column from a Table Schema written by `to_table_schema`;

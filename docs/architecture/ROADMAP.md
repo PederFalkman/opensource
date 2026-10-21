@@ -11,8 +11,9 @@ section "0.3.0". 0.1.0 (2026-10-19) and 0.2.0 (2026-10-20) were released as
 GitHub releases only; their records are kept there. Engineering for 0.3.0
 is complete (OSS-136 to OSS-138, P-14 to P-16), and the owner recorded the
 answers below on 2026-10-21; 0.3.0 was released the same day (OSS-140,
-#111). No 0.4.0 work is approved yet; candidates P-17 to P-20 (with
-P-12 and P-13 carried over) are under "Proposed" below (OSS-142).
+#111). For 0.4.0 the owner approved P-17 and P-19 on 2026-10-21; the other
+candidates (P-18, P-20, and P-12 and P-13 carried over) are under
+"Proposed" below (OSS-142) and not approved.
 
 - [x] **G1 for 0.3.0.** Counsel confirmed that the code added since 0.2.0
       (`344c862`) is covered (recorded 2026-10-21).
@@ -114,9 +115,9 @@ they should ship as one schema-3 change.
 
 | ID | Candidate | Why | Effort | Risk and cost |
 |---|---|---|---|---|
-| P-17 | **`--unit COLUMN=UNIT` names the value columns.** When `--value-col` is not given, the columns named by `--unit COLUMN=UNIT` become the assessed columns, as `--schema` columns already do. | Found while writing the 0.3.0 guide example (OSS-139): naming each column twice (`--value-col kwh --unit kwh=kWh`) is easy to get wrong, and the single-column form needs no `--value-col` when the file has one value column. Today the command stops with "pass --value-col". | S | No format change. Must keep an explicit `--value-col` authoritative (then `--unit` may name a subset), and keep the order of `--unit` options as the column order so reports stay deterministic. |
+| P-17 | *Approved by the owner on 2026-10-21; done in OSS-143.* **`--unit COLUMN=UNIT` names the value columns.** When `--value-col` is not given, the columns named by `--unit COLUMN=UNIT` become the assessed columns, as `--schema` columns already do. | Found while writing the 0.3.0 guide example (OSS-139): naming each column twice (`--value-col kwh --unit kwh=kWh`) is easy to get wrong, and the single-column form needs no `--value-col` when the file has one value column. Today the command stops with "pass --value-col". | S | No format change. Must keep an explicit `--value-col` authoritative (then `--unit` may name a subset), and keep the order of `--unit` options as the column order so reports stay deterministic. |
 | P-18 | **Compare full gap lists.** `compare before.json after.json --gaps before.csv after.csv` reads the `--gaps-csv` files and compares every gap, not only the first `max_listed`. | Known limitation: "Only listed gaps are compared"; long outage histories set `lists_truncated`, and the comparison then misses gaps. P-14 made the full list available but nothing reads it. | S–M | No report change. The comparison output keeps its fields; `lists_truncated` becomes `false` when full lists are read, which consumers must be told. Must refuse CSVs that do not match their report (columns, gap counts). |
-| P-19 | **Fast parsing of the other offset forms.** Extend the OSS-136 fast path to `+0200` and `+02` offsets. | Known limitation and `PERFORMANCE.md`: measured on 2026-10-21, 350,000 strings take 1.6–1.7 s in these forms against 0.5 s for `+02:00`. | S | No format change. Same rule as P-16: results and errors must match the general parser on the lowest and current pandas, checked by a property test, or the proposal is dropped. |
+| P-19 | *Approved by the owner on 2026-10-21; to be built in OSS-144.* **Fast parsing of the other offset forms.** Extend the OSS-136 fast path to `+0200` and `+02` offsets. | Known limitation and `PERFORMANCE.md`: measured on 2026-10-21, 350,000 strings take 1.6–1.7 s in these forms against 0.5 s for `+02:00`. | S | No format change. Same rule as P-16: results and errors must match the general parser on the lowest and current pandas, checked by a property test, or the proposal is dropped. |
 | P-20 | **Single-row spikes.** An opt-in `spike_max_delta` flags a row that differs from both neighbours by more than the limit, in opposite directions, with a new `SPIKE` flag (bit 2048), so one outlier is flagged once. | Known limitation: the jump check flags the row where a change lands, so a single outlier flags itself and the row after it; callers cannot tell a spike from a step. | M | New flag bit and recorded option, so schema 3 (pair with P-12). The caller picks the limit in the data's unit; no limit shipped. Must define behaviour at gaps (`max_gap`), missing values and the first and last rows. |
 | P-12 | *Carried over from 0.3.0, not approved.* **DST policy for calendar grids.** As described for 0.3.0 below. | Known limitation: a daily grid at 02:30 in Europe/Stockholm raises. | S–M | Schema 3 (pair with P-20). |
 | P-13 | *Carried over from 0.3.0, not approved.* **Grid anchored at the step boundary** (`origin="epoch"`). As described for 0.3.0 below. | Known limitation: a leading off-grid timestamp shifts the grid. | S | Fits schema 2; `origin` may then hold a keyword instead of a timestamp, documented as such. |
@@ -1326,13 +1327,25 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Status lines: 0.3.0 is the GitHub release, `main` is 0.4.0
       development.
 
-### OSS-142: 0.4.0 proposals — this change
+### OSS-142: 0.4.0 proposals — merged in [#113](https://github.com/PederFalkman/opensource/pull/113)
 
 - [x] P-17 to P-20 written up for the owner to approve one by one, ranked
       with P-12 and P-13 carried over from 0.3.0: effort, risk, and
       whether each needs report schema 3 (P-12 and P-20). The two measured
       claims (the `--unit` refusal, the offset-form parse times) were
       checked on 2026-10-21. Docs only; nothing is authorized.
+- [x] The owner approved P-17 and P-19 on 2026-10-21, to be built one PR
+      each (P-17 first). P-12, P-13, P-18 and P-20 are not approved.
+
+### OSS-143: `--unit COLUMN=UNIT` names the value columns (P-17) — this change
+
+- [x] Without `--value-col`, the columns named by `--unit COLUMN=UNIT` are
+      assessed, in `--unit` order; an explicit `--value-col` still decides,
+      and `--unit` may then name a subset. A named column missing from the
+      file is refused (exit status 2). A plain `--unit kWh` is unchanged.
+- [x] Tests: the same report as naming each column twice; column order;
+      a subset with `--value-col`; one named column; the refusals. The
+      guide's example drops the repeated `--value-col` (executed).
 
 ## Explicitly not planned
 
