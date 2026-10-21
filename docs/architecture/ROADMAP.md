@@ -10,10 +10,10 @@ Questions and evidence for each: `docs/governance/RELEASE_DECISIONS.md`,
 section "0.5.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 and 0.4.0
 (both 2026-10-21) were released as GitHub releases only; their records are
 kept there. Engineering for 0.5.0 is complete (OSS-149 and OSS-150, P-21
-and P-23), and the owner recorded the answers below on 2026-10-21; the release PR
-is OSS-152. The other candidates (P-22,
-and P-12, P-13, P-18 and P-20 carried over) are under "Proposed" below
-(OSS-148) and not approved.
+and P-23), and the owner recorded the answers below on 2026-10-21; 0.5.0 was
+released the same day (OSS-152, #123). No 0.6.0 work is approved yet; the
+remaining candidates (P-22, and P-12, P-13, P-18 and P-20) are under
+"Proposed" below (OSS-148) and not approved.
 
 - [x] **G1 for 0.5.0.** Counsel confirmed that the code added since 0.4.0
       (`6cc79fd`) is covered (recorded 2026-10-21).
@@ -1496,7 +1496,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       behaviour. Version stays `0.5.0.dev0`; the upload guard stays.
 - [x] "Open decisions" above lists the 0.5.0 questions.
 
-### OSS-152: release energydata-kit 0.5.0 — this change
+### OSS-152: release energydata-kit 0.5.0 — merged in [#123](https://github.com/PederFalkman/opensource/pull/123)
 
 - [x] Decisions recorded by the owner on 2026-10-21: G1 counsel confirmed, G3
       signed off, G4 the 0.4.0 position stands, D6 GitHub release only,
@@ -1507,10 +1507,19 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       expects nothing to fail (`--strict` exits 0, `--guard` passes), and the
       status lines in both READMEs, `SECURITY.md`, `CONTRIBUTING.md` and
       `RELEASE_GATES.md` name 0.5.0 as a GitHub release.
-- [ ] After merge (owner): tag the merge commit `energydata-kit-v0.5.0`,
-      check the digests and publish the draft GitHub release the *Release
-      build* workflow creates. Then the next development cycle restores the
-      upload guard.
+- [x] After merge (owner): tagged `energydata-kit-v0.5.0` on `34cf9c7`; the
+      *Release build* workflow passed and created the draft release, which
+      the owner published on 2026-10-21.
+
+### OSS-153: open 0.6.0 development — this change
+
+- [x] `__version__` is `0.6.0.dev0`; new changelog entries go under
+      `[Unreleased]`, and the released sections are not edited.
+- [x] The `Private :: Do Not Upload` guard is back: D6 approved 0.5.0 only,
+      as a GitHub release. The readiness test again expects a package that
+      is not release-ready, with the licence checks and `--guard` passing.
+- [x] Status lines: 0.5.0 is the GitHub release, `main` is 0.6.0
+      development.
 
 ## Explicitly not planned
 
