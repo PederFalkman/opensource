@@ -83,6 +83,43 @@ and anything that downloads data.
 **Suggested order if approved:** P-3 and P-4 first (small, no schema change),
 then P-2 with P-6 as one schema-2 change, then P-5 if users ask for it.
 
+### P-12 to P-16: candidates for 0.3.0 (OSS-135)
+
+*Prepared by the assistant in OSS-135 for the owner to approve or reject one
+by one. Nothing here is authorized; none of it starts without approval.*
+Each item is generic data-quality or command-line tooling as defined in
+`IP_BOUNDARY.md` ("What *is* in scope"), ships no domain thresholds and
+touches nothing on the out-of-scope list. Each comes from the package
+README's "Known limitations".
+
+**The constraint that shapes them:** report schema 2 is fixed since 0.2.0
+and its `parameters` object allows no extra fields. Only P-12 adds a
+recorded option, so only P-12 would need **report schema 3**; P-13 to P-16
+change no format. If P-12 is approved, any other option a report must
+record should join the same schema-3 change.
+
+| ID | Candidate | Why | Effort | Risk and cost |
+|---|---|---|---|---|
+| P-12 | **DST policy for calendar grids.** An opt-in `nonexistent`/`ambiguous` choice for calendar grids (`tz=`) whose wall-clock time falls in a skipped or repeated DST hour, with the same choices `normalize_timestamps` already offers, instead of raising. | Known limitation: a daily grid at 02:30 in Europe/Stockholm raises because pandas cannot place it, so such series cannot be assessed at all. | S–M | Recorded in reports, so report schema 3 and a `compare_reports` reader for 1, 2 and 3. Must define which grid point a skipped hour maps to; defaults stay "raise". |
+| P-13 | **Grid anchored at the step boundary.** `origin="epoch"` (or similar) places the grid on whole steps since the Unix epoch, so a leading off-grid timestamp no longer shifts the whole grid. | Known limitation: without `origin`, the grid starts at the first timestamp, and one early stray row moves every grid point. | S | Fits schema 2 (`origin` is a string), but a consumer that expects an ISO timestamp there sees a keyword; documented as such. Fixed steps only; calendar steps already align to the calendar. |
+| P-14 | *Approved by the owner on 2026-10-20.* **Full gap list as a file** (`report --gaps-csv`). Writes every gap, not only the first `max_listed`, next to the JSON report. | Known limitation: comparisons see only listed gaps; long outage histories hit `max_listed` and `lists_truncated`. | S | No format change: the JSON is untouched and the CSV follows the input's delimiter, like `--flags-csv`. |
+| P-15 | *Approved by the owner on 2026-10-20.* **Units for several columns on the command line** (`--unit COLUMN=UNIT`, repeatable), without writing a Table Schema. | Known limitation: `--unit` works with one `--value-col` only; several columns need `--schema`. | S | No format change. Must keep the single-column `--unit kWh` form and refuse a unit for a column that is not assessed. |
+| P-16 | *Approved by the owner on 2026-10-20.* **Faster parsing of timestamps whose UTC offset changes across DST.** Use pandas' ISO 8601 fast path where the input allows it, keeping the current result. | Known limitation and `PERFORMANCE.md`: about 2 s per 350,000 rows, all of it in pandas' general parser. | S | No format change. Results must stay byte-identical (the golden tests pin them) on the lowest and current pandas; if the fast path differs anywhere, the proposal is dropped. |
+
+Considered and not proposed:
+- **Comparing the frame-level `timestamps` section:** it repeats facts
+  already compared per column; little gain for a comparison-format change.
+- **Fractional expected counts on 30-minute DST days:** affects very few
+  zones (e.g. Lord Howe Island); the current floor is documented.
+- **pint-pandas support:** still deferred (process-wide unit registry).
+- **Automatic or statistical limits, gap filling, resampling:** out of
+  scope, as for P-7 to P-11.
+
+**Suggested order if approved:** P-16, P-14 and P-15 first (approved
+2026-10-20) (no format
+change, each small). P-13 next. P-12 only if wanted, as the single schema-3
+change. Each needs its own approval.
+
 ### P-7 to P-11: candidates after 0.1.0 (OSS-100)
 
 *Prepared by the assistant in OSS-100 for the owner to approve or reject one
@@ -1138,7 +1175,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       the owner published on 2026-10-20 (marked pre-release). An independent
       rebuild from the tag gave matching checksums to compare.
 
-### OSS-134: open 0.3.0 development — this change
+### OSS-134: open 0.3.0 development — merged in [#105](https://github.com/PederFalkman/opensource/pull/105)
 
 - [x] `__version__` is `0.3.0.dev0`; new changelog entries go under
       `[Unreleased]`, and the released sections are not edited.
@@ -1147,6 +1184,15 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       is not release-ready, with the licence checks and `--guard` passing.
 - [x] Status lines: 0.2.0 is the GitHub release, `main` is 0.3.0
       development.
+
+### OSS-135: 0.3.0 proposals — this change
+
+- [x] P-12 to P-16 written up for the owner to approve one by one, each from
+      a README "Known limitation", with effort, risk and whether it needs
+      report schema 3 (only P-12). Docs only; nothing is authorized.
+- [x] The owner approved P-14, P-15 and P-16 on 2026-10-20, to be built in
+      the suggested order (P-16, P-14, P-15), one PR each. P-12 and P-13 are
+      not approved.
 
 ## Explicitly not planned
 
