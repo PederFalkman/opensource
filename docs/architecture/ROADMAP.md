@@ -102,7 +102,7 @@ record should join the same schema-3 change.
 |---|---|---|---|---|
 | P-12 | **DST policy for calendar grids.** An opt-in `nonexistent`/`ambiguous` choice for calendar grids (`tz=`) whose wall-clock time falls in a skipped or repeated DST hour, with the same choices `normalize_timestamps` already offers, instead of raising. | Known limitation: a daily grid at 02:30 in Europe/Stockholm raises because pandas cannot place it, so such series cannot be assessed at all. | S–M | Recorded in reports, so report schema 3 and a `compare_reports` reader for 1, 2 and 3. Must define which grid point a skipped hour maps to; defaults stay "raise". |
 | P-13 | **Grid anchored at the step boundary.** `origin="epoch"` (or similar) places the grid on whole steps since the Unix epoch, so a leading off-grid timestamp no longer shifts the whole grid. | Known limitation: without `origin`, the grid starts at the first timestamp, and one early stray row moves every grid point. | S | Fits schema 2 (`origin` is a string), but a consumer that expects an ISO timestamp there sees a keyword; documented as such. Fixed steps only; calendar steps already align to the calendar. |
-| P-14 | *Approved by the owner on 2026-10-20.* **Full gap list as a file** (`report --gaps-csv`). Writes every gap, not only the first `max_listed`, next to the JSON report. | Known limitation: comparisons see only listed gaps; long outage histories hit `max_listed` and `lists_truncated`. | S | No format change: the JSON is untouched and the CSV follows the input's delimiter, like `--flags-csv`. |
+| P-14 | *Approved by the owner on 2026-10-20; done in OSS-137.* **Full gap list as a file** (`report --gaps-csv`). Writes every gap, not only the first `max_listed`, next to the JSON report. | Known limitation: comparisons see only listed gaps; long outage histories hit `max_listed` and `lists_truncated`. | S | No format change: the JSON is untouched and the CSV follows the input's delimiter, like `--flags-csv`. |
 | P-15 | *Approved by the owner on 2026-10-20.* **Units for several columns on the command line** (`--unit COLUMN=UNIT`, repeatable), without writing a Table Schema. | Known limitation: `--unit` works with one `--value-col` only; several columns need `--schema`. | S | No format change. Must keep the single-column `--unit kWh` form and refuse a unit for a column that is not assessed. |
 | P-16 | *Approved by the owner on 2026-10-20; done in OSS-136.* **Faster parsing of timestamps whose UTC offset changes across DST.** Use pandas' ISO 8601 fast path where the input allows it, keeping the current result. | Known limitation and `PERFORMANCE.md`: about 2 s per 350,000 rows, all of it in pandas' general parser. | S | No format change. Results must stay byte-identical (the golden tests pin them) on the lowest and current pandas; if the fast path differs anywhere, the proposal is dropped. |
 
@@ -1194,7 +1194,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       the suggested order (P-16, P-14, P-15), one PR each. P-12 and P-13 are
       not approved.
 
-### OSS-136: faster parsing of DST-offset timestamps (P-16) — this change
+### OSS-136: faster parsing of DST-offset timestamps (P-16) — merged in [#107](https://github.com/PederFalkman/opensource/pull/107)
 
 - [x] `normalize_timestamps` splits strict `±HH:MM`/`Z` strings into local
       time and offset and parses the local part on pandas' fast naive path:
@@ -1208,6 +1208,18 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] `benchmarks/run.py` times runs without `tracemalloc` (which slowed
       Python-level code and inflated every time) and adds the offset case;
       `PERFORMANCE.md` re-measured and says why all its times dropped.
+
+### OSS-137: `report --gaps-csv` (P-14) — this change
+
+- [x] Writes every gap, beyond `--max-listed`, as
+      `column,start,end,missing_count`, per column on that column's report
+      grid (`find_missing_intervals` with the report's step, `tz` and
+      `origin`), in the input's delimiter with `\n` line endings.
+- [x] Refused before anything is written when a column has no step.
+- [x] Tests: the CSV equals the uncapped report's gaps on fixed,
+      local-calendar (DST) and shifted grids; per-column grids from a
+      Table Schema; `;` input; header-only output; the refusal. The guide
+      shows it (executed).
 
 ## Explicitly not planned
 

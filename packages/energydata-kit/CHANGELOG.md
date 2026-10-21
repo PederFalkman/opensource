@@ -13,6 +13,13 @@ versioning: [SemVer](https://semver.org/).
   and error messages are unchanged; any other form uses the general parser
   as before.
 
+### Added
+- `report --gaps-csv FILE` writes every gap, also those beyond
+  `--max-listed`, as `column,start,end,missing_count`: one row per gap,
+  per column, on the grid that column's report uses, in the input's
+  delimiter and with `\n` line endings. Refused (exit status 2, nothing
+  written) when a column has no step. The JSON report is unchanged.
+
 ## [0.2.0] - 2026-10-20
 
 Report schema 2 and four opt-in refinements of the checks: gaps that stop

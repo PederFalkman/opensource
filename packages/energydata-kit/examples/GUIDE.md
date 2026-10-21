@@ -422,6 +422,7 @@ ek.make_synthetic_series(periods=96, drop=[10, 11], inf_at=[70]).rename("kw").to
 ```bash
 energydata-kit report meter.csv --freq 15min --unit kW --aggregation mean -o report.json
 energydata-kit report meter.csv --freq 15min --flags-csv flagged.csv --insert-missing
+energydata-kit report meter.csv --freq 15min --max-listed 0 --gaps-csv gaps.csv -o capped.json
 # --fail-on-issues makes the exit status usable in pipelines:
 energydata-kit report meter.csv --freq 15min --fail-on-issues  # exit status: 1
 ```
@@ -431,6 +432,12 @@ from pathlib import Path
 
 report = json.loads(Path("report.json").read_text())
 assert report["n_missing_intervals"] == 2 and report["flag_counts"]["NON_FINITE"] == 1
+
+# --gaps-csv lists every gap even when the report lists none (--max-listed 0):
+capped = json.loads(Path("capped.json").read_text())
+gaps = pd.read_csv("gaps.csv")
+assert capped["gaps"] == [] and len(gaps) == capped["n_gaps"] == report["n_gaps"]
+assert list(gaps.columns) == ["column", "start", "end", "missing_count"]
 
 flagged = pd.read_csv("flagged.csv")
 assert len(flagged) == 96 - 2 + 2  # original rows plus the two inserted ones
