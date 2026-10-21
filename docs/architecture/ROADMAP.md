@@ -104,7 +104,7 @@ record should join the same schema-3 change.
 | P-13 | **Grid anchored at the step boundary.** `origin="epoch"` (or similar) places the grid on whole steps since the Unix epoch, so a leading off-grid timestamp no longer shifts the whole grid. | Known limitation: without `origin`, the grid starts at the first timestamp, and one early stray row moves every grid point. | S | Fits schema 2 (`origin` is a string), but a consumer that expects an ISO timestamp there sees a keyword; documented as such. Fixed steps only; calendar steps already align to the calendar. |
 | P-14 | *Approved by the owner on 2026-10-20.* **Full gap list as a file** (`report --gaps-csv`). Writes every gap, not only the first `max_listed`, next to the JSON report. | Known limitation: comparisons see only listed gaps; long outage histories hit `max_listed` and `lists_truncated`. | S | No format change: the JSON is untouched and the CSV follows the input's delimiter, like `--flags-csv`. |
 | P-15 | *Approved by the owner on 2026-10-20.* **Units for several columns on the command line** (`--unit COLUMN=UNIT`, repeatable), without writing a Table Schema. | Known limitation: `--unit` works with one `--value-col` only; several columns need `--schema`. | S | No format change. Must keep the single-column `--unit kWh` form and refuse a unit for a column that is not assessed. |
-| P-16 | *Approved by the owner on 2026-10-20.* **Faster parsing of timestamps whose UTC offset changes across DST.** Use pandas' ISO 8601 fast path where the input allows it, keeping the current result. | Known limitation and `PERFORMANCE.md`: about 2 s per 350,000 rows, all of it in pandas' general parser. | S | No format change. Results must stay byte-identical (the golden tests pin them) on the lowest and current pandas; if the fast path differs anywhere, the proposal is dropped. |
+| P-16 | *Approved by the owner on 2026-10-20; done in OSS-136.* **Faster parsing of timestamps whose UTC offset changes across DST.** Use pandas' ISO 8601 fast path where the input allows it, keeping the current result. | Known limitation and `PERFORMANCE.md`: about 2 s per 350,000 rows, all of it in pandas' general parser. | S | No format change. Results must stay byte-identical (the golden tests pin them) on the lowest and current pandas; if the fast path differs anywhere, the proposal is dropped. |
 
 Considered and not proposed:
 - **Comparing the frame-level `timestamps` section:** it repeats facts
@@ -1185,7 +1185,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Status lines: 0.2.0 is the GitHub release, `main` is 0.3.0
       development.
 
-### OSS-135: 0.3.0 proposals — this change
+### OSS-135: 0.3.0 proposals — merged in [#106](https://github.com/PederFalkman/opensource/pull/106)
 
 - [x] P-12 to P-16 written up for the owner to approve one by one, each from
       a README "Known limitation", with effort, risk and whether it needs
@@ -1193,6 +1193,21 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] The owner approved P-14, P-15 and P-16 on 2026-10-20, to be built in
       the suggested order (P-16, P-14, P-15), one PR each. P-12 and P-13 are
       not approved.
+
+### OSS-136: faster parsing of DST-offset timestamps (P-16) — this change
+
+- [x] `normalize_timestamps` splits strict `±HH:MM`/`Z` strings into local
+      time and offset and parses the local part on pandas' fast naive path:
+      350k strings take 0.33–0.40 s instead of about 2.3 s. Other forms and
+      every failure fall back to the general parser.
+- [x] Unchanged results and errors: a property test compares the two
+      paths; 120,000 random inputs matched the previous code (results,
+      error types and messages) on pandas 3.0.6 and 2.1.4. One divergence
+      found on the way (an offset pushing a time past the ns range on
+      pandas 2.1) is fixed and pinned by a test.
+- [x] `benchmarks/run.py` times runs without `tracemalloc` (which slowed
+      Python-level code and inflated every time) and adds the offset case;
+      `PERFORMANCE.md` re-measured and says why all its times dropped.
 
 ## Explicitly not planned
 

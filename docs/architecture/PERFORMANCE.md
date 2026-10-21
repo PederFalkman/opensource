@@ -1,10 +1,13 @@
 # Performance
 
-**Measured:** 2026-10-16 (OSS-18), re-measured 2026-10-17 (OSS-50) after
-the input checks added in OSS-40 to OSS-49 (`assess_quality` again on
-2026-10-18, see OSS-74 below), on one x86_64 CI-class container.
-Numbers are wall time (best of 3) and peak memory traced by Python's
-`tracemalloc` (includes NumPy and pandas buffers). They depend on the
+**Measured:** 2026-10-20 (OSS-136), earlier runs on 2026-10-16 (OSS-18),
+2026-10-17 (OSS-50) and 2026-10-18 (OSS-74), on one x86_64 CI-class
+container. Numbers are wall time (best of 3, measured without memory
+tracing) and peak memory traced by Python's `tracemalloc` in one extra run
+(includes NumPy and pandas buffers). Before OSS-136 the timed runs were
+traced too, which slows Python-level code and made every time read higher;
+the table below is the first measured the new way, so its times are lower
+than earlier tables for that reason alone. They depend on the
 machine; use them for orders of magnitude and compare runs on the same
 machine only. Reproduce with `python benchmarks/run.py` from
 `packages/energydata-kit`.
@@ -17,14 +20,15 @@ are NaN.
 
 | Case | Python 3.13, pandas 3.0.6 (s) | Python 3.11, pandas 2.1.4 (s) | Peak memory (MiB) |
 |---|---|---|---|
-| `normalize_timestamps`, 350k naive ISO strings | 0.80 | 0.88 | 20–22 |
-| `flag_series`, 1 year at 1 min | 0.02 | 0.02 | 10–26 |
-| `flag_series`, 1 year at 1 min, every check + `insert_missing` | 0.14 | 0.11 | 37 |
-| `find_missing_intervals`, 1 year at 1 min | 0.11 | 0.05 | 17 |
-| `assess_quality`, 1 year at 1 min | 0.21 | 0.17 | 29–33 |
-| `assess_quality`, 10 years at 15 min, every opt-in check | 0.20 | 0.19 | 17–20 |
-| `local_day_completeness`, 10 years at 15 min, Europe/Stockholm | 0.06 | 0.12 | 11–14 |
-| `assess_frame`, 5 columns, 10 years at 15 min | 0.83 | 0.75 | 17–31 |
+| `normalize_timestamps`, 350k naive ISO strings | 0.70 | 0.69 | 20–42 |
+| `normalize_timestamps`, 350k ISO strings with DST offsets | 0.40 | 0.33 | 41–61 |
+| `flag_series`, 1 year at 1 min | 0.02 | 0.02 | 10 |
+| `flag_series`, 1 year at 1 min, every check + `insert_missing` | 0.14 | 0.12 | 37 |
+| `find_missing_intervals`, 1 year at 1 min | 0.07 | 0.03 | 17 |
+| `assess_quality`, 1 year at 1 min | 0.15 | 0.14 | 30–34 |
+| `assess_quality`, 10 years at 15 min, every opt-in check | 0.13 | 0.14 | 18–21 |
+| `local_day_completeness`, 10 years at 15 min, Europe/Stockholm | 0.02 | 0.04 | 11–14 |
+| `assess_frame`, 5 columns, 10 years at 15 min | 0.49 | 0.54 | 18–23 |
 
 Everything scales linearly with the number of rows (and, for
 `assess_frame`, with the number of columns). The coarse guard in
@@ -39,6 +43,30 @@ machine, the code before OSS-40 was no faster in either, so that is
 run-to-run noise. `compare_reports`, which validates
 its input since OSS-47, takes about 0.4 ms for two reports with 350 listed
 gaps each.
+
+## Changes in OSS-136
+
+Parsing ISO strings whose UTC offset changes across DST (`+01:00` /
+`+02:00`) was the slowest single step: pandas' general parser handles mixed
+offsets about 25 times slower than naive strings. `normalize_timestamps` now
+splits strings of the strict form `YYYY-MM-DD[T ]HH:MM[:SS[.fff]]` plus `Z`
+or `±HH:MM` into local time and offset, parses the local part on pandas'
+fast naive path and subtracts the offset. Any other form, and any failure
+(including a time pushed past the representable range by its offset), falls
+back to the general parser, so results and error messages are unchanged: a
+property test compares the two paths, and 120,000 random inputs (both
+pandas versions) gave identical results and errors compared with the code
+before the change.
+
+Measured on 2026-10-20 without tracing, best of 3, 350,640 strings
+(ten years at 15 min in Europe/Stockholm), before → after:
+
+| Case | Python 3.13, pandas 3.0.6 | Python 3.11, pandas 2.1.4 |
+|---|---|---|
+| `normalize_timestamps`, ISO strings with DST offsets | 2.27 → 0.40 | 2.25 → 0.33 |
+
+Peak memory for that case is higher (41–61 MiB), from the split strings
+held during parsing.
 
 ## Changes in OSS-74
 
@@ -92,10 +120,11 @@ removed above were already cheap.
 
 ## What dominates now
 
-- Parsing timestamp strings is pandas' `to_datetime`. ISO strings with UTC
-  offsets that change across DST (e.g. `+01:00` / `+02:00`) take about 2 s
-  per 350k rows in pandas itself; pass a `DatetimeIndex` if you already have
-  one.
+- Parsing timestamp strings is pandas' `to_datetime`: about 0.3–0.7 s per
+  350k rows, for naive strings or (since OSS-136) the common
+  `±HH:MM`/`Z` forms with changing offsets. Other offset forms (`+0100`,
+  `+01`) still take the general parser, about 2 s per 350k rows; pass a
+  `DatetimeIndex` if you already have one.
 - `assess_frame` runs `assess_quality` once per column, so the shared
   timestamp checks are repeated per column (by design, see OSS-17).
 - `insert_missing` builds a new, sorted frame with the inserted rows.
