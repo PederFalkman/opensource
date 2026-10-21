@@ -41,6 +41,39 @@ def test_mixed_offsets_across_dst_are_accepted():
     assert idx[1] - idx[0] == pd.Timedelta("15min")
 
 
+def test_offset_strings_take_the_fast_path_with_the_same_result():
+    # OSS-136 (P-16): strict "+HH:MM"/"Z" strings are split and parsed on pandas' naive
+    # path; other forms fall back to the general parser. Both give the same instants.
+    strict = [
+        "2024-03-31T01:30:00+01:00",
+        "2024-03-31 03:30:00.250+02:00",
+        "2024-03-31T01:45Z",
+        "2024-03-30T21:15-05:30",
+    ]
+    expected = pd.DatetimeIndex(pd.to_datetime(strict, utc=True, format="ISO8601")).as_unit("ns")
+    assert normalize_timestamps(strict).equals(expected)
+    for odd in ("2024-03-31T01:30:00+0100", "2024-03-31T01:30:00+01"):
+        assert normalize_timestamps([odd])[0] == pd.Timestamp("2024-03-31T00:30:00Z")
+    # Errors still come from the general path, with its message (a lowercase "z" was
+    # never accepted).
+    for bad in ("2024-13-01T00:00:00+01:00", "2024-03-31T00:30:00z"):
+        with pytest.raises(TimestampError, match="could not parse"):
+            normalize_timestamps([bad])
+
+
+def test_offset_fast_path_falls_back_at_the_edge_of_the_range():
+    # Near the end of the nanosecond range, applying the offset overflows; the fast path
+    # must hand over to the general parser rather than raise a different error.
+    edge = ["2262-04-11T10:00:00-12:00"]
+    try:
+        expected = pd.DatetimeIndex(pd.to_datetime(edge, utc=True, format="ISO8601")).as_unit("ns")
+    except (ValueError, OverflowError):
+        with pytest.raises((TimestampError, ValueError, OverflowError)):
+            normalize_timestamps(edge)
+    else:
+        assert normalize_timestamps(edge).equals(expected)
+
+
 def test_mixed_aware_and_naive_rejected():
     with pytest.raises(TimestampError, match="mix of timezone-aware"):
         normalize_timestamps(["2024-01-01T00:00Z", "2024-01-01T01:00"])

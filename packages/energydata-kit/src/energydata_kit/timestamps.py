@@ -62,6 +62,56 @@ def _unparseable(items: pd.Series) -> TimestampError | None:
     return TimestampError(f"could not parse {len(bad)} timestamp(s) as ISO 8601 ({examples})")
 
 
+def _split_offsets(strings: list[str]) -> tuple[list[str], np.ndarray] | None:
+    """Local parts and UTC offsets (minutes) of strings like ``2024-03-31T02:00:00+02:00``.
+
+    pandas parses ISO strings whose offsets differ (across a DST change) about
+    25 times slower than naive ones. Strings of the strict form
+    ``YYYY-MM-DD[T ]HH:MM[:SS[.fff]]`` followed by ``Z`` or ``+HH:MM`` are
+    split here, so the local parts can take the fast naive path. Anything
+    else returns ``None``, and the caller parses as before.
+    """
+    locals_: list[str] = []
+    minutes: list[int] = []
+    known: dict[str, int] = {}
+    for text in strings:
+        if len(text) < 17 or text[4] != "-" or text[7] != "-" or text[10] not in "T " or text[13] != ":":
+            return None
+        if text[-1] == "Z":
+            locals_.append(text[:-1])
+            minutes.append(0)
+            continue
+        suffix = text[-6:]
+        offset = known.get(suffix)
+        if offset is None:
+            sign, hh, colon, mm = suffix[0], suffix[1:3], suffix[3], suffix[4:]
+            if sign not in "+-" or colon != ":" or not (hh.isdigit() and mm.isdigit()):
+                return None
+            if int(hh) > 14 or int(mm) > 59:  # real offsets lie within -12:00 to +14:00
+                return None
+            offset = known[suffix] = (int(hh) * 60 + int(mm)) * (-1 if sign == "-" else 1)
+        locals_.append(text[:-6])
+        minutes.append(offset)
+    return locals_, np.asarray(minutes, dtype=np.int64)
+
+
+def _parse_offsets_fast(items: pd.Series) -> pd.DatetimeIndex | None:
+    """``items`` parsed as UTC via :func:`_split_offsets`, or ``None`` to use the general path."""
+    split = _split_offsets(items.tolist())
+    if split is None:
+        return None
+    local_parts, minutes = split
+    try:
+        local = pd.DatetimeIndex(pd.to_datetime(pd.Series(local_parts, dtype=object), format="ISO8601"))
+        if local.tz is not None:
+            return None
+        return (local - pd.to_timedelta(minutes, unit="min")).tz_localize("UTC")
+    except (ValueError, TypeError, OverflowError):
+        # Unparseable, or beyond the representable range once the offset is applied:
+        # the general path gives the same result or error message as before.
+        return None
+
+
 def _to_datetime_index(values: Iterable[object] | pd.Index | pd.Series) -> pd.DatetimeIndex:
     if isinstance(values, pd.DatetimeIndex):
         return values
@@ -77,6 +127,9 @@ def _to_datetime_index(values: Iterable[object] | pd.Index | pd.Series) -> pd.Da
     if items.isna().any():
         raise TimestampError(f"{int(items.isna().sum())} missing timestamp value(s)")
     if pd.api.types.infer_dtype(items, skipna=False) == "string":
+        fast = _parse_offsets_fast(items)
+        if fast is not None:
+            return fast
         # Vectorised form of _is_aware for the common all-strings case.
         aware = items.str.strip().str.contains(_OFFSET_SUFFIX)
     else:

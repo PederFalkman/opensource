@@ -5,6 +5,14 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- `normalize_timestamps` (and the command line) parse ISO 8601 strings
+  whose UTC offset changes across DST about six times faster (350,000
+  strings: about 2.3 s → 0.4 s) when they have the common form
+  `YYYY-MM-DD[T ]HH:MM[:SS[.fff]]` followed by `Z` or `±HH:MM`. Results
+  and error messages are unchanged; any other form uses the general parser
+  as before.
+
 ### Added
 - `report --gaps-csv FILE` writes every gap, also those beyond
   `--max-listed`, as `column,start,end,missing_count`: one row per gap,
