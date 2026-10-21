@@ -153,16 +153,15 @@ def test_missing_package(tmp_path):
     assert [c.name for c in crr.check_package(tmp_path, "absent")] == ["package exists"]
 
 
-def test_real_repository_is_release_ready():
-    # Release 0.3.0 (OSS-140): G1, G3, G4 and D6 are recorded, the upload guard
-    # is removed (gate G7) and the changelog dated, so every mechanical check
-    # passes and --strict exits 0. The next development cycle restores the guard.
+def test_real_repository_is_not_release_ready():
+    # 0.3.0 is released (#111); main is 0.4.0 development with the upload guard
+    # back (OSS-141), so the real package must not look releasable.
     failed = {c.name for c in crr.check_package(REPO, "energydata-kit") if not c.ok}
-    assert failed == set(), f"not release-ready: {sorted(failed)}"
+    assert {"final version", "upload guard removed"} <= failed
     # The licence checks must keep passing: if a LICENSE or the declaration is
     # ever dropped, this fails instead of widening what may be broken.
     licensed = {"LICENSE file", "LICENSE shipped with package", "license declared"}
     assert not (licensed & failed), f"G2 regressed: {sorted(licensed & failed)}"
     assert crr.main(["energydata-kit", "--root", str(REPO)]) == 0
-    assert crr.main(["energydata-kit", "--strict", "--root", str(REPO)]) == 0
+    assert crr.main(["energydata-kit", "--strict", "--root", str(REPO)]) == 1
     assert crr.main(["energydata-kit", "--guard", "--root", str(REPO)]) == 0
