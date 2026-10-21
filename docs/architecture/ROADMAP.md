@@ -10,17 +10,19 @@ Questions and evidence for each: `docs/governance/RELEASE_DECISIONS.md`,
 section "0.4.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20) and 0.3.0
 (2026-10-21) were released as GitHub releases only; their records are kept
 there. Engineering for 0.4.0 is complete (OSS-143 and OSS-144, P-17 and
-P-19); it waits on the questions below. The other 0.4.0 candidates (P-18,
+P-19), and the owner recorded the answers below on 2026-10-21; the release PR is
+OSS-146. The other 0.4.0 candidates (P-18,
 P-20, and P-12 and P-13 carried over) are under "Proposed" below (OSS-142)
 and not approved.
 
-- [ ] **G1 for 0.4.0.** Does counsel's confirmation cover the code added
-      since 0.3.0 (`afa6974`), or should counsel confirm again?
-- [ ] **G3 for 0.4.0.** Technical-lead sign-off of the IP-boundary review
-      of the diff from 0.3.0 (3 source files, about 35 added lines).
-- [ ] **G4 for 0.4.0.** No dependency changed; is the 0.3.0 position enough?
-- [ ] **D6 for 0.4.0 (G7).** GitHub release only, like 0.3.0, or also a
-      package index?
+- [x] **G1 for 0.4.0.** Counsel confirmed that the code added since 0.3.0
+      (`afa6974`) is covered (recorded 2026-10-21).
+- [x] **G3 for 0.4.0.** The technical lead signed off the IP-boundary review
+      of the diff from 0.3.0 (recorded 2026-10-21).
+- [x] **G4 for 0.4.0.** No dependency changed; the 0.3.0 position stands
+      (recorded 2026-10-21).
+- [x] **D6 for 0.4.0 (G7).** GitHub release only, like 0.3.0 (recorded
+      2026-10-21).
 
 Recorded for 0.3.0:
 
@@ -1369,7 +1371,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Benchmark case for `+0100` strings; `PERFORMANCE.md`, the README
       limitation and the changelog updated.
 
-### OSS-145: prepare the 0.4.0 release — this change
+### OSS-145: prepare the 0.4.0 release — merged in [#116](https://github.com/PederFalkman/opensource/pull/116)
 
 - [x] `RELEASE_DECISIONS.md` gains a 0.4.0 section: what the release
       contains (P-17, P-19), what did not change since 0.3.0 (no
@@ -1380,6 +1382,22 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       changes for 0.3.0 users. Version stays `0.4.0.dev0`; the upload
       guard stays.
 - [x] "Open decisions" above lists the 0.4.0 questions.
+
+### OSS-146: release energydata-kit 0.4.0 — this change
+
+- [x] Decisions recorded by the owner on 2026-10-21: G1 counsel confirmed, G3
+      signed off, G4 the 0.3.0 position stands, D6 GitHub release only,
+      with the `**D6 approved:**` line naming `energydata-kit 0.4.0`.
+- [x] `__version__` is `0.4.0`; the changelog's notes move under
+      `## [0.4.0] - 2026-10-21` with an empty `[Unreleased]` above.
+- [x] Release edits: `Private :: Do Not Upload` removed, the readiness test
+      expects nothing to fail (`--strict` exits 0, `--guard` passes), and the
+      status lines in both READMEs, `SECURITY.md`, `CONTRIBUTING.md` and
+      `RELEASE_GATES.md` name 0.4.0 as a GitHub release.
+- [ ] After merge (owner): tag the merge commit `energydata-kit-v0.4.0`,
+      check the digests and publish the draft GitHub release the *Release
+      build* workflow creates. Then the next development cycle restores the
+      upload guard.
 
 ## Explicitly not planned
 

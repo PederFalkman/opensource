@@ -5,6 +5,8 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-21
+
 Two refinements approved as P-17 and P-19: `report --unit COLUMN=UNIT`
 now also chooses the columns to assess, and timestamp strings with
 `±HHMM` or `±HH` offsets parse about five times faster, like `±HH:MM`.
