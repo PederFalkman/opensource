@@ -13,6 +13,14 @@ versioning: [SemVer](https://semver.org/).
   and error messages are unchanged; any other form uses the general parser
   as before.
 
+### Added
+- `report --unit COLUMN=UNIT`, repeatable, gives several value columns
+  metadata without a Table Schema; `--resolution`, `--aggregation` and
+  `--interval-label` apply to each named column, and columns not named get
+  none. The single-column `--unit kWh` form is unchanged. Refused (exit
+  status 2): a column that is not assessed, a column named twice, a plain
+  unit with several columns, and `--unit` together with `--schema`.
+
 ## [0.2.0] - 2026-10-20
 
 Report schema 2 and four opt-in refinements of the checks: gaps that stop
