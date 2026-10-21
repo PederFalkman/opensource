@@ -11,9 +11,9 @@ section "0.4.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20) and 0.3.0
 (2026-10-21) were released as GitHub releases only; their records are kept
 there. Engineering for 0.4.0 is complete (OSS-143 and OSS-144, P-17 and
 P-19), and the owner recorded the answers below on 2026-10-21; 0.4.0 was
-released the same day (OSS-146, #117). No 0.5.0 work is approved yet; the
-remaining candidates (P-18, P-20, and P-12 and P-13) are under "Proposed"
-below (OSS-142) and not approved.
+released the same day (OSS-146, #117). No 0.5.0 work is approved yet;
+candidates P-21 to P-23, with P-12, P-13, P-18 and P-20 carried over, are
+under "Proposed" below (OSS-148) and not approved.
 
 - [x] **G1 for 0.4.0.** Counsel confirmed that the code added since 0.3.0
       (`afa6974`) is covered (recorded 2026-10-21).
@@ -107,6 +107,37 @@ and anything that downloads data.
 
 **Suggested order if approved:** P-3 and P-4 first (small, no schema change),
 then P-2 with P-6 as one schema-2 change, then P-5 if users ask for it.
+
+### P-21 to P-23: candidates for 0.5.0 (OSS-148)
+
+*Prepared by the assistant in OSS-148 for the owner to approve or reject one
+by one. Nothing here is authorized; none of it starts without approval.*
+Each item is generic data-quality or command-line tooling as defined in
+`IP_BOUNDARY.md` ("What *is* in scope"), ships no domain thresholds and
+touches nothing on the out-of-scope list. P-12, P-13, P-18 and P-20 from
+earlier rounds were not approved and stay open; they are ranked again below.
+All three new items concern the command line's use in pipelines, and none
+changes the report format.
+
+| ID | Candidate | Why | Effort | Risk and cost |
+|---|---|---|---|---|
+| P-21 | **Explained gaps do not fail `--fail-on-issues`.** A missing interval inside a `--known-outage` period no longer counts as an issue for the exit status; unexplained gaps and flagged rows still do. | Checked on 2026-10-21: a report whose only gap lies wholly inside `--known-outage` has `n_missing_explained` equal to `n_missing_intervals` and `completeness_excluding_outages` 1.0, yet `--fail-on-issues` exits 1. A pipeline that declares planned maintenance still fails on it. | S | No format change, but the exit status changes for callers that combine both options (1 → 0 when every gap is explained); documented in the changelog. If that is not wanted, the same behaviour can sit behind an opt-in flag instead. |
+| P-22 | **Known outages from a file** (`report --known-outages-csv FILE` with `start,end` columns). | Today each period is a repeated `--known-outage START END`; a maintenance log with dozens of periods makes a long, fragile command. A file can also be a `--gaps-csv` from an earlier run, to accept the gaps found once as known. | S | No format change: the report records the periods as it does now. Must define how a `column` column (as `--gaps-csv` writes) applies a period to one column only in multi-column reports, and refuse malformed rows (exit 2). |
+| P-23 | **Choose what fails the exit status** (`report --fail-on FLAG`, repeatable, e.g. `--fail-on NON_FINITE --fail-on gaps`). | `--fail-on-issues` is all or nothing: any flag or any missing interval. A pipeline that tolerates stale values but not gaps cannot express that and ends up ignoring the exit status. | S | No format change; `--fail-on-issues` keeps its meaning. The accepted names are the `QualityFlag` names plus `gaps` (and `unexplained-gaps` if P-21 is approved); unknown names are refused. Designing it together with P-21 keeps the two consistent. |
+| P-13 | *Carried over, not approved.* **Grid anchored at the step boundary** (`origin="epoch"`). As described for 0.3.0 below. | Known limitation: a leading off-grid timestamp shifts the grid. | S | Fits schema 2. |
+| P-18 | *Carried over, not approved.* **Compare full gap lists** from `--gaps-csv` files. As described for 0.4.0 below. | Known limitation: only listed gaps are compared. | S–M | No report change. |
+| P-12, P-20 | *Carried over, not approved.* **DST policy for calendar grids** and **single-row spikes.** As described below. | Known limitations. | S–M, M | Both need report schema 3; only worth doing together. |
+
+Considered and not proposed:
+- **Reading Excel or other formats:** a new dependency for a one-line
+  pandas conversion the caller can do.
+- **Per-flag exit codes** (different numbers per issue): harder to use in
+  shells than P-23's yes/no with a chosen set.
+
+**Suggested order if approved:** P-21 first (it fixes surprising
+behaviour), then P-23 designed with it, then P-22. P-13 and P-18 as
+before; P-12 with P-20 only as a schema-3 change. Each needs its own
+approval.
 
 ### P-17 to P-20: candidates for 0.4.0 (OSS-142)
 
@@ -1398,7 +1429,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       *Release build* workflow passed and created the draft release, which
       the owner published on 2026-10-21 (marked pre-release).
 
-### OSS-147: open 0.5.0 development — this change
+### OSS-147: open 0.5.0 development — merged in [#118](https://github.com/PederFalkman/opensource/pull/118)
 
 - [x] `__version__` is `0.5.0.dev0`; new changelog entries go under
       `[Unreleased]`, and the released sections are not edited.
@@ -1407,6 +1438,14 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       is not release-ready, with the licence checks and `--guard` passing.
 - [x] Status lines: 0.4.0 is the GitHub release, `main` is 0.5.0
       development.
+
+### OSS-148: 0.5.0 proposals — this change
+
+- [x] P-21 to P-23 written up for the owner to approve one by one, ranked
+      with P-12, P-13, P-18 and P-20 carried over: effort, risk, and that
+      none of the new items changes the report format. The behaviour behind
+      P-21 (an explained gap still failing `--fail-on-issues`) was checked
+      on 2026-10-21. Docs only; nothing is authorized.
 
 ## Explicitly not planned
 
