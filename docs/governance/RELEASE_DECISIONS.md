@@ -1,5 +1,70 @@
 # Release decisions for energydata-kit
 
+## 0.3.0 (in preparation)
+
+**Status:** open. Engineering for 0.3.0 is complete (OSS-136 to OSS-138)
+and nothing is decided here. `main` stays at `0.3.0.dev0` with the upload
+guard until the owner answers the questions below. The 0.2.0 and 0.1.0
+records follow and are unchanged.
+
+**What 0.3.0 contains** (approved as P-14 to P-16 by the owner on
+2026-10-20; proposals in `docs/architecture/ROADMAP.md`, OSS-135):
+
+- Faster parsing of timestamp strings whose UTC offset changes across DST
+  (P-16, OSS-136, #107): about 2.3 s → 0.4 s for 350,000 strings. Same
+  results and errors; 120,000 random inputs matched the previous code on
+  the lowest and current pandas, and a property test keeps comparing them.
+- `report --gaps-csv FILE` (P-14, OSS-137, #108): every gap as a CSV, also
+  beyond `--max-listed`, on the same grid as the report.
+- `report --unit COLUMN=UNIT`, repeatable (P-15, OSS-138, #109): units for
+  several columns without a Table Schema.
+- No report-format change (schema 2), no new or renamed public Python
+  name, nothing removed. The changelog's `[Unreleased]` section has the
+  release notes.
+
+**What did not change since 0.2.0** (`git diff 344c862` on
+`pyproject.toml`, 2026-10-21): no runtime dependency, optional extra,
+version range or data file was added or changed. The only `pyproject.toml`
+change is the restored upload guard (OSS-134). `THIRD_PARTY_LICENSES.md` is
+unchanged.
+
+| Gate | State for 0.3.0 | Open question |
+|---|---|---|
+| G1 Ownership | Counsel confirmed ownership for 0.1.0 (D2) and for the code added up to 0.2.0. Commits since the 0.2.0 release commit (`344c862`), on `main` at `ef01c86`: 15, of which 10 by the AI coding assistant in the owner's sessions (7 with changes, 3 merging `main` into a pull-request branch) and 5 by the owner (pull-request merges #105 to #109); no external contributor | Does counsel's confirmation cover the code added since 0.2.0, or should counsel confirm again? |
+| G2 Licence | Passed: Apache-2.0, unchanged | — |
+| G3 IP boundary review | The `IP boundary` CI job passed on every 0.3.0 PR. P-14 and P-15 are command-line options over checks the package already has; P-16 changes how timestamp strings are parsed, not what they mean | Will the technical lead review and sign off the diff from 0.2.0? |
+| G4 Third-party licences | Unchanged since 0.2.0 (no dependency change) | Is the 0.2.0 position enough? |
+| G5 CI green | Green on every 0.3.0 PR; re-checked on the release commit | — |
+| G6 Documentation honest | README, changelog and guide updated with each step; the guide's examples of both new options run in the test suite | Review on the release commit |
+| G7 Publication (D6) | D6 approved 0.2.0 only; it does not carry over | GitHub release only, like 0.1.0 and 0.2.0, or also a package index? |
+
+**For the G3 reviewer** (the technical lead). The package code to review
+is the diff from the 0.2.0 release commit to the 0.3.0 release commit:
+`git diff 344c862 <release commit> -- packages/energydata-kit/src`
+(3 files, about 160 added lines: `cli.py`, `timestamps.py` and the version
+in `__init__.py`). Points to confirm, each also checked by a tool:
+
+- No new import: besides the standard library, the code still imports only
+  numpy, pandas and Pint (Pandera and pyarrow optional).
+  `python tools/check_ip_boundary.py`, run in CI, refuses forbidden imports
+  and any dependency off the reviewed allowlist.
+- No domain limits ship: the new options take what the caller passes
+  (a file name, units); nothing has a built-in threshold.
+- Tests and examples use synthetic series only; no customer data,
+  endpoints or credentials.
+- Nothing forecasts, optimises, or computes grid, capacity or financial
+  quantities: the additions write out gaps the report already finds, attach
+  caller-given units, and parse timestamps faster.
+
+**After the decisions:** a release PR built from `RELEASE_CHECKLIST.md`
+sets `__version__` to `0.3.0`, moves `[Unreleased]` under a dated
+`## [0.3.0]` heading, records the answers under G1, G3 and G4, and adds the
+owner's D6 line naming `energydata-kit 0.3.0`; only with that line does it
+remove the upload guard. It passes `check_release_readiness.py --strict`.
+The owner then tags the merged commit `energydata-kit-v0.3.0`, the
+*Release build* workflow prepares the draft GitHub release, and the owner
+publishes it. None of this is done before the owner's decisions.
+
 ## 0.2.0 (released 2026-10-20)
 
 **Status:** decided 2026-10-20. The repository owner recorded the answers

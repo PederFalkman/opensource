@@ -5,6 +5,18 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+Two command-line additions and faster timestamp parsing (approved as P-14
+to P-16): `report --gaps-csv` writes the full gap list, `report --unit
+COLUMN=UNIT` gives several columns their units without a Table Schema, and
+offset timestamps such as `2024-03-31T03:00:00+02:00` parse about six
+times faster. The report format is unchanged (schema 2), no public Python
+name is added or changed, and with the 0.2.0 options results are identical.
+
+**Upgrading from 0.2.0.** Nothing to change. One error message is reworded:
+a plain `--unit` with several value columns now reads "--unit UNIT
+describes a single column; for several, repeat --unit COLUMN=UNIT, or use
+--schema" (exit status 2, as before).
+
 ### Changed
 - `normalize_timestamps` (and the command line) parse ISO 8601 strings
   whose UTC offset changes across DST about six times faster (350,000

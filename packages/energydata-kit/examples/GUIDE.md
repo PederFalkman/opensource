@@ -443,6 +443,26 @@ flagged = pd.read_csv("flagged.csv")
 assert len(flagged) == 96 - 2 + 2  # original rows plus the two inserted ones
 ```
 
+For several value columns, `--unit COLUMN=UNIT` gives each one its unit,
+without writing a Table Schema; the other metadata options apply to every
+named column:
+
+```python
+channels.to_csv("channels.csv", index_label="timestamp")
+```
+
+```bash
+energydata-kit report channels.csv --value-col power_kw --value-col energy_kwh \
+    --unit power_kw=kW --unit energy_kwh=kWh --resolution 15min -o channels.json
+```
+
+```python
+both = json.loads(Path("channels.json").read_text())["columns"]
+assert both["power_kw"]["metadata"]["unit"] == "kW"
+assert both["energy_kwh"]["metadata"]["unit"] == "kWh"
+assert both["energy_kwh"]["metadata"]["resolution"] == "15min"
+```
+
 After a fix, or when the next delivery of the same feed arrives, compare the
 saved reports. Here the gap was filled but the infinite value is still there:
 
