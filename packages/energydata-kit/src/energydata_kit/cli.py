@@ -30,7 +30,7 @@ import pandas as pd
 
 from energydata_kit import __version__
 from energydata_kit.compare import compare_reports
-from energydata_kit.flags import VALUE_COLUMN, flag_series
+from energydata_kit.flags import VALUE_COLUMN, QualityFlag, flag_series
 from energydata_kit.frame_report import FrameQualityReport, assess_frame, flag_frame
 from energydata_kit.intervals import find_missing_intervals, to_step
 from energydata_kit.metadata import Aggregation, IntervalLabel, MeasurementMetadata, _grid_from_metadata
@@ -236,6 +236,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="exit with status 1 if any row is flagged or any interval is missing outside the "
         "--known-outage periods",
     )
+    out.add_argument(
+        "--fail-on",
+        action="append",
+        metavar="NAME",
+        help="exit with status 1 only for these issues (repeatable): a flag name such as NON_FINITE "
+        "or STALE_VALUE, ANY for any flagged row, gaps for any missing interval, or "
+        "unexplained-gaps for missing intervals outside the --known-outage periods",
+    )
 
     cmp = sub.add_parser(
         "compare",
@@ -437,12 +445,44 @@ def _metadata(args: argparse.Namespace, name: str) -> MeasurementMetadata | None
     )
 
 
-def _has_issues(report: QualityReport | FrameQualityReport) -> bool:
-    """Flagged rows or missing intervals; those inside a --known-outage are explained (P-21)."""
+_GAP_ISSUES = ("gaps", "unexplained-gaps")
+
+
+def _fail_on(names: list[str] | None) -> list[str] | None:
+    """--fail-on names, checked and normalised: flag names in upper case, gap names in lower case."""
+    if names is None:
+        return None
+    known = [m.name for m in QualityFlag if m.name and m.value and m is not QualityFlag.MISSING_INTERVAL]
+    known.append("ANY")
+    checked = []
+    for name in names:
+        if name.lower() in _GAP_ISSUES:
+            checked.append(name.lower())
+        elif name.upper() in known:
+            checked.append(name.upper())
+        else:
+            raise CliError(f"--fail-on {name!r} is not an issue name; use one of {[*known, *_GAP_ISSUES]}")
+    return checked
+
+
+def _issue_found(r: QualityReport, name: str) -> bool:
+    unexplained = r.n_missing_intervals - (r.n_missing_explained or 0)
+    if name == "gaps":
+        return r.n_missing_intervals > 0
+    if name == "unexplained-gaps":
+        return unexplained > 0
+    return r.flag_counts.get(name, 0) > 0
+
+
+def _exit_status(args: argparse.Namespace, report: QualityReport | FrameQualityReport) -> int:
+    """1 when an issue that should fail the command was found, else 0.
+
+    --fail-on-issues: any flagged row or any missing interval outside the --known-outage periods
+    (P-21). --fail-on NAME: only the named issues (P-23).
+    """
+    names = ["ANY", "unexplained-gaps"] if args.fail_on_issues else args.fail_on or []
     reports = report.columns.values() if isinstance(report, FrameQualityReport) else [report]
-    return any(
-        r.n_flagged_rows > 0 or r.n_missing_intervals - (r.n_missing_explained or 0) > 0 for r in reports
-    )
+    return int(any(_issue_found(r, name) for r in reports for name in names))
 
 
 def _write_flags(args: argparse.Namespace, flagged: pd.DataFrame) -> None:
@@ -513,6 +553,9 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
         raise CliError("--insert-missing only affects --flags-csv")
     if args.schema and args.unit is not None:
         raise CliError("--schema and --unit both set metadata; use one")
+    if args.fail_on_issues and args.fail_on:
+        raise CliError("--fail-on-issues and --fail-on both choose what fails; use one")
+    args.fail_on = _fail_on(args.fail_on)
     if args.unit is None and (
         args.resolution
         or args.timezone
@@ -587,7 +630,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
         flagged.index.name = args.timestamp_col
         _write_flags(args, flagged)
 
-    return 1 if args.fail_on_issues and _has_issues(report) else 0
+    return _exit_status(args, report)
 
 
 def _write_report(
@@ -772,7 +815,7 @@ def _run_frame_report(
         )
         flagged.index.name = args.timestamp_col
         _write_flags(args, flagged)
-    return 1 if args.fail_on_issues and _has_issues(report) else 0
+    return _exit_status(args, report)
 
 
 def _load_report(path: str) -> dict[str, object]:

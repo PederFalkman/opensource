@@ -5,6 +5,15 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `report --fail-on NAME`, repeatable, chooses which issues give exit
+  status 1: a flag name (`NON_FINITE`, `STALE_VALUE`, … or `ANY` for any
+  flagged row, case-insensitive), `gaps` for any missing interval, or
+  `unexplained-gaps` for missing intervals outside the `--known-outage`
+  periods. Without it, or with `--fail-on-issues`, the exit status is as
+  before. Unknown names, and `--fail-on` together with `--fail-on-issues`,
+  are refused (exit status 2).
+
 ### Changed
 - `report --fail-on-issues` no longer fails on missing intervals that lie
   inside `--known-outage` periods: such gaps are reported as explained

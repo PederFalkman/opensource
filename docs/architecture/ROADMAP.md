@@ -124,7 +124,7 @@ changes the report format.
 |---|---|---|---|---|
 | P-21 | *Approved by the owner on 2026-10-21, as the default behaviour; done in OSS-149.* **Explained gaps do not fail `--fail-on-issues`.** A missing interval inside a `--known-outage` period no longer counts as an issue for the exit status; unexplained gaps and flagged rows still do. | Checked on 2026-10-21: a report whose only gap lies wholly inside `--known-outage` has `n_missing_explained` equal to `n_missing_intervals` and `completeness_excluding_outages` 1.0, yet `--fail-on-issues` exits 1. A pipeline that declares planned maintenance still fails on it. | S | No format change, but the exit status changes for callers that combine both options (1 → 0 when every gap is explained); documented in the changelog. If that is not wanted, the same behaviour can sit behind an opt-in flag instead. |
 | P-22 | **Known outages from a file** (`report --known-outages-csv FILE` with `start,end` columns). | Today each period is a repeated `--known-outage START END`; a maintenance log with dozens of periods makes a long, fragile command. A file can also be a `--gaps-csv` from an earlier run, to accept the gaps found once as known. | S | No format change: the report records the periods as it does now. Must define how a `column` column (as `--gaps-csv` writes) applies a period to one column only in multi-column reports, and refuse malformed rows (exit 2). |
-| P-23 | *Approved by the owner on 2026-10-21; to be built in OSS-150.* **Choose what fails the exit status** (`report --fail-on FLAG`, repeatable, e.g. `--fail-on NON_FINITE --fail-on gaps`). | `--fail-on-issues` is all or nothing: any flag or any missing interval. A pipeline that tolerates stale values but not gaps cannot express that and ends up ignoring the exit status. | S | No format change; `--fail-on-issues` keeps its meaning. The accepted names are the `QualityFlag` names plus `gaps` (and `unexplained-gaps` if P-21 is approved); unknown names are refused. Designing it together with P-21 keeps the two consistent. |
+| P-23 | *Approved by the owner on 2026-10-21; done in OSS-150.* **Choose what fails the exit status** (`report --fail-on FLAG`, repeatable, e.g. `--fail-on NON_FINITE --fail-on gaps`). | `--fail-on-issues` is all or nothing: any flag or any missing interval. A pipeline that tolerates stale values but not gaps cannot express that and ends up ignoring the exit status. | S | No format change; `--fail-on-issues` keeps its meaning. The accepted names are the `QualityFlag` names plus `gaps` (and `unexplained-gaps` if P-21 is approved); unknown names are refused. Designing it together with P-21 keeps the two consistent. |
 | P-13 | *Carried over, not approved.* **Grid anchored at the step boundary** (`origin="epoch"`). As described for 0.3.0 below. | Known limitation: a leading off-grid timestamp shifts the grid. | S | Fits schema 2. |
 | P-18 | *Carried over, not approved.* **Compare full gap lists** from `--gaps-csv` files. As described for 0.4.0 below. | Known limitation: only listed gaps are compared. | S–M | No report change. |
 | P-12, P-20 | *Carried over, not approved.* **DST policy for calendar grids** and **single-row spikes.** As described below. | Known limitations. | S–M, M | Both need report schema 3; only worth doing together. |
@@ -1451,7 +1451,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       each (P-21 first, as proposed: the default behaviour, not opt-in).
       P-12, P-13, P-18, P-20 and P-22 are not approved.
 
-### OSS-149: explained gaps do not fail `--fail-on-issues` (P-21) — this change
+### OSS-149: explained gaps do not fail `--fail-on-issues` (P-21) — merged in [#120](https://github.com/PederFalkman/opensource/pull/120)
 
 - [x] `--fail-on-issues` counts a missing interval as an issue only when it
       lies outside every `--known-outage` period (per column in
@@ -1461,6 +1461,18 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       no outage, or one covering part of the gap, exits 1; a flagged row
       exits 1 even with every gap explained. Help text, README exit
       status, guide and changelog updated.
+
+### OSS-150: `report --fail-on NAME` (P-23) — this change
+
+- [x] `--fail-on`, repeatable, fails the command only on the named issues:
+      a `QualityFlag` name or `ANY` (case-insensitive), `gaps`, or
+      `unexplained-gaps` (outside the `--known-outage` periods, as P-21).
+      `--fail-on-issues` is now the same as `--fail-on ANY --fail-on
+      unexplained-gaps`, with unchanged behaviour; the two options are
+      refused together, as are unknown names (exit status 2).
+- [x] Tests: each kind of name, case-insensitivity, a check that did not
+      run, explained and unexplained gaps, a multi-column report and the
+      refusals. Guide (executed), README exit status and changelog updated.
 
 ## Explicitly not planned
 

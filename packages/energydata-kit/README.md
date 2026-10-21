@@ -131,8 +131,9 @@ step when `--freq` is not given.
 two saved reports (`--format text` or `markdown` for a short summary per column); with `--fail-if-worse` it exits `1` if more rows are
 flagged, more intervals are missing or completeness fell.
 Exit status: `0` OK, `1` issues found with `--fail-on-issues` (a flagged
-row, or a missing interval outside the `--known-outage` periods) or
-`--fail-if-worse`, `2` usage, input or file error (for example a directory
+row, or a missing interval outside the `--known-outage` periods), with
+`--fail-on NAME` (only the named issues: a flag such as `NON_FINITE`, `ANY`,
+`gaps` or `unexplained-gaps`; repeatable) or with `--fail-if-worse`, `2` usage, input or file error (for example a directory
 given as the CSV, or `-o` in a folder that does not exist). `python -m energydata_kit` is equivalent. See
 `energydata-kit report --help` and `energydata-kit compare --help` for every
 option.

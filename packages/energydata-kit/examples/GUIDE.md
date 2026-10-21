@@ -426,6 +426,9 @@ energydata-kit report meter.csv --freq 15min --flags-csv flagged.csv --insert-mi
 energydata-kit report meter.csv --freq 15min --max-listed 0 --gaps-csv gaps.csv -o capped.json
 # --fail-on-issues makes the exit status usable in pipelines:
 energydata-kit report meter.csv --freq 15min --fail-on-issues  # exit status: 1
+# --fail-on chooses which issues fail: the gaps here, but not the infinite value
+energydata-kit report meter.csv --freq 15min --fail-on STALE_VALUE --fail-on JUMP
+energydata-kit report meter.csv --freq 15min --fail-on gaps  # exit status: 1
 ```
 
 ```python

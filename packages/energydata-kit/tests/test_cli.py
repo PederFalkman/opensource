@@ -927,3 +927,33 @@ def test_fail_on_issues_ignores_explained_gaps(tmp_path):
     flagged = str(write(tmp_path, "timestamp,a\n" + "\n".join(r.rsplit(",", 1)[0] for r in rows[:2]) + "\n"
                         "2024-01-01T04:00Z,inf\n", "flagged.csv"))  # fmt: skip
     assert run("report", flagged, "--freq", "1h", "--fail-on-issues", *whole)[0] == 1
+
+
+def test_fail_on_chooses_the_issues(tmp_path):
+    # P-23: --fail-on NAME fails only on the named issues; --fail-on-issues is unchanged.
+    rows = ["2024-01-01T00:00Z,5", "2024-01-01T01:00Z,5", "2024-01-01T02:00Z,5", "2024-01-01T04:00Z,inf"]
+    path = str(write(tmp_path, "timestamp,kw\n" + "\n".join(rows) + "\n"))  # stale run, a gap, inf
+    base = ["report", path, "--freq", "1h", "--stale-min-run", "3"]
+    for names, expected in [
+        (["STALE_VALUE"], 1),
+        (["non_finite"], 1),  # names are case-insensitive
+        (["JUMP"], 0),  # no jump check ran, so nothing to fail on
+        (["gaps"], 1),
+        (["ANY"], 1),
+    ]:
+        argv = [a for n in names for a in ("--fail-on", n)]
+        assert run(*base, *argv)[0] == expected, names
+    outage = ["--known-outage", "2024-01-01T03:00Z", "2024-01-01T03:00Z"]
+    assert run(*base, "--fail-on", "gaps", *outage)[0] == 1
+    assert run(*base, "--fail-on", "unexplained-gaps", *outage)[0] == 0
+    assert run(*base, "--fail-on", "unexplained-gaps")[0] == 1
+    # Multi-column: any column with the issue fails the command.
+    two = str(write(tmp_path, "timestamp,a,b\n2024-01-01T00:00Z,1,1\n2024-01-01T01:00Z,1,inf\n", "two.csv"))
+    assert run("report", two, "--value-col", "a", "--value-col", "b", "--fail-on", "NON_FINITE")[0] == 1
+    for argv, message in [
+        (["--fail-on", "nope"], "--fail-on 'nope' is not an issue name"),
+        (["--fail-on", "MISSING_INTERVAL"], "is not an issue name"),
+        (["--fail-on", "gaps", "--fail-on-issues"], "--fail-on-issues and --fail-on both choose"),
+    ]:
+        code, out, err = run(*base, *argv)
+        assert code == 2 and out == "" and message in err, (argv, err)
