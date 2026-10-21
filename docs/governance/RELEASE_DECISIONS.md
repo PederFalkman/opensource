@@ -1,5 +1,68 @@
 # Release decisions for energydata-kit
 
+## 0.4.0 (in preparation)
+
+**Status:** open. Engineering for 0.4.0 is complete (OSS-143 and OSS-144)
+and nothing is decided here. `main` stays at `0.4.0.dev0` with the upload
+guard until the owner answers the questions below. The 0.3.0, 0.2.0 and
+0.1.0 records follow and are unchanged.
+
+**What 0.4.0 contains** (approved as P-17 and P-19 by the owner on
+2026-10-21; proposals in `docs/architecture/ROADMAP.md`, OSS-142):
+
+- `report --unit COLUMN=UNIT` without `--value-col` assesses the named
+  columns (P-17, OSS-143, #114); an explicit `--value-col` still decides.
+- Fast parsing of timestamp strings with `±HHMM` or `±HH` offsets (P-19,
+  OSS-144, #115): 350,000 strings in about 0.4 s instead of 2.1–2.5 s.
+  Same results and errors; 120,000 random batches matched the general
+  parser on the lowest and current pandas, and a property test keeps
+  comparing them.
+- No report-format change (schema 2), no new or renamed public Python
+  name, nothing removed. The changelog's `[Unreleased]` section has the
+  release notes.
+
+**What did not change since 0.3.0** (`git diff afa6974` on
+`pyproject.toml`, 2026-10-21): no runtime dependency, optional extra,
+version range or data file was added or changed. The only `pyproject.toml`
+change is the restored upload guard (OSS-141). `THIRD_PARTY_LICENSES.md` is
+unchanged.
+
+| Gate | State for 0.4.0 | Open question |
+|---|---|---|
+| G1 Ownership | Counsel confirmed ownership for 0.1.0 (D2) and for the code added up to 0.3.0. Commits since the 0.3.0 release commit (`afa6974`), on `main` at `9e4a97b`: 8, of which 4 by the AI coding assistant in the owner's sessions (all with changes) and 4 by the owner (pull-request merges #112 to #115); no external contributor | Does counsel's confirmation cover the code added since 0.3.0, or should counsel confirm again? |
+| G2 Licence | Passed: Apache-2.0, unchanged | — |
+| G3 IP boundary review | The `IP boundary` CI job passed on every 0.4.0 PR. P-17 changes which columns the command line assesses; P-19 changes how timestamp strings are parsed, not what they mean | Will the technical lead review and sign off the diff from 0.3.0? |
+| G4 Third-party licences | Unchanged since 0.3.0 (no dependency change) | Is the 0.3.0 position enough? |
+| G5 CI green | Green on every 0.4.0 PR; re-checked on the release commit | — |
+| G6 Documentation honest | README, changelog, guide and `PERFORMANCE.md` updated with each step; the guide's `--unit COLUMN=UNIT` example runs in the test suite | Review on the release commit |
+| G7 Publication (D6) | D6 approved 0.3.0 only; it does not carry over | GitHub release only, like 0.1.0 to 0.3.0, or also a package index? |
+
+**For the G3 reviewer** (the technical lead). The package code to review
+is the diff from the 0.3.0 release commit to the 0.4.0 release commit:
+`git diff afa6974 <release commit> -- packages/energydata-kit/src`
+(3 files, about 35 added lines: `cli.py`, `timestamps.py` and the version
+in `__init__.py`). Points to confirm, each also checked by a tool:
+
+- No new import: besides the standard library, the code still imports only
+  numpy, pandas and Pint (Pandera and pyarrow optional).
+  `python tools/check_ip_boundary.py`, run in CI, refuses forbidden imports
+  and any dependency off the reviewed allowlist.
+- No domain limits ship: the change takes the column names and units the
+  caller passes, and the offset bounds are those of real UTC offsets.
+- Tests, benchmarks and examples use synthetic data only; no customer
+  data, endpoints or credentials.
+- Nothing forecasts, optimises, or computes grid, capacity or financial
+  quantities: the changes select columns and parse timestamps faster.
+
+**After the decisions:** a release PR built from `RELEASE_CHECKLIST.md`
+sets `__version__` to `0.4.0`, moves `[Unreleased]` under a dated
+`## [0.4.0]` heading, records the answers under G1, G3 and G4, and adds the
+owner's D6 line naming `energydata-kit 0.4.0`; only with that line does it
+remove the upload guard. It passes `check_release_readiness.py --strict`.
+The owner then tags the merged commit `energydata-kit-v0.4.0`, the
+*Release build* workflow prepares the draft GitHub release, and the owner
+publishes it. None of this is done before the owner's decisions.
+
 ## 0.3.0 (released 2026-10-21)
 
 **Status:** decided 2026-10-21. The repository owner recorded the answers for G1,
