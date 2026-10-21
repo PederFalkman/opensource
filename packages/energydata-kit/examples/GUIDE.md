@@ -369,7 +369,8 @@ assert explained.completeness_excluding_outages == 1.0
 ```
 
 The command line takes the same periods with `--known-outage START END`,
-repeated for several.
+repeated for several. With `--fail-on-issues`, missing intervals inside
+them do not fail the command; flagged rows and other gaps still do.
 
 ## 9. Exchanging metadata as a Table Schema
 
