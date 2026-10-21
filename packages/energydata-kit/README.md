@@ -114,6 +114,8 @@ anything automated. Files separated by `;`, tab or `|` are
 read with `--delimiter ';'` (or `--delimiter tab`); `--decimal ,` reads
 decimal commas such as `1,5`. `--flags-csv` writes the original rows, in the
 same delimiter and decimal format as the input, with a `quality_flag` column, plus inserted rows with `--insert-missing`.
+`--gaps-csv gaps.csv` writes every gap, also beyond `--max-listed`, as
+`column,start,end,missing_count`, on the same grid as the report.
 Calendar steps work as in the library: `--freq D --tz Europe/Stockholm`.
 Repeat `--value-col` for one report covering several columns (check options
 then apply to every column; `--unit` needs a single column). With several
@@ -163,8 +165,8 @@ lists them. A further change means schema 3.
   guessed silently.
 - **Deterministic.** Reports contain no wall-clock time or randomness. The same
   input, parameters and package version produce byte-identical JSON, on
-  Linux, macOS and Windows: files written with `-o` and `--flags-csv` end
-  lines in `\n` everywhere.
+  Linux, macOS and Windows: files written with `-o`, `--flags-csv` and
+  `--gaps-csv` end lines in `\n` everywhere.
 - **UTC grid by default.** Sub-daily gap detection runs on a fixed UTC grid, so
   a 23- or 25-hour local DST day is not reported as missing or duplicated
   data. Daily and longer steps in local time use a calendar grid: `tz=`, or
@@ -248,7 +250,8 @@ use Pint or pint-pandas directly, e.g. `series.astype(f"pint[{meta.unit}]")`.
   is listed under `changed` with its before and after bounds (a split or
   merged gap once per overlapping pair), and only gaps overlapping nothing
   are `resolved` or `new`. Only listed gaps are compared; check
-  `lists_truncated` when reports capped their lists with `max_listed`.
+  `lists_truncated` when reports capped their lists with `max_listed`
+  (on the command line, `--gaps-csv` writes the full gap list).
 - Parsing timestamp strings whose UTC offset changes across DST is slow in
   pandas itself (about 2 s per 350,000 rows); pass a `DatetimeIndex` when you
   have one. Measured numbers are in the repository's
