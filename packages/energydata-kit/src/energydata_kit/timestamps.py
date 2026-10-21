@@ -67,13 +67,13 @@ def _split_offsets(strings: list[str]) -> tuple[list[str], np.ndarray] | None:
 
     pandas parses ISO strings whose offsets differ (across a DST change) about
     25 times slower than naive ones. Strings of the strict form
-    ``YYYY-MM-DD[T ]HH:MM[:SS[.fff]]`` followed by ``Z`` or ``+HH:MM`` are
-    split here, so the local parts can take the fast naive path. Anything
-    else returns ``None``, and the caller parses as before.
+    ``YYYY-MM-DD[T ]HH:MM[:SS[.fff]]`` followed by ``Z``, ``+HH:MM``, ``+HHMM``
+    or ``+HH`` are split here, so the local parts can take the fast naive path.
+    Anything else returns ``None``, and the caller parses as before.
     """
     locals_: list[str] = []
     minutes: list[int] = []
-    known: dict[str, int] = {}
+    known: dict[str, tuple[int, int]] = {}  # last six characters -> (suffix length, minutes)
     for text in strings:
         if len(text) < 17 or text[4] != "-" or text[7] != "-" or text[10] not in "T " or text[13] != ":":
             return None
@@ -81,16 +81,28 @@ def _split_offsets(strings: list[str]) -> tuple[list[str], np.ndarray] | None:
             locals_.append(text[:-1])
             minutes.append(0)
             continue
-        suffix = text[-6:]
-        offset = known.get(suffix)
-        if offset is None:
-            sign, hh, colon, mm = suffix[0], suffix[1:3], suffix[3], suffix[4:]
-            if sign not in "+-" or colon != ":" or not (hh.isdigit() and mm.isdigit()):
+        # The last six characters decide the form (+HH:MM, +HHMM or +HH, by the sign's
+        # position) and the offset, so they are parsed once and cached.
+        tail = text[-6:]
+        cached = known.get(tail)
+        if cached is None:
+            if tail[0] in "+-" and tail[3] == ":":
+                size = 6
+            elif tail[1] in "+-":
+                size = 5
+            elif tail[3] in "+-":
+                size = 3
+            else:
+                return None
+            suffix = tail[-size:]
+            sign, hh, mm = suffix[0], suffix[1:3], suffix[-2:] if size > 3 else "00"
+            if not (hh.isdigit() and mm.isdigit()):
                 return None
             if int(hh) > 14 or int(mm) > 59:  # real offsets lie within -12:00 to +14:00
                 return None
-            offset = known[suffix] = (int(hh) * 60 + int(mm)) * (-1 if sign == "-" else 1)
-        locals_.append(text[:-6])
+            cached = known[tail] = (size, (int(hh) * 60 + int(mm)) * (-1 if sign == "-" else 1))
+        size, offset = cached
+        locals_.append(text[:-size])
         minutes.append(offset)
     return locals_, np.asarray(minutes, dtype=np.int64)
 

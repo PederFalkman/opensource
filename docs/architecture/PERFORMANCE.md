@@ -68,6 +68,29 @@ Measured on 2026-10-20 without tracing, best of 3, 350,640 strings
 Peak memory for that case is higher (41–61 MiB), from the split strings
 held during parsing.
 
+## Changes in OSS-144
+
+The same split now covers the `±HHMM` and `±HH` offset forms (P-19), which
+still took the general parser. The last six characters of each string
+decide the form and the offset and are parsed once per distinct ending, so
+the common `±HH:MM` form costs no more than before. As for OSS-136, a
+property test compares the fast and general paths, and 120,000 random
+batches (both pandas versions, every form plus malformed endings) gave
+identical results and errors with the fast path on and off.
+
+Measured on 2026-10-21 without tracing, best of 3, 350,640 strings (ten
+years at 15 min in Europe/Stockholm), before → after:
+
+| Offset form | Python 3.13, pandas 3.0.6 | Python 3.11, pandas 2.1.4 |
+|---|---|---|
+| `+0100` / `+0200` | 2.51 → 0.47 | 2.26 → 0.34 |
+| `+01` / `+02` | 2.50 → 0.44 | 2.10 → 0.36 |
+| `+01:00` / `+02:00` | 0.38 → 0.39 | 0.31 → 0.33 |
+
+The last row is within run-to-run noise on this machine: in alternating
+runs of both versions of the code, best times differed by at most 0.04 s,
+and medians overlapped.
+
 ## Changes in OSS-74
 
 `assess_quality` built the expected grid twice and tested which grid
@@ -121,9 +144,9 @@ removed above were already cheap.
 ## What dominates now
 
 - Parsing timestamp strings is pandas' `to_datetime`: about 0.3–0.7 s per
-  350k rows, for naive strings or (since OSS-136) the common
-  `±HH:MM`/`Z` forms with changing offsets. Other offset forms (`+0100`,
-  `+01`) still take the general parser, about 2 s per 350k rows; pass a
+  350k rows, for naive strings or strings with changing offsets in the
+  forms `±HH:MM`, `±HHMM`, `±HH` or `Z` (OSS-136, OSS-144). Anything else
+  takes the general parser, about 2 s per 350k rows; pass a
   `DatetimeIndex` if you already have one.
 - `assess_frame` runs `assess_quality` once per column, so the shared
   timestamp checks are repeated per column (by design, see OSS-17).

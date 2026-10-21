@@ -316,9 +316,14 @@ def test_gap_overlap_matching_matches_brute_force(drop_before, drop_after):
 
 
 _OFFSETS = st.sampled_from(
-    ["Z", "+00:00", "+01:00", "+02:00", "-05:00", "+05:30", "+05:45", "-03:30", "+14:00", "-12:00"]
+    [
+        *("Z", "+00:00", "+01:00", "+02:00", "-05:00", "+05:30", "+05:45", "-03:30", "+14:00", "-12:00"),
+        *("+0100", "-0530", "+1400", "+01", "-05", "+14", "-12", "+00"),  # P-19: +HHMM and +HH
+    ]
 )
-_NEAR_MISSES = st.sampled_from(["+0100", "+01", "z", "+15:00", " +01:00", "+01:00 ", "UTC", ""])
+_NEAR_MISSES = st.sampled_from(
+    ["z", "+15:00", "+1500", "+15", "+1", "+010", "+01:0", "+0160", " +01:00", "+01:00 ", "+01 ", "UTC", ""]
+)
 
 
 @DETERMINISTIC
@@ -368,3 +373,48 @@ def test_offset_fast_path_matches_pandas(rows, near_miss):
         assert expected is not None and got is not None and got.equals(expected), (strings, got, expected)
     elif expected is not None and got is not None:
         assert got.equals(expected), (strings, got, expected)
+
+
+@DETERMINISTIC
+@given(
+    st.lists(
+        st.tuples(
+            st.datetimes(
+                min_value=pd.Timestamp("1677-09-22").to_pydatetime(),
+                max_value=pd.Timestamp("2262-04-11").to_pydatetime(),
+            ),
+            st.sampled_from(["T", " "]),
+            st.integers(0, 2),  # minutes only, seconds, or fractional seconds
+            st.one_of(_OFFSETS, _NEAR_MISSES),
+        ),
+        min_size=1,
+        max_size=10,
+    )
+)
+def test_offset_fast_path_equals_the_general_path(rows):
+    # P-19 (OSS-144): with the fast path on or off, normalize_timestamps gives the same
+    # result, or raises the same error with the same message, for every offset form.
+    from unittest import mock
+
+    from energydata_kit import timestamps
+
+    strings = []
+    for when, sep, precision, suffix in rows:
+        text = when.strftime(f"%Y-%m-%d{sep}%H:%M")
+        if precision:
+            text += when.strftime(":%S") + (f".{when.microsecond:06d}" if precision == 2 else "")
+        strings.append(text + suffix)
+
+    def outcome() -> object:
+        try:
+            return normalize_timestamps(strings)
+        except Exception as exc:  # the error itself is what is compared
+            return (type(exc), str(exc))
+
+    fast = outcome()
+    with mock.patch.object(timestamps, "_parse_offsets_fast", return_value=None):
+        general = outcome()
+    if isinstance(fast, pd.DatetimeIndex) and isinstance(general, pd.DatetimeIndex):
+        assert fast.equals(general), (strings, fast, general)
+    else:
+        assert fast == general, (strings, fast, general)

@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 from energydata_kit import TimestampError, infer_resolution, normalize_timestamps, summarize_timestamps
+from energydata_kit import timestamps as ts_module
 
 
 def test_naive_requires_assume_tz():
@@ -52,8 +53,12 @@ def test_offset_strings_take_the_fast_path_with_the_same_result():
     ]
     expected = pd.DatetimeIndex(pd.to_datetime(strict, utc=True, format="ISO8601")).as_unit("ns")
     assert normalize_timestamps(strict).equals(expected)
-    for odd in ("2024-03-31T01:30:00+0100", "2024-03-31T01:30:00+01"):
+    # P-19 (OSS-144): "+HHMM" and "+HH" take the fast path too, with the same instants.
+    for odd in ("2024-03-31T01:30:00+0100", "2024-03-31T01:30:00+01", "2024-03-30T19:00-0530"):
         assert normalize_timestamps([odd])[0] == pd.Timestamp("2024-03-31T00:30:00Z")
+    split = ts_module._split_offsets(["2024-03-31T03:30+0200", "2024-03-31T01:30:00+01", "2024-03-31T00:30Z"])
+    assert split is not None and split[1].tolist() == [120, 60, 0]
+    assert ts_module._split_offsets(["2024-03-31T01:30:00+1"]) is None
     # Errors still come from the general path, with its message (a lowercase "z" was
     # never accepted).
     for bad in ("2024-13-01T00:00:00+01:00", "2024-03-31T00:30:00z"):
