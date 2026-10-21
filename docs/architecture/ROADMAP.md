@@ -7,10 +7,19 @@ Merged items stay listed here as a record of what was agreed.
 ## Open decisions (owners required)
 
 Questions and evidence for each: `docs/governance/RELEASE_DECISIONS.md`,
-section "0.2.0". 0.1.0 was released on 2026-10-19 as a GitHub release only
-(D1 to D4 and D6 decided; the record is kept there). Engineering for 0.2.0
-is complete (OSS-104 to OSS-110), and the owner recorded the answers
-below on 2026-10-20; the release PR is OSS-133.
+section "0.3.0". 0.1.0 (2026-10-19) and 0.2.0 (2026-10-20) were released as
+GitHub releases only; their records are kept there. Engineering for 0.3.0
+is complete (OSS-136 to OSS-138, P-14 to P-16); it waits on:
+
+- [ ] **G1 for 0.3.0.** Does counsel's confirmation cover the code added
+      since 0.2.0 (`344c862`), or should counsel confirm again?
+- [ ] **G3 for 0.3.0.** Technical-lead sign-off of the IP-boundary review
+      of the diff from 0.2.0 (3 source files, about 160 added lines).
+- [ ] **G4 for 0.3.0.** No dependency changed; is the 0.2.0 position enough?
+- [ ] **D6 for 0.3.0 (G7).** GitHub release only, like 0.2.0, or also a
+      package index?
+
+Recorded for 0.2.0:
 
 - [x] **G1 for 0.2.0.** Counsel confirmed in writing that the code added
       since 0.1.0 is covered (recorded 2026-10-20).
@@ -1221,7 +1230,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       Table Schema; `;` input; header-only output; the refusal. The guide
       shows it (executed).
 
-### OSS-138: `report --unit COLUMN=UNIT` (P-15) — this change
+### OSS-138: `report --unit COLUMN=UNIT` (P-15) — merged in [#109](https://github.com/PederFalkman/opensource/pull/109)
 
 - [x] `--unit` is repeatable: `COLUMN=UNIT` gives each named column
       metadata, with the shared `--resolution`, `--aggregation` and
@@ -1234,6 +1243,19 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Tests: per-column metadata and completeness in the frame report;
       one named column gives the same report as the plain form; each
       refusal. The README limitation is removed.
+
+### OSS-139: prepare the 0.3.0 release — this change
+
+- [x] `RELEASE_DECISIONS.md` gains a 0.3.0 section: what the release
+      contains, what did not change since 0.2.0 (no dependency, extra or
+      data file), the open questions per gate (G1, G3, G4, D6) and a guide
+      for the G3 reviewer. It decides nothing; earlier records are kept.
+- [x] Changelog `[Unreleased]` reads as release notes: a summary and what
+      changes for 0.2.0 users (one reworded error message). Version stays
+      `0.3.0.dev0`; the upload guard stays.
+- [x] `examples/GUIDE.md` shows `--unit COLUMN=UNIT`, executed by the test
+      suite, next to the `--gaps-csv` example.
+- [x] "Open decisions" above lists the 0.3.0 questions.
 
 ## Explicitly not planned
 
