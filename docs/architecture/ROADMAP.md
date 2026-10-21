@@ -7,14 +7,22 @@ Merged items stay listed here as a record of what was agreed.
 ## Open decisions (owners required)
 
 Questions and evidence for each: `docs/governance/RELEASE_DECISIONS.md`,
-section "0.4.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20) and 0.3.0
-(2026-10-21) were released as GitHub releases only; their records are kept
-there. Engineering for 0.4.0 is complete (OSS-143 and OSS-144, P-17 and
-P-19), and the owner recorded the answers below on 2026-10-21; 0.4.0 was
-released the same day (OSS-146, #117). For 0.5.0 the owner approved P-21
-and P-23 on 2026-10-21; the other candidates (P-22, and P-12, P-13, P-18
-and P-20 carried over) are under "Proposed" below (OSS-148) and not
-approved.
+section "0.5.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 and 0.4.0
+(both 2026-10-21) were released as GitHub releases only; their records are
+kept there. Engineering for 0.5.0 is complete (OSS-149 and OSS-150, P-21
+and P-23); it waits on the questions below. The other candidates (P-22,
+and P-12, P-13, P-18 and P-20 carried over) are under "Proposed" below
+(OSS-148) and not approved.
+
+- [ ] **G1 for 0.5.0.** Does counsel's confirmation cover the code added
+      since 0.4.0 (`6cc79fd`), or should counsel confirm again?
+- [ ] **G3 for 0.5.0.** Technical-lead sign-off of the IP-boundary review
+      of the diff from 0.4.0 (2 source files, about 55 added lines).
+- [ ] **G4 for 0.5.0.** No dependency changed; is the 0.4.0 position enough?
+- [ ] **D6 for 0.5.0 (G7).** GitHub release only, like 0.4.0, or also a
+      package index?
+
+Recorded for 0.4.0:
 
 - [x] **G1 for 0.4.0.** Counsel confirmed that the code added since 0.3.0
       (`afa6974`) is covered (recorded 2026-10-21).
@@ -1462,7 +1470,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       exits 1 even with every gap explained. Help text, README exit
       status, guide and changelog updated.
 
-### OSS-150: `report --fail-on NAME` (P-23) — this change
+### OSS-150: `report --fail-on NAME` (P-23) — merged in [#121](https://github.com/PederFalkman/opensource/pull/121)
 
 - [x] `--fail-on`, repeatable, fails the command only on the named issues:
       a `QualityFlag` name or `ANY` (case-insensitive), `gaps`, or
@@ -1473,6 +1481,18 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Tests: each kind of name, case-insensitivity, a check that did not
       run, explained and unexplained gaps, a multi-column report and the
       refusals. Guide (executed), README exit status and changelog updated.
+
+### OSS-151: prepare the 0.5.0 release — this change
+
+- [x] `RELEASE_DECISIONS.md` gains a 0.5.0 section: what the release
+      contains (P-21, P-23), what did not change since 0.4.0 (no
+      dependency, extra or data file), the open questions per gate (G1,
+      G3, G4, D6) and a guide for the G3 reviewer. It decides nothing;
+      earlier records are kept.
+- [x] Changelog `[Unreleased]` reads as release notes: a summary and the
+      one exit-status change for 0.4.0 users, with how to keep the old
+      behaviour. Version stays `0.5.0.dev0`; the upload guard stays.
+- [x] "Open decisions" above lists the 0.5.0 questions.
 
 ## Explicitly not planned
 

@@ -1,5 +1,68 @@
 # Release decisions for energydata-kit
 
+## 0.5.0 (in preparation)
+
+**Status:** open. Engineering for 0.5.0 is complete (OSS-149 and OSS-150)
+and nothing is decided here. `main` stays at `0.5.0.dev0` with the upload
+guard until the owner answers the questions below. The 0.4.0 to 0.1.0
+records follow and are unchanged.
+
+**What 0.5.0 contains** (approved as P-21 and P-23 by the owner on
+2026-10-21; proposals in `docs/architecture/ROADMAP.md`, OSS-148):
+
+- `report --fail-on-issues` no longer fails on missing intervals inside
+  `--known-outage` periods (P-21, OSS-149, #120). This changes the exit
+  status (1 → 0) for commands whose only gaps are explained; the release
+  notes say so and give the old behaviour's replacement.
+- `report --fail-on NAME`, repeatable, chooses which issues fail the exit
+  status (P-23, OSS-150, #121).
+- No report-format change (schema 2), no new or renamed public Python
+  name, nothing removed. The changelog's `[Unreleased]` section has the
+  release notes.
+
+**What did not change since 0.4.0** (`git diff 6cc79fd` on
+`pyproject.toml`, 2026-10-21): no runtime dependency, optional extra,
+version range or data file was added or changed. The only `pyproject.toml`
+change is the restored upload guard (OSS-147). `THIRD_PARTY_LICENSES.md` is
+unchanged.
+
+| Gate | State for 0.5.0 | Open question |
+|---|---|---|
+| G1 Ownership | Counsel confirmed ownership for 0.1.0 (D2) and for the code added up to 0.4.0. Commits since the 0.4.0 release commit (`6cc79fd`), on `main` at `2d42045`: 8, of which 4 by the AI coding assistant in the owner's sessions (all with changes) and 4 by the owner (pull-request merges #118 to #121); no external contributor | Does counsel's confirmation cover the code added since 0.4.0, or should counsel confirm again? |
+| G2 Licence | Passed: Apache-2.0, unchanged | — |
+| G3 IP boundary review | The `IP boundary` CI job passed on every 0.5.0 PR. Both changes decide the command line's exit status from counts the report already contains | Will the technical lead review and sign off the diff from 0.4.0? |
+| G4 Third-party licences | Unchanged since 0.4.0 (no dependency change) | Is the 0.4.0 position enough? |
+| G5 CI green | Green on every 0.5.0 PR; re-checked on the release commit | — |
+| G6 Documentation honest | README, changelog and guide updated with each step; the guide's `--fail-on` examples run in the test suite | Review on the release commit |
+| G7 Publication (D6) | D6 approved 0.4.0 only; it does not carry over | GitHub release only, like 0.1.0 to 0.4.0, or also a package index? |
+
+**For the G3 reviewer** (the technical lead). The package code to review
+is the diff from the 0.4.0 release commit to the 0.5.0 release commit:
+`git diff 6cc79fd <release commit> -- packages/energydata-kit/src`
+(2 files, about 55 added lines: `cli.py` and the version in
+`__init__.py`). Points to confirm, each also checked by a tool:
+
+- No new import beyond `QualityFlag` from the package itself: besides the
+  standard library, the code still imports only numpy, pandas and Pint
+  (Pandera and pyarrow optional). `python tools/check_ip_boundary.py`,
+  run in CI, refuses forbidden imports and any dependency off the reviewed
+  allowlist.
+- No domain limits ship: the exit status depends only on counts in the
+  report and the issue names the caller passes.
+- Tests and examples use synthetic data only; no customer data,
+  endpoints or credentials.
+- Nothing forecasts, optimises, or computes grid, capacity or financial
+  quantities: the changes decide when the command exits 1.
+
+**After the decisions:** a release PR built from `RELEASE_CHECKLIST.md`
+sets `__version__` to `0.5.0`, moves `[Unreleased]` under a dated
+`## [0.5.0]` heading, records the answers under G1, G3 and G4, and adds the
+owner's D6 line naming `energydata-kit 0.5.0`; only with that line does it
+remove the upload guard. It passes `check_release_readiness.py --strict`.
+The owner then tags the merged commit `energydata-kit-v0.5.0`, the
+*Release build* workflow prepares the draft GitHub release, and the owner
+publishes it. None of this is done before the owner's decisions.
+
 ## 0.4.0 (released 2026-10-21)
 
 **Status:** decided 2026-10-21. The repository owner recorded the answers for G1,

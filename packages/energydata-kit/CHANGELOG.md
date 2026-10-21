@@ -5,6 +5,17 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+Two command-line changes for pipelines, approved as P-21 and P-23: gaps
+inside `--known-outage` periods no longer fail `--fail-on-issues`, and
+`--fail-on NAME` chooses which issues fail the exit status. The report
+format is unchanged (schema 2) and no public Python name is added or
+changed.
+
+**Upgrading from 0.4.0.** Check one case: a `report` command with both
+`--known-outage` and `--fail-on-issues` whose only gaps lie inside the
+outage periods now exits 0 instead of 1. To keep failing on every gap,
+use `--fail-on ANY --fail-on gaps` instead of `--fail-on-issues`.
+
 ### Added
 - `report --fail-on NAME`, repeatable, chooses which issues give exit
   status 1: a flag name (`NON_FINITE`, `STALE_VALUE`, … or `ANY` for any
