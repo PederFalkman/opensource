@@ -255,8 +255,8 @@ use Pint or pint-pandas directly, e.g. `series.astype(f"pint[{meta.unit}]")`.
   `lists_truncated` when reports capped their lists with `max_listed`
   (on the command line, `--gaps-csv` writes the full gap list).
 - Timestamp strings whose UTC offset changes across DST parse quickly in
-  the common forms (`2024-03-31T03:00:00+02:00`, or ending in `Z`): about
-  0.4 s per 350,000 rows. Other offset forms (`+0200`, `+02`) take pandas'
-  general parser, about 2 s per 350,000 rows; pass a `DatetimeIndex` when
-  you have one. Measured numbers are in the repository's
+  the ISO forms `2024-03-31T03:00:00+02:00`, `+0200`, `+02` or ending in
+  `Z`: about 0.4 s per 350,000 rows. Anything else takes pandas' general
+  parser, about 2 s per 350,000 rows; pass a `DatetimeIndex` when you have
+  one. Measured numbers are in the repository's
   `docs/architecture/PERFORMANCE.md`.

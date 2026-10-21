@@ -117,7 +117,7 @@ they should ship as one schema-3 change.
 |---|---|---|---|---|
 | P-17 | *Approved by the owner on 2026-10-21; done in OSS-143.* **`--unit COLUMN=UNIT` names the value columns.** When `--value-col` is not given, the columns named by `--unit COLUMN=UNIT` become the assessed columns, as `--schema` columns already do. | Found while writing the 0.3.0 guide example (OSS-139): naming each column twice (`--value-col kwh --unit kwh=kWh`) is easy to get wrong, and the single-column form needs no `--value-col` when the file has one value column. Today the command stops with "pass --value-col". | S | No format change. Must keep an explicit `--value-col` authoritative (then `--unit` may name a subset), and keep the order of `--unit` options as the column order so reports stay deterministic. |
 | P-18 | **Compare full gap lists.** `compare before.json after.json --gaps before.csv after.csv` reads the `--gaps-csv` files and compares every gap, not only the first `max_listed`. | Known limitation: "Only listed gaps are compared"; long outage histories set `lists_truncated`, and the comparison then misses gaps. P-14 made the full list available but nothing reads it. | S–M | No report change. The comparison output keeps its fields; `lists_truncated` becomes `false` when full lists are read, which consumers must be told. Must refuse CSVs that do not match their report (columns, gap counts). |
-| P-19 | *Approved by the owner on 2026-10-21; to be built in OSS-144.* **Fast parsing of the other offset forms.** Extend the OSS-136 fast path to `+0200` and `+02` offsets. | Known limitation and `PERFORMANCE.md`: measured on 2026-10-21, 350,000 strings take 1.6–1.7 s in these forms against 0.5 s for `+02:00`. | S | No format change. Same rule as P-16: results and errors must match the general parser on the lowest and current pandas, checked by a property test, or the proposal is dropped. |
+| P-19 | *Approved by the owner on 2026-10-21; done in OSS-144.* **Fast parsing of the other offset forms.** Extend the OSS-136 fast path to `+0200` and `+02` offsets. | Known limitation and `PERFORMANCE.md`: measured on 2026-10-21, 350,000 strings take 1.6–1.7 s in these forms against 0.5 s for `+02:00`. | S | No format change. Same rule as P-16: results and errors must match the general parser on the lowest and current pandas, checked by a property test, or the proposal is dropped. |
 | P-20 | **Single-row spikes.** An opt-in `spike_max_delta` flags a row that differs from both neighbours by more than the limit, in opposite directions, with a new `SPIKE` flag (bit 2048), so one outlier is flagged once. | Known limitation: the jump check flags the row where a change lands, so a single outlier flags itself and the row after it; callers cannot tell a spike from a step. | M | New flag bit and recorded option, so schema 3 (pair with P-12). The caller picks the limit in the data's unit; no limit shipped. Must define behaviour at gaps (`max_gap`), missing values and the first and last rows. |
 | P-12 | *Carried over from 0.3.0, not approved.* **DST policy for calendar grids.** As described for 0.3.0 below. | Known limitation: a daily grid at 02:30 in Europe/Stockholm raises. | S–M | Schema 3 (pair with P-20). |
 | P-13 | *Carried over from 0.3.0, not approved.* **Grid anchored at the step boundary** (`origin="epoch"`). As described for 0.3.0 below. | Known limitation: a leading off-grid timestamp shifts the grid. | S | Fits schema 2; `origin` may then hold a keyword instead of a timestamp, documented as such. |
@@ -1337,7 +1337,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] The owner approved P-17 and P-19 on 2026-10-21, to be built one PR
       each (P-17 first). P-12, P-13, P-18 and P-20 are not approved.
 
-### OSS-143: `--unit COLUMN=UNIT` names the value columns (P-17) — this change
+### OSS-143: `--unit COLUMN=UNIT` names the value columns (P-17) — merged in [#114](https://github.com/PederFalkman/opensource/pull/114)
 
 - [x] Without `--value-col`, the columns named by `--unit COLUMN=UNIT` are
       assessed, in `--unit` order; an explicit `--value-col` still decides,
@@ -1346,6 +1346,19 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Tests: the same report as naming each column twice; column order;
       a subset with `--value-col`; one named column; the refusals. The
       guide's example drops the repeated `--value-col` (executed).
+
+### OSS-144: fast parsing of `±HHMM` and `±HH` offsets (P-19) — this change
+
+- [x] The OSS-136 split covers `±HHMM` and `±HH` as well as `±HH:MM` and
+      `Z`: 350k strings take 0.34–0.47 s instead of 2.1–2.5 s. The last
+      six characters decide form and offset and are cached, so `±HH:MM`
+      is not slower (a first version without that cache was, by about
+      15–20 %, and was reworked).
+- [x] Unchanged results and errors: a new property test runs every form
+      and malformed endings with the fast path on and off; 120,000 random
+      batches matched on pandas 3.0.6 and 2.1.4.
+- [x] Benchmark case for `+0100` strings; `PERFORMANCE.md`, the README
+      limitation and the changelog updated.
 
 ## Explicitly not planned
 

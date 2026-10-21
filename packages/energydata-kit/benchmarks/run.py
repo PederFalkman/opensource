@@ -56,6 +56,7 @@ def main() -> None:
     strings = pd.Series(pd.date_range("2020-01-01", periods=350_640, freq="15min").astype(str))
     local = pd.date_range("2020-01-01", periods=350_640, freq="15min", tz="Europe/Stockholm")
     offset_strings = pd.Series([t.isoformat() for t in local])  # +01:00 / +02:00 across DST
+    compact_offsets = pd.Series([t.strftime("%Y-%m-%dT%H:%M:%S%z") for t in local])  # +0100 / +0200
     every_check = {"bounds": (0, 200), "stale_min_run": 5, "cumulative": True, "jump_max_delta": 50}
 
     print("\n| Case (best of 3) | Time (s) | Peak traced memory (MiB) |\n|---|---|---|")
@@ -66,6 +67,10 @@ def main() -> None:
     measure(
         "`normalize_timestamps`, 350k ISO strings with DST offsets",
         lambda: ek.normalize_timestamps(offset_strings),
+    )
+    measure(
+        "`normalize_timestamps`, 350k ISO strings with DST offsets as `+0100`",
+        lambda: ek.normalize_timestamps(compact_offsets),
     )
     measure("`flag_series`, 1 year at 1 min", lambda: ek.flag_series(minute, freq="1min"))
     measure(

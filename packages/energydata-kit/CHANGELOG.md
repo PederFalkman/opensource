@@ -11,6 +11,10 @@ versioning: [SemVer](https://semver.org/).
   command stopped with "pass --value-col". An explicit `--value-col` still
   decides which columns are assessed. A column named by `--unit` that is
   not in the file is refused (exit status 2).
+- `normalize_timestamps` (and the command line) parse timestamp strings
+  with `±HHMM` or `±HH` offsets, such as `2024-03-31T03:00:00+0200`, about
+  five times faster (350,000 strings: about 2.3 s → 0.4 s), as `±HH:MM`
+  strings already were. Results and error messages are unchanged.
 
 ## [0.3.0] - 2026-10-21
 
