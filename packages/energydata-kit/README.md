@@ -118,7 +118,9 @@ same delimiter and decimal format as the input, with a `quality_flag` column, pl
 `column,start,end,missing_count`, on the same grid as the report.
 Calendar steps work as in the library: `--freq D --tz Europe/Stockholm`.
 Repeat `--value-col` for one report covering several columns (check options
-then apply to every column; `--unit` needs a single column). With several
+then apply to every column). `--unit kWh` describes a single column; for
+several, repeat `--unit kwh=kWh --unit pv=kW` (`--resolution`,
+`--aggregation` and `--interval-label` apply to each named column). With several
 columns, `--flags-csv` writes each value column followed by its
 `quality_flag_<column>`. `--schema data.schema.json` reads unit, resolution and
 other metadata per column from a Table Schema written by `to_table_schema`;
@@ -244,8 +246,7 @@ use Pint or pint-pandas directly, e.g. `series.astype(f"pint[{meta.unit}]")`.
   `assess_quality` gives for it. The frame-level `timestamps` section
   states them once when all columns share one step; it is `null` when
   columns take different steps from their metadata. `compare_reports`
-  compares frames column by column and does not read that section. On the command line, `--unit` works with a
-  single `--value-col`; use `--schema` for metadata on several columns.
+  compares frames column by column and does not read that section.
 - `compare_reports` matches gaps by overlap: a gap that shrank, grew or moved
   is listed under `changed` with its before and after bounds (a split or
   merged gap once per overlapping pair), and only gaps overlapping nothing

@@ -182,13 +182,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="stale, counter and jump checks skip rows further apart than this, e.g. 1h",
     )
 
-    meta = rep.add_argument_group("measurement metadata (--unit for one column, or --schema)")
+    meta = rep.add_argument_group("measurement metadata (--unit, or --schema)")
     meta.add_argument(
         "--schema",
         help="Table Schema JSON with energydata_kit metadata per column (see to_table_schema); "
         "its columns are the default --value-col",
     )
-    meta.add_argument("--unit", help="unit, e.g. kW or kWh; adds metadata to the report")
+    meta.add_argument(
+        "--unit",
+        action="append",
+        metavar="[COLUMN=]UNIT",
+        help="unit, e.g. kWh for a single column, or COLUMN=UNIT (repeatable) for several; "
+        "adds metadata to the report",
+    )
     meta.add_argument("--resolution", help="metadata resolution (default: --freq)")
     meta.add_argument("--aggregation", choices=[a.value for a in Aggregation], default="instantaneous")
     meta.add_argument("--interval-label", choices=[lab.value for lab in IntervalLabel], default="start")
@@ -384,15 +390,36 @@ def _load_schema(path: str) -> dict[str, MeasurementMetadata]:
         raise CliError(f"invalid metadata in {path}: {exc}") from exc
 
 
+def _units(given: list[str] | None) -> tuple[str | None, dict[str, str]]:
+    """``--unit`` values as one unit for a single column, or units per column (``COLUMN=UNIT``)."""
+    if not given:
+        return None, {}
+    plain = [u for u in given if "=" not in u]
+    if plain and len(given) > 1:
+        raise CliError("--unit UNIT describes a single column; for several, repeat --unit COLUMN=UNIT")
+    if plain:
+        return plain[0], {}
+    by_column: dict[str, str] = {}
+    for item in given:
+        column, unit = item.rsplit("=", 1)  # units never contain "="; column names might
+        if not column or not unit:
+            raise CliError(f"--unit {item!r}: expected COLUMN=UNIT")
+        if column in by_column:
+            raise CliError(f"--unit names column {column!r} twice")
+        by_column[column] = unit
+    return None, by_column
+
+
 def _metadata(args: argparse.Namespace, name: str) -> MeasurementMetadata | None:
     schema_metadata: dict[str, MeasurementMetadata] = args.schema_metadata
     if name in schema_metadata:
         return schema_metadata[name]
-    if args.unit is None:
+    unit = args.unit_for_all or args.unit_by_column.get(name)
+    if unit is None:
         return None
     return MeasurementMetadata(
         name=name,
-        unit=args.unit,
+        unit=unit,
         resolution=args.resolution or args.freq,
         aggregation=Aggregation(args.aggregation),
         interval_label=IntervalLabel(args.interval_label),
@@ -483,9 +510,15 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
             "with --unit; pass --unit too (for the grid step alone, use --freq)"
         )
     args.schema_metadata = _load_schema(args.schema) if args.schema else {}
+    args.unit_for_all, args.unit_by_column = _units(args.unit)
     args.jump_max_rate = _rate_option(args.jump_max_rate)
 
     frame = _read_frame(args, stdin)
+    unknown = [c for c in args.unit_by_column if c not in frame.columns]
+    if unknown:
+        raise CliError(
+            f"--unit names columns that are not assessed: {unknown}; columns: {list(frame.columns)}"
+        )
     origin = None if args.origin is None else pd.Timestamp(args.origin)
     bounds = None if args.bounds is None else (args.bounds[0], args.bounds[1])
     if frame.shape[1] > 1:
@@ -661,10 +694,14 @@ def _run_frame_report(
     bounds: tuple[float | None, float | None] | None,
     stdout: TextIO,
 ) -> int:
-    # --unit describes one column; refuse rather than guess. --schema names its columns.
-    if args.unit is not None:
-        raise CliError("--unit describes one column; use a single --value-col, or --schema")
-    metadata = {c: m for c, m in args.schema_metadata.items() if c in frame.columns}
+    # A plain --unit describes one column; refuse rather than guess. --schema and
+    # --unit COLUMN=UNIT name their columns.
+    if args.unit_for_all is not None:
+        raise CliError(
+            "--unit UNIT describes a single column; for several, repeat --unit COLUMN=UNIT, or use --schema"
+        )
+    named = {str(c): _metadata(args, str(c)) for c in frame.columns}
+    metadata = {c: m for c, m in named.items() if m is not None}
     checks: dict[str, Any] = {
         "bounds": bounds,
         "stale_min_run": args.stale_min_run,

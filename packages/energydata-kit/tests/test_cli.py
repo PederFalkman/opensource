@@ -112,11 +112,52 @@ def test_multiple_value_columns(tmp_path):
     args = ["report", str(path), "--value-col", "a", "--value-col", "b", "--freq", "1h"]
     assert run(*args, "--fail-on-issues", "--jump-max-delta", "0.5")[0] == 1
     for extra, message in [
-        (["--unit", "kW"], "--unit describes one column"),
+        (["--unit", "kW"], "--unit UNIT describes a single column"),
         (["--value-col", "a"], "only once"),
     ]:
         code, out, err = run(*args, *extra)
         assert code == 2 and out == "" and message in err
+
+
+def test_unit_per_column(tmp_path):
+    # P-15: --unit COLUMN=UNIT gives several columns metadata without a schema file.
+    rows = [f"2024-01-01T{h:02d}:00Z,{h},{10 - h},{h}" for h in range(4)]
+    path = str(write(tmp_path, "timestamp,kwh,pv,other\n" + "\n".join(rows) + "\n"))
+    cols = ["--value-col", "kwh", "--value-col", "pv", "--value-col", "other"]
+    code, out, err = run(
+        "report", path, *cols, "--unit", "kwh=kWh", "--unit", "pv=kW",
+        "--resolution", "1h", "--aggregation", "sum",
+    )  # fmt: skip
+    assert (code, err) == (0, "")
+    columns = json.loads(out)["columns"]
+    assert columns["kwh"]["metadata"]["unit"] == "kWh" and columns["pv"]["metadata"]["unit"] == "kW"
+    for name in ("kwh", "pv"):  # the shared options apply to every named column
+        assert columns[name]["metadata"]["resolution"] == "1h"
+        assert columns[name]["metadata"]["aggregation"] == "sum"
+        assert columns[name]["completeness"] == 1.0
+    assert columns["other"]["metadata"] is None  # no unit, no metadata
+    # One column named this way is the same as a plain --unit.
+    named = run("report", path, "--value-col", "kwh", "--unit", "kwh=kWh", "--resolution", "1h")
+    plain = run("report", path, "--value-col", "kwh", "--unit", "kWh", "--resolution", "1h")
+    assert named == plain and named[0] == 0
+    for extra, message in [
+        (["--unit", "kwh=kWh", "--unit", "nope=kW"], "--unit names columns that are not assessed: ['nope']"),
+        (["--unit", "kwh=kWh", "--unit", "kwh=kW"], "--unit names column 'kwh' twice"),
+        (["--unit", "kWh", "--unit", "pv=kW"], "--unit UNIT describes a single column"),
+        (["--unit", "kWh"], "--unit UNIT describes a single column"),
+        (["--unit", "=kWh"], "expected COLUMN=UNIT"),
+        (["--unit", "kwh="], "expected COLUMN=UNIT"),
+    ]:
+        code, out, err = run("report", path, *cols, *extra)
+        assert code == 2 and out == "" and message in err, (extra, err)
+
+
+def test_unit_per_column_with_schema_is_refused(tmp_path):
+    path = str(write(tmp_path, "timestamp,kwh\n2024-01-01T00:00Z,1\n"))
+    schema = ek.to_table_schema(ek.MeasurementMetadata(name="kwh", unit="kWh"))
+    schema_path = str(write(tmp_path, json.dumps(schema), "schema.json"))
+    code, out, err = run("report", path, "--schema", schema_path, "--unit", "kwh=kWh")
+    assert code == 2 and out == "" and "--schema and --unit both set metadata" in err
 
 
 def test_multiple_value_columns_flags_csv(tmp_path):

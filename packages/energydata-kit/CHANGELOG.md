@@ -19,6 +19,12 @@ versioning: [SemVer](https://semver.org/).
   per column, on the grid that column's report uses, in the input's
   delimiter and with `\n` line endings. Refused (exit status 2, nothing
   written) when a column has no step. The JSON report is unchanged.
+- `report --unit COLUMN=UNIT`, repeatable, gives several value columns
+  metadata without a Table Schema; `--resolution`, `--aggregation` and
+  `--interval-label` apply to each named column, and columns not named get
+  none. The single-column `--unit kWh` form is unchanged. Refused (exit
+  status 2): a column that is not assessed, a column named twice, a plain
+  unit with several columns, and `--unit` together with `--schema`.
 
 ## [0.2.0] - 2026-10-20
 
