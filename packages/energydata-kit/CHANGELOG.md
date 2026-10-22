@@ -5,6 +5,23 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+Two command-line additions approved as P-26 and P-27: with several input
+files the flags CSV names each row's file, and `--freq inferred` uses the
+most common step between timestamps on request. Also a fix for pandas
+3.1. The report and comparison formats are unchanged (schema 2) and no
+public Python name is added or changed.
+
+**Upgrading from 0.6.0.** Check two cases, both in command-line output
+only:
+
+- If you pass several input files together with `--flags-csv`, the flags
+  CSV now ends with a `source` column. A reader that expects the 0.6.0
+  columns by position, or a value column named `source`, needs a change.
+  One-file runs are unchanged.
+- Without a step, the text and Markdown summaries' "completeness: not
+  checked" line now also names the most common step between timestamps.
+  The JSON report is unchanged.
+
 ### Added
 
 - With several input files, `report --flags-csv` ends with a `source`
