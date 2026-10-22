@@ -119,7 +119,9 @@ same delimiter and decimal format as the input, with a `quality_flag` column, pl
 Calendar steps work as in the library: `--freq D --tz Europe/Stockholm`.
 Several files, such as monthly exports, are read as one table:
 `energydata-kit report jan.csv feb.csv mar.csv` (same columns, all CSV or
-all Parquet; a timestamp in two files counts as a duplicate).
+all Parquet; a timestamp in two files counts as a duplicate). Then
+`--flags-csv` ends with a `source` column naming each row's file (empty for
+rows `--insert-missing` adds).
 Repeat `--value-col` for one report covering several columns (check options
 then apply to every column). `--unit kWh` describes a single column; for
 several, repeat `--unit kwh=kWh --unit pv=kW` (`--resolution`,

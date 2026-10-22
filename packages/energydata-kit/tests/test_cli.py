@@ -989,7 +989,10 @@ def test_several_input_files(tmp_path):
     one = run("report", str(whole), "--freq", "1h", "--flags-csv", str(tmp_path / "f1.csv"))
     two = run("report", str(jan), str(feb), "--freq", "1h", "--flags-csv", str(tmp_path / "f2.csv"))
     assert one == two and one[0] == 0  # the same report, byte for byte
-    assert (tmp_path / "f1.csv").read_text() == (tmp_path / "f2.csv").read_text()
+    # The same flags too; only the source column (P-26) is added.
+    combined = pd.read_csv(tmp_path / "f2.csv")
+    assert list(combined["source"]) == [str(jan)] * 3 + [str(feb)] * 3
+    pd.testing.assert_frame_equal(combined.drop(columns="source"), pd.read_csv(tmp_path / "f1.csv"))
     # A row in both files is a duplicate, as within one file.
     overlap = write(tmp_path, "timestamp,kw\n" + "\n".join(rows[2:]) + "\n", "overlap.csv")
     data = json.loads(run("report", str(jan), str(overlap), "--freq", "1h")[1])
@@ -1003,6 +1006,32 @@ def test_several_input_files(tmp_path):
     ]:
         code, out, err = run("report", *argv, "--freq", "1h")
         assert code == 2 and out == "" and message in err, (argv, err)
+
+
+def test_flags_csv_names_the_input_file(tmp_path):
+    # P-26: with several files, each row of --flags-csv names its file; one file adds nothing.
+    rows = [f"2024-01-01T{h:02d}:00Z,{h},{10 * h}" for h in range(6)]
+    jan = write(tmp_path, "timestamp,a,b\n" + "\n".join(rows[:2]) + "\n", "jan.csv")
+    feb = write(tmp_path, "timestamp,a,b\n" + "\n".join(rows[3:]) + "\n", "feb.csv")
+    flags = tmp_path / "flags.csv"
+    for columns, flag in [(["--value-col", "a"], "quality_flag"), ([], "quality_flag_a")]:
+        argv = [str(jan), str(feb), "--freq", "1h", "--flags-csv", str(flags), "--insert-missing"]
+        assert run("report", *argv, *(columns or ["--value-col", "a", "--value-col", "b"]))[0] == 0
+        written = pd.read_csv(flags, keep_default_na=False)
+        assert list(written.columns)[-1] == "source", columns
+        # The row --insert-missing adds for 02:00 comes from no file.
+        assert list(written["source"]) == [str(jan)] * 2 + [""] + [str(feb)] * 3
+        assert list(written[flag]) == [0, 0, 65, 0, 0, 0]
+    # Files out of time order: rows keep the order read, each with its own file.
+    assert run("report", str(feb), str(jan), "--value-col", "a", "--flags-csv", str(flags))[0] == 0
+    assert list(pd.read_csv(flags)["source"]) == [str(feb)] * 3 + [str(jan)] * 2
+    assert run("report", str(jan), "--value-col", "a", "--flags-csv", str(flags))[0] == 0
+    assert "source" not in pd.read_csv(flags).columns
+    # A column already named source would be ambiguous: refused before anything is written.
+    clash = write(tmp_path, "timestamp,source\n" + rows[0].rsplit(",", 1)[0] + "\n", "clash.csv")
+    flags.unlink()
+    code, out, err = run("report", str(clash), str(clash), "--flags-csv", str(flags))
+    assert code == 2 and out == "" and "a column is already named so" in err and not flags.exists()
 
 
 def test_several_parquet_files(tmp_path):
