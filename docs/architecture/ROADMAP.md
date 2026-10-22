@@ -7,13 +7,22 @@ Merged items stay listed here as a record of what was agreed.
 ## Open decisions (owners required)
 
 Questions and evidence for each: `docs/governance/RELEASE_DECISIONS.md`,
-section "0.5.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 and 0.4.0
-(both 2026-10-21) were released as GitHub releases only; their records are
-kept there. Engineering for 0.5.0 is complete (OSS-149 and OSS-150, P-21
-and P-23), and the owner recorded the answers below on 2026-10-21; 0.5.0 was
-released the same day (OSS-152, #123). For 0.6.0 the owner approved P-24
-and P-25 on 2026-10-22; the other candidates (P-12, P-13, P-18, P-20 and
-P-22) are under "Proposed" below (OSS-154) and not approved.
+section "0.6.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), and 0.3.0 to 0.5.0
+(all 2026-10-21) were released as GitHub releases only; their records are
+kept there. Engineering for 0.6.0 is complete (OSS-155 and OSS-156, P-24
+and P-25); it waits on the questions below. The other candidates (P-12,
+P-13, P-18, P-20 and P-22) are under "Proposed" below (OSS-154) and not
+approved.
+
+- [ ] **G1 for 0.6.0.** Does counsel's confirmation cover the code added
+      since 0.5.0 (`34cf9c7`), or should counsel confirm again?
+- [ ] **G3 for 0.6.0.** Technical-lead sign-off of the IP-boundary review
+      of the diff from 0.5.0 (3 source files, about 70 added lines).
+- [ ] **G4 for 0.6.0.** No dependency changed; is the 0.5.0 position enough?
+- [ ] **D6 for 0.6.0 (G7).** GitHub release only, like 0.5.0, or also a
+      package index?
+
+Recorded for 0.5.0:
 
 - [x] **G1 for 0.5.0.** Counsel confirmed that the code added since 0.4.0
       (`6cc79fd`) is covered (recorded 2026-10-21).
@@ -1574,7 +1583,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       files are unchanged. Help text, README, docstring and changelog
       updated.
 
-### OSS-156: several input files in one report (P-25) — this change
+### OSS-156: several input files in one report (P-25) — merged in [#127](https://github.com/PederFalkman/opensource/pull/127)
 
 - [x] `report FILE...` reads each file with the same options and stacks
       them in order; duplicates across files are found as within one file,
@@ -1585,6 +1594,18 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       byte, as the whole file; the same for two Parquet halves; an
       overlapping row is a duplicate; each refusal. README, guide
       (executed) and changelog updated.
+
+### OSS-157: prepare the 0.6.0 release — this change
+
+- [x] `RELEASE_DECISIONS.md` gains a 0.6.0 section: what the release
+      contains (P-24, P-25), what did not change since 0.5.0 (no
+      dependency, extra or data file), the open questions per gate (G1,
+      G3, G4, D6) and a guide for the G3 reviewer. It decides nothing;
+      earlier records are kept.
+- [x] Changelog `[Unreleased]` reads as release notes: a summary and the
+      one comparison change for 0.5.0 users. Version stays `0.6.0.dev0`;
+      the upload guard stays.
+- [x] "Open decisions" above lists the 0.6.0 questions.
 
 ## Explicitly not planned
 

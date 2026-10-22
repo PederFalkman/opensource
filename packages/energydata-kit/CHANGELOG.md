@@ -5,6 +5,18 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+Two changes approved as P-24 and P-25: `compare` now treats gaps inside
+known outages the way `report` does, and `report` reads several input
+files (such as monthly exports) as one table. The report and comparison
+formats are unchanged (schema 2) and no public Python name is added or
+changed.
+
+**Upgrading from 0.5.0.** Check one case: comparing two reports that
+record known outages, `compare_reports(...).worse` (and the exit status of
+`compare --fail-if-worse`) no longer counts missing intervals inside the
+outages, so it can be `false` (0) where it was `true` (1). Comparisons of
+reports without outages are unchanged.
+
 ### Added
 - `report` reads several input files as one table, e.g. monthly exports:
   `energydata-kit report jan.csv feb.csv mar.csv`. The files are read with
