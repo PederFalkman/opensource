@@ -12,9 +12,9 @@ section "0.7.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 only; their records are kept there. Engineering for 0.7.0 is complete
 (OSS-161 and OSS-162, P-26 and P-27), and the owner recorded the answers
 below on 2026-10-22; 0.7.0 was released the same day (OSS-164, #136). No
-0.8.0 work is approved yet; the remaining candidates (P-28, and P-12,
-P-13, P-18, P-20 and P-22 carried over) are under "Proposed" below
-(OSS-160) and not approved.
+0.8.0 work is approved yet; the candidates (P-29 to P-31, and P-12, P-13,
+P-18, P-20, P-22 and P-28 carried over) are under "Proposed" below
+(OSS-166) and not approved.
 
 - [x] **G1 for 0.7.0.** Counsel confirmed that the code added since 0.6.0
       (`ba19231`) is covered (recorded 2026-10-22).
@@ -141,6 +141,42 @@ and anything that downloads data.
 
 **Suggested order if approved:** P-3 and P-4 first (small, no schema change),
 then P-2 with P-6 as one schema-2 change, then P-5 if users ask for it.
+
+### P-29 to P-31: candidates for 0.8.0 (OSS-166)
+
+*Prepared by the assistant in OSS-166 for the owner to approve or reject one
+by one. Nothing here is authorized; none of it starts without approval.*
+Each item is generic data-quality or command-line tooling as defined in
+`IP_BOUNDARY.md` ("What *is* in scope"), ships no domain thresholds and
+touches nothing on the out-of-scope list. P-22, P-13, P-18, P-28, P-12 and
+P-20 from earlier rounds were not approved and stay open; they are ranked
+again below. All three new items concern reading real exports, and none
+changes the report format. Each motivating behaviour was checked on
+2026-10-22 on `main` at `5f9480c` (0.8.0.dev0).
+
+| ID | Candidate | Why | Effort | Risk and cost |
+|---|---|---|---|---|
+| P-29 | **Input encoding for CSV** (`report --encoding latin-1`, default UTF-8 as now). The flags and gaps CSVs are written in the same encoding, as they already follow the input's delimiter and decimal mark. | Checked: a Latin-1 file with a column `förbrukning` (`--delimiter ';' --decimal ,`, as many European exports are) is refused with "could not read CSV: 'utf-8' codec can't decode byte 0xf6". Users must re-encode the file first. | S | No format change. The encoding is named by the caller and never guessed (no detection library). An unknown name is refused (exit 2); Parquet ignores it, so with Parquet input it is refused rather than silently unused. |
+| P-30 | **Known outages in the data's time zone.** With `--assume-tz`, a naive `--known-outage` timestamp is read in that zone, as the data's own timestamps are; without it, naive outages are refused as now. | Checked: `report naive.csv --assume-tz Europe/Oslo --known-outage "2026-01-01 02:00" "2026-01-01 02:00"` is refused with "known outage must be timezone-aware", although the same wall-clock text in the data is accepted. Users convert maintenance times to UTC offsets by hand. | S | No format change: the report already records the outages in UTC. A naive time in a DST gap or overlap follows `--nonexistent` and `--ambiguous` like the data, or is refused. The Python API (`known_outages=`) keeps requiring aware timestamps; only the command line reads them in `--assume-tz`. |
+| P-31 | **Unix epoch timestamps** (`report --timestamp-unit s`, also `ms`). Integer or decimal seconds (or milliseconds) since 1970-01-01 UTC are read as UTC timestamps. | Checked: a file with `timestamp` values `1767225600,1767229200` (two hours in 2026) is refused with "could not parse 2 timestamp(s) as ISO 8601". Exports from APIs and loggers often use epoch seconds. | S–M | No format change: timestamps become UTC as ISO input does. Opt-in, so a column of numbers is never taken as epoch time by guess; `--assume-tz` is refused with it (epoch time has no local zone). Whether `normalize_timestamps` should gain the same option, a public API addition, is a separate choice; the command line can convert before calling it. |
+| P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below; pairs naturally with P-30. | A long maintenance log makes a long command. | S | No format change. |
+| P-13 | *Carried over, not approved.* `origin="epoch"`. | A leading off-grid timestamp shifts the grid. | S | Fits schema 2. |
+| P-18 | *Carried over, not approved.* Compare full gap lists from `--gaps-csv`. | Only listed gaps are compared. | S–M | No report change. |
+| P-28, P-12, P-20 | *Carried over, not approved.* Conflicting duplicates; DST policy for calendar grids; single-row spikes. | Known limitations. | M, S–M, M | Report schema 3; only together. |
+
+Considered and not proposed:
+- **A UTF-8 byte-order mark** (as Excel writes): already handled; checked on
+  2026-10-22, such a file reads like any UTF-8 file.
+- **Detecting the encoding:** a guess can be wrong without an error; P-29
+  keeps it explicit.
+- **Date and time in separate columns** (`date,time,kwh`): common, but
+  joining two columns raises format questions (`24:00`, missing parts); the
+  caller can join them first. Can be proposed if asked for.
+
+**Suggested order if approved:** P-29 first (the most common refusal,
+small), then P-30, then P-22 with it, then P-31. P-13 and P-18 as before;
+P-28 with P-12 and P-20 only as one schema-3 change. Each needs its own
+approval.
 
 ### P-26 to P-28: candidates for 0.7.0 (OSS-160)
 
@@ -1756,7 +1792,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       *Release build* workflow passed and created the draft release, which
       the owner published on 2026-10-22.
 
-### OSS-165: open 0.8.0 development — this change
+### OSS-165: open 0.8.0 development — merged in [#137](https://github.com/PederFalkman/opensource/pull/137)
 
 - [x] `__version__` is `0.8.0.dev0`; new changelog entries go under
       `[Unreleased]`, and the released sections are not edited.
@@ -1765,6 +1801,15 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       is not release-ready, with the licence checks and `--guard` passing.
 - [x] Status lines: 0.7.0 is the GitHub release, `main` is 0.8.0
       development.
+
+### OSS-166: 0.8.0 proposals — this change
+
+- [x] P-29 to P-31 written up for the owner to approve one by one, ranked
+      with P-12, P-13, P-18, P-20, P-22 and P-28 carried over; none of the
+      new items changes the report format. Each motivating behaviour was
+      checked on 2026-10-22 on `5f9480c` (a Latin-1 file refused, a naive
+      `--known-outage` refused despite `--assume-tz`, epoch-second
+      timestamps refused). Docs only; nothing is authorized.
 
 ## Explicitly not planned
 
