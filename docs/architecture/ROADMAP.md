@@ -10,10 +10,10 @@ Questions and evidence for each: `docs/governance/RELEASE_DECISIONS.md`,
 section "0.6.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), and 0.3.0 to 0.5.0
 (all 2026-10-21) were released as GitHub releases only; their records are
 kept there. Engineering for 0.6.0 is complete (OSS-155 and OSS-156, P-24
-and P-25), and the owner recorded the answers below on 2026-10-22; the release PR
-is OSS-158. The other candidates (P-12,
-P-13, P-18, P-20 and P-22) are under "Proposed" below (OSS-154) and not
-approved.
+and P-25), and the owner recorded the answers below on 2026-10-22; 0.6.0 was
+released the same day (OSS-158, #130). No 0.7.0 work is approved yet; the
+remaining candidates (P-12, P-13, P-18, P-20 and P-22) are under
+"Proposed" below (OSS-154) and not approved.
 
 - [x] **G1 for 0.6.0.** Counsel confirmed that the code added since 0.5.0
       (`34cf9c7`) is covered (recorded 2026-10-22).
@@ -1609,7 +1609,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       the upload guard stays.
 - [x] "Open decisions" above lists the 0.6.0 questions.
 
-### OSS-158: release energydata-kit 0.6.0 — this change
+### OSS-158: release energydata-kit 0.6.0 — merged in [#130](https://github.com/PederFalkman/opensource/pull/130)
 
 - [x] Decisions recorded by the owner on 2026-10-22: G1 counsel confirmed, G3
       signed off, G4 the 0.5.0 position stands, D6 GitHub release only,
@@ -1620,10 +1620,27 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       expects nothing to fail (`--strict` exits 0, `--guard` passes), and the
       status lines in both READMEs, `SECURITY.md`, `CONTRIBUTING.md` and
       `RELEASE_GATES.md` name 0.6.0 as a GitHub release.
-- [ ] After merge (owner): tag the merge commit `energydata-kit-v0.6.0`,
-      check the digests and publish the draft GitHub release the *Release
-      build* workflow creates. Then the next development cycle restores the
-      upload guard.
+- [x] After merge (owner): tagged `energydata-kit-v0.6.0` on `ba19231`; the
+      *Release build* workflow passed (its first run with
+      `actions/download-artifact` v8.0.2, #128) and created the draft release,
+      which the owner published on 2026-10-22.
+
+### OSS-159: open 0.7.0 development; pandas 3.1 compatibility — this change
+
+- [x] `__version__` is `0.7.0.dev0`; new changelog entries go under
+      `[Unreleased]`, and the released sections are not edited.
+- [x] The `Private :: Do Not Upload` guard is back: D6 approved 0.6.0 only,
+      as a GitHub release. The readiness test again expects a package that
+      is not release-ready, with the licence checks and `--guard` passing.
+- [x] Status lines: 0.6.0 is the GitHub release, `main` is 0.7.0
+      development.
+- [x] pandas 3.1.0 (released 2026-10-22) deprecates `DatetimeIndex.values`
+      on a timezone-aware index. `utc_ns` used it, so CI on `main` failed
+      after #130 (the suite turns warnings into errors) while it passed on
+      the PR the hour before. `utc_ns` now calls `tz_convert(None)` before
+      reading the values: the same int64 values, still without a copy, on
+      pandas 2.1.4 to 3.1.0. No other
+      warning appears with pandas 3.1.
 
 ## Explicitly not planned
 
