@@ -5,6 +5,8 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-22
+
 Two changes approved as P-24 and P-25: `compare` now treats gaps inside
 known outages the way `report` does, and `report` reads several input
 files (such as monthly exports) as one table. The report and comparison
