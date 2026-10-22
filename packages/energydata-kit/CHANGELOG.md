@@ -13,6 +13,14 @@ versioning: [SemVer](https://semver.org/).
   file the flags CSV is unchanged, and the JSON report is unchanged in
   both cases. A value or timestamp column already named `source` is
   refused when several files are combined with `--flags-csv`.
+- `report --freq inferred` uses the most common step between timestamps
+  (the report's `inferred_resolution`) as the expected step, so gaps and
+  completeness are checked on a first look at an unknown file (P-27). The
+  report records it under `freq` exactly as if it had been passed; the
+  text and Markdown summaries add a line saying the step was inferred.
+  It is opt-in: without `--freq` nothing is guessed, but the summary now
+  names the most common step. Refused with `--tz` (a fixed step only) and
+  for fewer than two distinct timestamps.
 
 ### Fixed
 

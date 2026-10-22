@@ -429,6 +429,8 @@ energydata-kit report meter.csv --freq 15min --fail-on-issues  # exit status: 1
 # --fail-on chooses which issues fail: the gaps here, but not the infinite value
 energydata-kit report meter.csv --freq 15min --fail-on STALE_VALUE --fail-on JUMP
 energydata-kit report meter.csv --freq 15min --fail-on gaps  # exit status: 1
+# For a first look at an unknown file, --freq inferred uses the most common step:
+energydata-kit report meter.csv --freq inferred -o inferred.json
 ```
 
 ```python
@@ -436,6 +438,9 @@ from pathlib import Path
 
 report = json.loads(Path("report.json").read_text())
 assert report["n_missing_intervals"] == 2 and report["flag_counts"]["NON_FINITE"] == 1
+inferred = json.loads(Path("inferred.json").read_text())
+assert inferred["parameters"]["freq"] == "P0DT0H15M0S"  # recorded as if --freq 15min were given
+assert inferred["n_missing_intervals"] == 2
 
 # --gaps-csv lists every gap even when the report lists none (--max-listed 0):
 capped = json.loads(Path("capped.json").read_text())
