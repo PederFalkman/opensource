@@ -11,9 +11,10 @@ section "0.7.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 (all 2026-10-21) and 0.6.0 (2026-10-22) were released as GitHub releases
 only; their records are kept there. Engineering for 0.7.0 is complete
 (OSS-161 and OSS-162, P-26 and P-27), and the owner recorded the answers
-below on 2026-10-22; the release PR is OSS-164. The
-other candidates (P-28, and P-12, P-13, P-18, P-20 and P-22 carried over)
-are under "Proposed" below (OSS-160) and not approved.
+below on 2026-10-22; 0.7.0 was released the same day (OSS-164, #136). No
+0.8.0 work is approved yet; the remaining candidates (P-28, and P-12,
+P-13, P-18, P-20 and P-22 carried over) are under "Proposed" below
+(OSS-160) and not approved.
 
 - [x] **G1 for 0.7.0.** Counsel confirmed that the code added since 0.6.0
       (`ba19231`) is covered (recorded 2026-10-22).
@@ -1740,7 +1741,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       upload guard stays.
 - [x] "Open decisions" above lists the 0.7.0 questions.
 
-### OSS-164: release energydata-kit 0.7.0 — this change
+### OSS-164: release energydata-kit 0.7.0 — merged in [#136](https://github.com/PederFalkman/opensource/pull/136)
 
 - [x] Decisions recorded by the owner on 2026-10-22: G1 counsel confirmed, G3
       signed off, G4 the 0.6.0 position stands, D6 GitHub release only,
@@ -1751,10 +1752,19 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       expects nothing to fail (`--strict` exits 0, `--guard` passes), and the
       status lines in both READMEs, `SECURITY.md`, `CONTRIBUTING.md` and
       `RELEASE_GATES.md` name 0.7.0 as a GitHub release.
-- [ ] After merge (owner): tag the merge commit `energydata-kit-v0.7.0`,
-      check the digests and publish the draft GitHub release the *Release
-      build* workflow creates. Then the next development cycle restores the
-      upload guard.
+- [x] After merge (owner): tagged `energydata-kit-v0.7.0` on `230483c`; the
+      *Release build* workflow passed and created the draft release, which
+      the owner published on 2026-10-22.
+
+### OSS-165: open 0.8.0 development — this change
+
+- [x] `__version__` is `0.8.0.dev0`; new changelog entries go under
+      `[Unreleased]`, and the released sections are not edited.
+- [x] The `Private :: Do Not Upload` guard is back: D6 approved 0.7.0 only,
+      as a GitHub release. The readiness test again expects a package that
+      is not release-ready, with the licence checks and `--guard` passing.
+- [x] Status lines: 0.7.0 is the GitHub release, `main` is 0.8.0
+      development.
 
 ## Explicitly not planned
 

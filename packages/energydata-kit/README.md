@@ -4,8 +4,8 @@ Framework-independent quality checks for energy time-series data.
 
 > **Status: 0.7.0, released as a GitHub release** (wheel and sdist attached
 > to the tag `energydata-kit-v0.7.0`); not published to PyPI or any other
-> index. Licensed Apache-2.0 (`LICENSE`). What changed since 0.6.0 is in
-> the changelog under `[0.7.0]`.
+> index. Licensed Apache-2.0 (`LICENSE`). This branch is 0.8.0
+> development; changes since 0.7.0 are under `[Unreleased]` in the changelog.
 
 energydata-kit is a small layer on top of [pandas](https://pandas.pydata.org)
 and [Pint](https://pint.readthedocs.io). It adds the parts those libraries do not
