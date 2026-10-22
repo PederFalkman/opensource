@@ -1,11 +1,27 @@
 # Release decisions for energydata-kit
 
-## 0.7.0 (in preparation)
+## 0.7.0 (prepared 2026-10-22, OSS-163)
 
-**Status:** open. Engineering for 0.7.0 is complete (OSS-161 and OSS-162)
-and nothing is decided here. `main` stays at `0.7.0.dev0` with the upload
-guard until the owner answers the questions below. The 0.6.0 to 0.1.0
-records follow and are unchanged.
+**Status:** decided 2026-10-22. The repository owner recorded the answers for G1,
+G3, G4 and D6 on 2026-10-22 (below; the written confirmations are held by the
+owner and not copied here). The release PR (OSS-164) sets the version to
+`0.7.0`, dates the changelog and removes the upload guard together with the
+D6 line for 0.7.0 under D6 further down. The 0.6.0 to 0.1.0 records follow
+and are unchanged.
+
+**Decisions for 0.7.0, as recorded by the repository owner on 2026-10-22:**
+
+- **G1 Ownership:** counsel confirmed that the publishing entity owns the
+  code added since 0.6.0 and can license it.
+- **G3 IP boundary review:** signed off by the technical lead.
+- **G4 Third-party licences:** the 0.6.0 position is enough; no dependency
+  changed.
+- **D6 Publication (G7):** a GitHub release only, like 0.1.0 to 0.6.0; no
+  package index.
+
+**Since the preparation** (`2f29520` to the release PR's base `30e19d6`):
+only OSS-163 (#135, docs). Nothing touched the package code or
+`pyproject.toml`.
 
 **What 0.7.0 contains** (P-26 and P-27 approved by the owner on
 2026-10-22; proposals in `docs/architecture/ROADMAP.md`, OSS-160):
@@ -31,13 +47,13 @@ unchanged.
 
 | Gate | State for 0.7.0 | Open question |
 |---|---|---|
-| G1 Ownership | Counsel confirmed ownership for 0.1.0 (D2) and for the code added up to 0.6.0. Commits since the 0.6.0 release commit (`ba19231`), on `main` at `2f29520`: 8, of which 4 by the AI coding assistant in the owner's sessions (all with changes) and 4 by the owner (pull-request merges #131 to #134); no external contributor | Does counsel's confirmation cover the code added since 0.6.0, or should counsel confirm again? |
+| G1 Ownership | **Passed 2026-10-22**: counsel confirmed (held by the owner). Counsel confirmed ownership for 0.1.0 (D2) and for the code added up to 0.6.0. Commits since the 0.6.0 release commit (`ba19231`), on `main` at `2f29520`: 8, of which 4 by the AI coding assistant in the owner's sessions (all with changes) and 4 by the owner (pull-request merges #131 to #134); no external contributor | — |
 | G2 Licence | Passed: Apache-2.0, unchanged | — |
-| G3 IP boundary review | The `IP boundary` CI job passed on every 0.7.0 PR. P-26 labels flagged rows with their input file; P-27 reuses the existing most-common-step count as an opt-in grid; the pandas 3.1 fix changes how timestamps are read, not what they are | Will the technical lead review and sign off the diff from 0.6.0? |
-| G4 Third-party licences | Unchanged since 0.6.0 (no dependency change) | Is the 0.6.0 position enough? |
+| G3 IP boundary review | **Passed 2026-10-22**: signed off by the technical lead (held by the owner). The `IP boundary` CI job passed on every 0.7.0 PR. P-26 labels flagged rows with their input file; P-27 reuses the existing most-common-step count as an opt-in grid; the pandas 3.1 fix changes how timestamps are read, not what they are | — |
+| G4 Third-party licences | **Passed 2026-10-22**: the 0.6.0 position stands; unchanged since 0.6.0 (no dependency change) | — |
 | G5 CI green | Green on every 0.7.0 PR and on `main` after #131; re-checked on the release commit | — |
 | G6 Documentation honest | README, changelog and guide updated with each step; the guide's several-files and `--freq inferred` examples run in the test suite | Review on the release commit |
-| G7 Publication (D6) | D6 approved 0.6.0 only; it does not carry over | GitHub release only, like 0.1.0 to 0.6.0, or also a package index? |
+| G7 Publication (D6) | **Passed 2026-10-22**: GitHub release only; approval line under D6 below | — |
 
 **For the G3 reviewer** (the technical lead). The package code to review
 is the diff from the 0.6.0 release commit to the 0.7.0 release commit:
@@ -65,7 +81,7 @@ owner's D6 line naming `energydata-kit 0.7.0`; only with that line does it
 remove the upload guard. It passes `check_release_readiness.py --strict`.
 The owner then tags the merged commit `energydata-kit-v0.7.0`, the
 *Release build* workflow prepares the draft GitHub release, and the owner
-publishes it. None of this is done before the owner's decisions.
+publishes it. The release PR is OSS-164.
 
 ## 0.6.0 (released 2026-10-22)
 
@@ -708,6 +724,8 @@ Not a release gate, but it protects the release commit.
 **D6 approved:** 2026-10-21, energydata-kit 0.5.0 as a GitHub release only (built wheel and sdist attached to the tagged release; no package index), recorded by the repository owner.
 
 **D6 approved:** 2026-10-22, energydata-kit 0.6.0 as a GitHub release only (built wheel and sdist attached to the tagged release; no package index), recorded by the repository owner.
+
+**D6 approved:** 2026-10-22, energydata-kit 0.7.0 as a GitHub release only (built wheel and sdist attached to the tagged release; no package index), recorded by the repository owner.
 
 Nothing is uploaded to PyPI or any other index; publishing there would need
 a new D6 decision and trusted publishing set up in a separate, reviewed
