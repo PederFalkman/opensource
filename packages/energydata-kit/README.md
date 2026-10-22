@@ -117,6 +117,11 @@ same delimiter and decimal format as the input, with a `quality_flag` column, pl
 `--gaps-csv gaps.csv` writes every gap, also beyond `--max-listed`, as
 `column,start,end,missing_count`, on the same grid as the report.
 Calendar steps work as in the library: `--freq D --tz Europe/Stockholm`.
+Without a step, gaps and completeness are not checked, and the summary
+names the most common step between timestamps; `--freq inferred` uses it
+as if it had been passed (the text and Markdown summaries say it was
+inferred). It is never used unless asked for, and a file that is mostly
+gaps or mixes resolutions can give a misleading step.
 Several files, such as monthly exports, are read as one table:
 `energydata-kit report jan.csv feb.csv mar.csv` (same columns, all CSV or
 all Parquet; a timestamp in two files counts as a duplicate). Then

@@ -11,6 +11,7 @@ import pytest
 import energydata_kit as ek
 from energydata_kit import __version__, cli
 from energydata_kit.cli import main
+from energydata_kit.intervals import to_step
 
 CLEAN = "timestamp,kwh\n" + "".join(
     f"2024-01-01T{h:02d}:{m:02d}:00Z,{h + m / 60:.2f}\n" for h in range(2) for m in (0, 15, 30, 45)
@@ -375,10 +376,63 @@ def test_text_summary_columns_and_no_step(tmp_path):
     assert "  kwh: 4 rows, 2026-01-01T00:00:00+00:00 to 2026-01-01T01:15:00+00:00" in lines
     assert "    flagged rows: 0" in lines  # pv
     out = run("report", path, "--value-col", "kwh", "--format", "text")[1]
+    # The summary names the step the report infers (P-27), so the next run can use it.
     assert (
-        "  completeness: not checked (no step: pass --freq, or a resolution with --unit or --schema)"
-        in out.splitlines()
+        "  completeness: not checked (no step: pass --freq, or a resolution with --unit or --schema; "
+        "the most common step between timestamps is 15min, used by --freq inferred)" in out.splitlines()
     )
+
+
+def test_freq_inferred(tmp_path):
+    # P-27: --freq inferred uses the most common step as if it were passed, and says so.
+    path = str(write(tmp_path, GAPPY))
+    given = run("report", path, "--value-col", "kwh", "--freq", "15min")
+    inferred = run("report", path, "--value-col", "kwh", "--freq", "inferred")
+    assert inferred == given and inferred[0] == 0  # the same report, byte for byte
+    assert json.loads(inferred[1])["n_missing_intervals"] == 2
+    for fmt, line in [("text", "step: "), ("markdown", "Step: ")]:
+        out = run("report", path, "--value-col", "kwh", "--freq", "inferred", "--format", fmt)[1]
+        assert line + "15min, inferred (the most common step between timestamps)" in out.splitlines()
+        assert line not in run("report", path, "--value-col", "kwh", "--freq", "15min", "--format", fmt)[1]
+    # The flags and gaps files use the inferred grid too.
+    for freq, name in [("15min", "given"), ("inferred", "inferred")]:
+        argv = [
+            "--flags-csv",
+            str(tmp_path / f"{name}.csv"),
+            "--gaps-csv",
+            str(tmp_path / f"{name}-gaps.csv"),
+        ]
+        assert run("report", path, "--value-col", "kwh", "--value-col", "pv", "--freq", freq, *argv)[0] == 0
+    for suffix in [".csv", "-gaps.csv"]:
+        assert (tmp_path / f"given{suffix}").read_text() == (tmp_path / f"inferred{suffix}").read_text()
+    one = str(write(tmp_path, "timestamp,kwh\n2026-01-01T00:00:00Z,1\n", "one.csv"))
+    for argv, message in [
+        ([one, "--freq", "inferred"], "--freq inferred needs at least two distinct timestamps"),
+        (
+            [path, "--value-col", "kwh", "--freq", "inferred", "--tz", "Europe/Oslo"],
+            "cannot be used with --tz",
+        ),
+    ]:
+        code, out, err = run("report", *argv)
+        assert code == 2 and out == "" and message in err, (argv, err)
+
+
+@pytest.mark.parametrize(
+    ("ns", "text"),
+    [
+        (3_600_000_000_000, "1h"),
+        (5_400_000_000_000, "90min"),
+        (86_400_000_000_000, "24h"),
+        (30_000_000_000, "30s"),
+        (100_000_000, "100ms"),
+        (5_000, "5us"),
+        (7, "7ns"),
+    ],
+)
+def test_step_text(ns, text):
+    step = pd.Timedelta(ns, unit="ns")
+    assert cli._step_text(step) == text
+    assert to_step(text) == step  # a value --freq accepts, for the same step
 
 
 def test_text_summary_says_why_completeness_is_missing(tmp_path):

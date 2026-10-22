@@ -37,7 +37,7 @@ from energydata_kit.intervals import find_missing_intervals, to_step
 from energydata_kit.metadata import Aggregation, IntervalLabel, MeasurementMetadata, _grid_from_metadata
 from energydata_kit.report import QualityReport, assess_quality
 from energydata_kit.table_schema import NAMESPACE, from_table_schema
-from energydata_kit.timestamps import TimestampError, normalize_timestamps
+from energydata_kit.timestamps import TimestampError, infer_resolution, normalize_timestamps
 
 __all__ = ["build_parser", "main"]
 
@@ -143,7 +143,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     grid = rep.add_argument_group("grid")
-    grid.add_argument("--freq", help="expected step, e.g. 15min, 1h; with --tz also D, W-MON, MS")
+    grid.add_argument(
+        "--freq",
+        help="expected step, e.g. 15min, 1h; with --tz also D, W-MON, MS; "
+        "'inferred' uses the most common step between timestamps",
+    )
     grid.add_argument("--tz", help="treat --freq as a local-calendar step in this zone")
     grid.add_argument("--origin", help="timezone-aware timestamp the grid runs through")
 
@@ -588,6 +592,8 @@ def _write_gaps(
 def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
     if args.tz and not args.freq:
         raise CliError("--tz needs --freq")
+    if args.tz and args.freq == "inferred":
+        raise CliError("--freq inferred is a fixed step; it cannot be used with --tz")
     if args.insert_missing and not args.flags_csv:
         raise CliError("--insert-missing only affects --flags-csv")
     if args.schema and args.unit is not None:
@@ -610,6 +616,14 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
     args.jump_max_rate = _rate_option(args.jump_max_rate)
 
     frame = _read_frame(args, stdin)
+    args.freq_inferred = args.freq == "inferred"
+    if args.freq_inferred:
+        # Opt-in (P-27): the step the report records as inferred_resolution becomes the grid, as if
+        # it had been passed; the summary says it was inferred.
+        step = infer_resolution(pd.DatetimeIndex(frame.index))
+        if step is None:
+            raise CliError("--freq inferred needs at least two distinct timestamps")
+        args.freq = _step_text(step)
     if args.flags_csv and args.sources is not None and "source" in [args.timestamp_col, *frame.columns]:
         raise CliError(
             "with several input files --flags-csv adds a 'source' column; a column is already named so"
@@ -682,7 +696,8 @@ def _write_report(
     if args.format == "json":
         text = report.to_json() + "\n"
     else:
-        text = _summary(report.to_dict(), markdown=args.format == "markdown")
+        inferred = args.freq if args.freq_inferred else None
+        text = _summary(report.to_dict(), markdown=args.format == "markdown", inferred_step=inferred)
     if args.output:
         Path(args.output).write_text(text, encoding="utf-8", newline="\n")  # same bytes on Windows
     else:
@@ -703,6 +718,12 @@ def _series_facts(data: dict[str, Any]) -> tuple[str, _Facts]:
             why = "not checked (no rows)"
         elif data["n_expected_intervals"] is None:
             why = "not checked (no step: pass --freq, or a resolution with --unit or --schema)"
+            if data["inferred_resolution"] is not None:
+                common = _step_text(pd.Timedelta(data["inferred_resolution"]))
+                why = (
+                    why[:-1]
+                    + f"; the most common step between timestamps is {common}, used by --freq inferred)"
+                )
         else:
             why = "undefined (no expected interval within the data's time span)"
         facts.append(("completeness", why))
@@ -760,8 +781,25 @@ def _md_facts(facts: _Facts) -> list[str]:
     return [f"- **{label}:** {text}" if label else f"- {text}" for label, text in facts]
 
 
-def _summary(data: dict[str, Any], markdown: bool = False) -> str:
-    """A short human-readable summary of a report dict (``--format text`` or ``markdown``)."""
+def _step_text(step: pd.Timedelta) -> str:
+    """A fixed step as a short --freq value in the largest whole unit, e.g. ``1h``, ``90min``."""
+    ns = step.value
+    for unit, size in (("h", 3_600_000_000_000), ("min", 60_000_000_000), ("s", 10**9), ("ms", 10**6)):
+        if ns % size == 0:
+            return f"{ns // size}{unit}"
+    return f"{ns // 1000}us" if ns % 1000 == 0 else f"{ns}ns"
+
+
+def _summary(data: dict[str, Any], markdown: bool = False, inferred_step: str | None = None) -> str:
+    """A short human-readable summary of a report dict (``--format text`` or ``markdown``).
+
+    ``inferred_step``: the step ``--freq inferred`` chose, named so it is never taken as given.
+    """
+    inferred = (
+        None
+        if inferred_step is None
+        else f"{inferred_step}, inferred (the most common step between timestamps)"
+    )
     single = "columns" not in data
     series = (
         [(data["series_name"] or "series", data)]
@@ -775,6 +813,8 @@ def _summary(data: dict[str, Any], markdown: bool = False) -> str:
         for name, part in series:
             head, facts = _series_facts(part)
             lines += [""] + ([] if single else [f"## {_md(name)}", ""]) + [head, ""] + _md_facts(facts)
+        if inferred:
+            lines += ["", f"Step: {inferred}"]
         lines += ["", f"Fingerprint `{data['fingerprint'][:16]}` (energydata-kit {data['package_version']})"]
         return "\n".join(lines) + "\n"
     indent = "" if single else "  "
@@ -783,6 +823,8 @@ def _summary(data: dict[str, Any], markdown: bool = False) -> str:
         head, facts = _series_facts(part)
         lines.append(f"{indent}{_one_line(name)}: {head}")
         lines += [f"{indent}  {label}: {text}" if label else f"{indent}  {text}" for label, text in facts]
+    if inferred:
+        lines.append(f"step: {inferred}")
     lines.append(f"fingerprint: {footer}")
     return "\n".join(lines) + "\n"
 
