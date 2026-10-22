@@ -12,8 +12,8 @@ section "0.6.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), and 0.3.0 to 0.5.0
 kept there. Engineering for 0.6.0 is complete (OSS-155 and OSS-156, P-24
 and P-25), and the owner recorded the answers below on 2026-10-22; 0.6.0 was
 released the same day (OSS-158, #130). No 0.7.0 work is approved yet; the
-remaining candidates (P-12, P-13, P-18, P-20 and P-22) are under
-"Proposed" below (OSS-154) and not approved.
+candidates (P-26 to P-28, and P-12, P-13, P-18, P-20 and P-22 carried over)
+are under "Proposed" below (OSS-160) and not approved.
 
 - [x] **G1 for 0.6.0.** Counsel confirmed that the code added since 0.5.0
       (`34cf9c7`) is covered (recorded 2026-10-22).
@@ -129,6 +129,41 @@ and anything that downloads data.
 
 **Suggested order if approved:** P-3 and P-4 first (small, no schema change),
 then P-2 with P-6 as one schema-2 change, then P-5 if users ask for it.
+
+### P-26 to P-28: candidates for 0.7.0 (OSS-160)
+
+*Prepared by the assistant in OSS-160 for the owner to approve or reject one
+by one. Nothing here is authorized; none of it starts without approval.*
+Each item is generic data-quality or command-line tooling as defined in
+`IP_BOUNDARY.md` ("What *is* in scope"), ships no domain thresholds and
+touches nothing on the out-of-scope list. P-22, P-13, P-18, P-12 and P-20
+from earlier rounds were not approved and stay open; they are ranked again
+below. Each new motivating behaviour was checked on 2026-10-22 on `main`
+at `17314b6` (0.7.0.dev0).
+
+| ID | Candidate | Why | Effort | Risk and cost |
+|---|---|---|---|---|
+| P-26 | **Which file each flagged row came from.** When `report` reads several files (P-25), `--flags-csv` gains a `source` column with the input file name of each row. With one file the CSV is unchanged. | P-25 was motivated by users joining monthly files by hand and losing which file a row came from, but it loses that too: checked with `report jan.csv feb.csv --flags-csv f.csv`, the file has only `timestamp,kwh,quality_flag`. A flagged row then has to be searched for in every month's file. | S | No report-format change: the JSON report is unchanged; only the flags CSV of a several-file run gets a column, documented in the changelog. `--gaps-csv` stays as it is, because a gap can span two files. Names are written as given on the command line. |
+| P-27 | **Use the inferred step on request** (`--freq inferred`). The report already records `inferred_resolution` (the most common step between timestamps); this option makes it the expected step, so gaps and completeness are checked. The text and Markdown summaries also name the inferred step when no step is given. | Checked: without `--freq`, the summary says "completeness: not checked (no step: pass --freq …)" and does not show the step the JSON already infers (`inferred_resolution: P0DT1H0M0S` for hourly data); `--freq inferred` is refused. A first look at an unknown file takes two runs. | S | No format change: the inferred step is recorded under `freq` as an explicit one would be. It stays opt-in: the report's rule that "the step is never guessed silently" holds, and the summary says the step was inferred. Inference picks the most common step, so a file that is mostly gaps or mixed resolutions can give a misleading step; documented. Fixed steps only; `--tz` with `inferred` is refused. |
+| P-28 | **Duplicates that disagree.** Count duplicate timestamps whose values differ separately from exact repeats, e.g. `n_conflicting_duplicates` next to `n_duplicate_timestamps`. | Checked: two overlapping files that repeat 02:00 with the same value and two that repeat it with 3 and 9 give identical reports (1 duplicate timestamp, `DUPLICATE_TIMESTAMP` 2). A re-issued, corrected month and a harmless overlap look the same. More likely now that P-25 reads several files. | M | A new report field, so report schema 3 and a `compare_reports` reader for 1, 2 and 3; worth doing only together with P-12 and P-20. Must define "differ" for missing values (NaN against NaN is not a conflict) and keep the `DUPLICATE_TIMESTAMP` flag as it is. |
+| P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below. | A long maintenance log makes a long command. | S | No format change. |
+| P-13 | *Carried over, not approved.* `origin="epoch"`. | A leading off-grid timestamp shifts the grid. | S | Fits schema 2. |
+| P-18 | *Carried over, not approved.* Compare full gap lists from `--gaps-csv`. | Only listed gaps are compared. | S–M | No report change. |
+| P-12, P-20 | *Carried over, not approved.* DST policy for calendar grids; single-row spikes. | Known limitations. | S–M, M | Report schema 3; together with P-28 if it is approved. |
+
+Considered and not proposed:
+- **Compressed input** (`report data.csv.gz`): already works; checked on
+  2026-10-22, pandas reads it by its extension. A line in the README is
+  enough and can ride with any change.
+- **Sorting files by time:** `report feb.csv jan.csv` already gives the same
+  result as `report jan.csv feb.csv`, because timestamps are checked in
+  time order.
+- **Inferring the step by default:** it would change reports that have no
+  step today and break "never guessed silently"; P-27 keeps it opt-in.
+
+**Suggested order if approved:** P-26 first (it completes P-25, and is
+small), then P-27, then P-22. P-13 and P-18 as before; P-28 only with P-12
+and P-20, as one schema-3 change. Each needs its own approval.
 
 ### P-24 and P-25: candidates for 0.6.0 (OSS-154)
 
@@ -1625,7 +1660,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `actions/download-artifact` v8.0.2, #128) and created the draft release,
       which the owner published on 2026-10-22.
 
-### OSS-159: open 0.7.0 development; pandas 3.1 compatibility — this change
+### OSS-159: open 0.7.0 development; pandas 3.1 compatibility — merged in [#131](https://github.com/PederFalkman/opensource/pull/131)
 
 - [x] `__version__` is `0.7.0.dev0`; new changelog entries go under
       `[Unreleased]`, and the released sections are not edited.
@@ -1641,6 +1676,16 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       reading the values: the same int64 values, still without a copy, on
       pandas 2.1.4 to 3.1.0. No other
       warning appears with pandas 3.1.
+
+### OSS-160: 0.7.0 proposals — this change
+
+- [x] P-26 to P-28 written up for the owner to approve one by one, ranked
+      with P-12, P-13, P-18, P-20 and P-22 carried over. P-26 and P-27
+      change no report format; P-28 needs schema 3. Each motivating
+      behaviour was checked on 2026-10-22 on `17314b6` (a several-file
+      flags CSV without the file; the inferred step neither shown nor
+      usable; agreeing and conflicting duplicates reported alike). Docs
+      only; nothing is authorized.
 
 ## Explicitly not planned
 
