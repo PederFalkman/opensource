@@ -102,8 +102,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     rep.add_argument(
         "csv",
+        nargs="+",
+        metavar="FILE",
         help="input CSV file, or '-' for standard input; a .parquet, .parq or .pq file is read as "
-        "Parquet (needs the [parquet] extra)",
+        "Parquet (needs the [parquet] extra); several files (all CSV or all Parquet, with the same "
+        "columns) are read in order as one table",
     )
 
     csv_fmt = rep.add_argument_group("CSV format")
@@ -286,22 +289,26 @@ def _delimiter(args: argparse.Namespace) -> str:
 _PARQUET_SUFFIXES = (".parquet", ".parq", ".pq")
 
 
-def _read_parquet(args: argparse.Namespace) -> pd.DataFrame:
+def _is_parquet(path: str) -> bool:
+    return path != "-" and path.lower().endswith(_PARQUET_SUFFIXES)
+
+
+def _read_parquet(args: argparse.Namespace, path: str) -> pd.DataFrame:
     """Read a Parquet input file (optional [parquet] extra: pyarrow)."""
     if args.delimiter != "," or args.decimal != ".":
         raise CliError("--delimiter and --decimal apply to CSV files only, not Parquet")
-    if Path(args.csv).is_dir():  # pandas would read it as a partitioned dataset
-        raise CliError(f"{args.csv} is a directory; pass a single Parquet file")
+    if Path(path).is_dir():  # pandas would read it as a partitioned dataset
+        raise CliError(f"{path} is a directory; pass a single Parquet file")
     try:
-        frame = pd.read_parquet(args.csv)
+        frame = pd.read_parquet(path)
     except FileNotFoundError as exc:
-        raise CliError(f"file not found: {args.csv}") from exc
+        raise CliError(f"file not found: {path}") from exc
     except ImportError as exc:  # pyarrow missing, or installed but unusable (e.g. NumPy too old)
         raise CliError(
             f"reading Parquet needs pyarrow: python -m pip install 'energydata-kit[parquet]' ({exc})"
         ) from exc
     except (OSError, ValueError) as exc:  # pyarrow's errors name a '<Buffer>', not the file
-        raise CliError(f"could not read Parquet file {args.csv}: {exc}") from exc
+        raise CliError(f"could not read Parquet file {path}: {exc}") from exc
     # pandas writes a named index (often the timestamps) into the file and restores it as
     # the index; make it a column again, as in the CSV of the same data.
     names = list(frame.index.names)
@@ -315,21 +322,40 @@ def _read_parquet(args: argparse.Namespace) -> pd.DataFrame:
     return frame
 
 
+def _read_table(args: argparse.Namespace, path: str, stdin: TextIO) -> pd.DataFrame:
+    if _is_parquet(path):
+        return _read_parquet(args, path)
+    try:
+        return pd.read_csv(
+            stdin if path == "-" else path,
+            sep=_delimiter(args),
+            decimal=args.decimal,
+            dtype={args.timestamp_col: str},
+            keep_default_na=True,
+        )
+    except FileNotFoundError as exc:
+        raise CliError(f"file not found: {path}") from exc
+    except (pd.errors.ParserError, pd.errors.EmptyDataError, UnicodeDecodeError) as exc:
+        where = f" {path}" if len(args.csv) > 1 else ""
+        raise CliError(f"could not read CSV{where}: {exc}") from exc
+
+
 def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
-    if args.csv != "-" and args.csv.lower().endswith(_PARQUET_SUFFIXES):
-        frame = _read_parquet(args)
-        sep = ","  # only used for the CSV hints below
-    else:
-        sep = _delimiter(args)
-        source = stdin if args.csv == "-" else args.csv
-        try:
-            frame = pd.read_csv(
-                source, sep=sep, decimal=args.decimal, dtype={args.timestamp_col: str}, keep_default_na=True
+    paths: list[str] = args.csv
+    if len(paths) > 1:
+        # Several files (P-25): read alike and stacked in order, as if they were one file.
+        if "-" in paths:
+            raise CliError("standard input ('-') cannot be combined with other files")
+        if len({_is_parquet(p) for p in paths}) > 1:
+            raise CliError("several input files must be all CSV or all Parquet")
+    tables = [_read_table(args, path, stdin) for path in paths]
+    for path, table in zip(paths[1:], tables[1:], strict=True):
+        if list(table.columns) != list(tables[0].columns):
+            raise CliError(
+                f"{path} has columns {list(table.columns)}; {paths[0]} has {list(tables[0].columns)}"
             )
-        except FileNotFoundError as exc:
-            raise CliError(f"file not found: {args.csv}") from exc
-        except (pd.errors.ParserError, pd.errors.EmptyDataError, UnicodeDecodeError) as exc:
-            raise CliError(f"could not read CSV: {exc}") from exc
+    frame = tables[0] if len(tables) == 1 else pd.concat(tables, ignore_index=True)
+    sep = "," if _is_parquet(paths[0]) else _delimiter(args)  # only used for the CSV hints below
 
     if args.timestamp_col not in frame.columns:
         hint = ""

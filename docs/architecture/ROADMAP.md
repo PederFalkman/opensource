@@ -132,7 +132,7 @@ below.
 | ID | Candidate | Why | Effort | Risk and cost |
 |---|---|---|---|---|
 | P-24 | *Approved by the owner on 2026-10-22, as the default behaviour; done in OSS-155.* **`compare` treats explained gaps like `report` does.** A comparison is "worse" only when unexplained missing intervals rise (outside `--known-outage` periods) or, when both reports record outages, when `completeness_excluding_outages` falls; flagged rows count as before. | Checked on 2026-10-21: one hour missing inside a declared outage makes `report --fail-on-issues` exit 0 (since P-21) but `compare --fail-if-worse` exit 1, calling the data worse. The two commands disagree about the same gap. | S | The comparison's `worse` field keeps its name and type but changes meaning for reports with outages, and `--fail-if-worse` can then exit 0 where it exited 1; documented in the changelog. Reports without outages compare exactly as before. If that is not wanted, the rule can sit behind a `compare --ignore-explained` option instead. |
-| P-25 | *Approved by the owner on 2026-10-22; to be built in OSS-156.* **Several input files in one report** (`report jan.csv feb.csv mar.csv`). The files are read with the same options and stacked in the order given; duplicates across files are detected as within one file. | Meter exports usually come per month; today `report` takes one file (a second is refused as "unrecognized arguments"), so users join files by hand first, which loses which file a row came from. | S–M | No format change: the report covers the combined data, as if it were one file. All files must have the same columns (refused otherwise, exit 2). `--flags-csv` writes one combined file. Reading Parquet and CSV together is out of scope. |
+| P-25 | *Approved by the owner on 2026-10-22; done in OSS-156.* **Several input files in one report** (`report jan.csv feb.csv mar.csv`). The files are read with the same options and stacked in the order given; duplicates across files are detected as within one file. | Meter exports usually come per month; today `report` takes one file (a second is refused as "unrecognized arguments"), so users join files by hand first, which loses which file a row came from. | S–M | No format change: the report covers the combined data, as if it were one file. All files must have the same columns (refused otherwise, exit 2). `--flags-csv` writes one combined file. Reading Parquet and CSV together is out of scope. |
 | P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below. | A long maintenance log makes a long command. | S | No format change. |
 | P-13 | *Carried over, not approved.* `origin="epoch"`. | A leading off-grid timestamp shifts the grid. | S | Fits schema 2. |
 | P-18 | *Carried over, not approved.* Compare full gap lists from `--gaps-csv`. | Only listed gaps are compared. | S–M | No report change. |
@@ -1561,7 +1561,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       each (P-24 first, as proposed: the default behaviour, not opt-in).
       P-12, P-13, P-18, P-20 and P-22 are not approved.
 
-### OSS-155: `compare` treats explained gaps like `report` (P-24) — this change
+### OSS-155: `compare` treats explained gaps like `report` (P-24) — merged in [#126](https://github.com/PederFalkman/opensource/pull/126)
 
 - [x] A series is worse when flagged rows rise, when missing intervals
       outside known outages rise, or when completeness falls (compared
@@ -1573,6 +1573,18 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       the case where `report --fail-on-issues` does. The comparison golden
       files are unchanged. Help text, README, docstring and changelog
       updated.
+
+### OSS-156: several input files in one report (P-25) — this change
+
+- [x] `report FILE...` reads each file with the same options and stacks
+      them in order; duplicates across files are found as within one file,
+      and `--flags-csv` writes one combined file. Files with different
+      columns, CSV mixed with Parquet, and `-` with other files are refused
+      (exit status 2).
+- [x] Tests: two CSV halves give the same report and flags file, byte for
+      byte, as the whole file; the same for two Parquet halves; an
+      overlapping row is a duplicate; each refusal. README, guide
+      (executed) and changelog updated.
 
 ## Explicitly not planned
 

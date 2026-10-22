@@ -5,6 +5,15 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `report` reads several input files as one table, e.g. monthly exports:
+  `energydata-kit report jan.csv feb.csv mar.csv`. The files are read with
+  the same options and stacked in the order given; a timestamp in two files
+  is a duplicate, as within one file, and `--flags-csv` writes one combined
+  file. Refused (exit status 2): files with different columns, CSV mixed
+  with Parquet, and `-` (standard input) with other files. The report
+  format is unchanged.
+
 ### Changed
 - `compare_reports` (and `compare --fail-if-worse`) no longer call a
   comparison worse because of missing intervals inside known outages: a
