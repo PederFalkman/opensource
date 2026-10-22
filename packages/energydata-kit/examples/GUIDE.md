@@ -457,13 +457,16 @@ parts.iloc[48:].to_csv("meter_b.csv", index=False)
 ```
 
 ```bash
-energydata-kit report meter_a.csv meter_b.csv --freq 15min -o halves.json
+energydata-kit report meter_a.csv meter_b.csv --freq 15min -o halves.json --flags-csv halves.csv
 ```
 
 ```python
 halves = json.loads(Path("halves.json").read_text())
 assert halves["fingerprint"] == report["fingerprint"]  # the same data as meter.csv
 assert halves["n_missing_intervals"] == report["n_missing_intervals"]
+# With several files the flags CSV names each row's file, so a flagged row is easy to find:
+sources = pd.read_csv("halves.csv")["source"]
+assert list(sources) == ["meter_a.csv"] * 48 + ["meter_b.csv"] * (len(parts) - 48)
 ```
 
 For several value columns, `--unit COLUMN=UNIT` gives each one its unit,

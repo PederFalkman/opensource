@@ -5,6 +5,15 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- With several input files, `report --flags-csv` ends with a `source`
+  column naming the file each row came from, as given on the command line
+  (P-26). Rows added by `--insert-missing` have an empty source. With one
+  file the flags CSV is unchanged, and the JSON report is unchanged in
+  both cases. A value or timestamp column already named `source` is
+  refused when several files are combined with `--flags-csv`.
+
 ### Fixed
 
 - No `Pandas4Warning` with pandas 3.1. Timestamp handling read the

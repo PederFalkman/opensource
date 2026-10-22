@@ -11,9 +11,10 @@ section "0.6.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), and 0.3.0 to 0.5.0
 (all 2026-10-21) were released as GitHub releases only; their records are
 kept there. Engineering for 0.6.0 is complete (OSS-155 and OSS-156, P-24
 and P-25), and the owner recorded the answers below on 2026-10-22; 0.6.0 was
-released the same day (OSS-158, #130). No 0.7.0 work is approved yet; the
-candidates (P-26 to P-28, and P-12, P-13, P-18, P-20 and P-22 carried over)
-are under "Proposed" below (OSS-160) and not approved.
+released the same day (OSS-158, #130). For 0.7.0 the owner approved P-26
+and P-27 on 2026-10-22 (OSS-161 and OSS-162); P-28, and P-12, P-13, P-18,
+P-20 and P-22 carried over, are under "Proposed" below (OSS-160) and not
+approved.
 
 - [x] **G1 for 0.6.0.** Counsel confirmed that the code added since 0.5.0
       (`34cf9c7`) is covered (recorded 2026-10-22).
@@ -143,8 +144,8 @@ at `17314b6` (0.7.0.dev0).
 
 | ID | Candidate | Why | Effort | Risk and cost |
 |---|---|---|---|---|
-| P-26 | **Which file each flagged row came from.** When `report` reads several files (P-25), `--flags-csv` gains a `source` column with the input file name of each row. With one file the CSV is unchanged. | P-25 was motivated by users joining monthly files by hand and losing which file a row came from, but it loses that too: checked with `report jan.csv feb.csv --flags-csv f.csv`, the file has only `timestamp,kwh,quality_flag`. A flagged row then has to be searched for in every month's file. | S | No report-format change: the JSON report is unchanged; only the flags CSV of a several-file run gets a column, documented in the changelog. `--gaps-csv` stays as it is, because a gap can span two files. Names are written as given on the command line. |
-| P-27 | **Use the inferred step on request** (`--freq inferred`). The report already records `inferred_resolution` (the most common step between timestamps); this option makes it the expected step, so gaps and completeness are checked. The text and Markdown summaries also name the inferred step when no step is given. | Checked: without `--freq`, the summary says "completeness: not checked (no step: pass --freq …)" and does not show the step the JSON already infers (`inferred_resolution: P0DT1H0M0S` for hourly data); `--freq inferred` is refused. A first look at an unknown file takes two runs. | S | No format change: the inferred step is recorded under `freq` as an explicit one would be. It stays opt-in: the report's rule that "the step is never guessed silently" holds, and the summary says the step was inferred. Inference picks the most common step, so a file that is mostly gaps or mixed resolutions can give a misleading step; documented. Fixed steps only; `--tz` with `inferred` is refused. |
+| P-26 | *Approved by the owner on 2026-10-22; done in OSS-161.* **Which file each flagged row came from.** When `report` reads several files (P-25), `--flags-csv` gains a `source` column with the input file name of each row. With one file the CSV is unchanged. | P-25 was motivated by users joining monthly files by hand and losing which file a row came from, but it loses that too: checked with `report jan.csv feb.csv --flags-csv f.csv`, the file has only `timestamp,kwh,quality_flag`. A flagged row then has to be searched for in every month's file. | S | No report-format change: the JSON report is unchanged; only the flags CSV of a several-file run gets a column, documented in the changelog. `--gaps-csv` stays as it is, because a gap can span two files. Names are written as given on the command line. |
+| P-27 | *Approved by the owner on 2026-10-22; OSS-162.* **Use the inferred step on request** (`--freq inferred`). The report already records `inferred_resolution` (the most common step between timestamps); this option makes it the expected step, so gaps and completeness are checked. The text and Markdown summaries also name the inferred step when no step is given. | Checked: without `--freq`, the summary says "completeness: not checked (no step: pass --freq …)" and does not show the step the JSON already infers (`inferred_resolution: P0DT1H0M0S` for hourly data); `--freq inferred` is refused. A first look at an unknown file takes two runs. | S | No format change: the inferred step is recorded under `freq` as an explicit one would be. It stays opt-in: the report's rule that "the step is never guessed silently" holds, and the summary says the step was inferred. Inference picks the most common step, so a file that is mostly gaps or mixed resolutions can give a misleading step; documented. Fixed steps only; `--tz` with `inferred` is refused. |
 | P-28 | **Duplicates that disagree.** Count duplicate timestamps whose values differ separately from exact repeats, e.g. `n_conflicting_duplicates` next to `n_duplicate_timestamps`. | Checked: two overlapping files that repeat 02:00 with the same value and two that repeat it with 3 and 9 give identical reports (1 duplicate timestamp, `DUPLICATE_TIMESTAMP` 2). A re-issued, corrected month and a harmless overlap look the same. More likely now that P-25 reads several files. | M | A new report field, so report schema 3 and a `compare_reports` reader for 1, 2 and 3; worth doing only together with P-12 and P-20. Must define "differ" for missing values (NaN against NaN is not a conflict) and keep the `DUPLICATE_TIMESTAMP` flag as it is. |
 | P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below. | A long maintenance log makes a long command. | S | No format change. |
 | P-13 | *Carried over, not approved.* `origin="epoch"`. | A leading off-grid timestamp shifts the grid. | S | Fits schema 2. |
@@ -1677,7 +1678,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       pandas 2.1.4 to 3.1.0. No other
       warning appears with pandas 3.1.
 
-### OSS-160: 0.7.0 proposals — this change
+### OSS-160: 0.7.0 proposals — merged in [#132](https://github.com/PederFalkman/opensource/pull/132)
 
 - [x] P-26 to P-28 written up for the owner to approve one by one, ranked
       with P-12, P-13, P-18, P-20 and P-22 carried over. P-26 and P-27
@@ -1686,6 +1687,23 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       flags CSV without the file; the inferred step neither shown nor
       usable; agreeing and conflicting duplicates reported alike). Docs
       only; nothing is authorized.
+- [x] The owner approved P-26 and P-27 on 2026-10-22, to be built one PR
+      each (P-26 first, as proposed). P-28, P-12, P-13, P-18, P-20 and P-22
+      are not approved.
+
+### OSS-161: which file each flagged row came from (P-26) — this change
+
+- [x] With several input files, `--flags-csv` ends with a `source` column:
+      each input row's file as given on the command line, empty for rows
+      `--insert-missing` adds (they are the only rows with
+      `MISSING_INTERVAL`, and input rows keep their order). Single-column
+      and multi-column flags files alike.
+- [x] With one file the flags CSV is unchanged; the JSON report is
+      unchanged in both cases. A column already named `source` is refused
+      (exit 2) before anything is written.
+- [x] Tests: the source per row with and without `--insert-missing`, files
+      out of time order, one file, and the refusal; the guide's several-file
+      example (executed) reads the column. README and changelog updated.
 
 ## Explicitly not planned
 

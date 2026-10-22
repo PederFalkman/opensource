@@ -26,12 +26,13 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, TextIO
 
+import numpy as np
 import pandas as pd
 
 from energydata_kit import __version__
 from energydata_kit.compare import compare_reports
-from energydata_kit.flags import VALUE_COLUMN, QualityFlag, flag_series
-from energydata_kit.frame_report import FrameQualityReport, assess_frame, flag_frame
+from energydata_kit.flags import FLAG_COLUMN, VALUE_COLUMN, QualityFlag, flag_series
+from energydata_kit.frame_report import FrameQualityReport, assess_frame, flag_column, flag_frame
 from energydata_kit.intervals import find_missing_intervals, to_step
 from energydata_kit.metadata import Aggregation, IntervalLabel, MeasurementMetadata, _grid_from_metadata
 from energydata_kit.report import QualityReport, assess_quality
@@ -224,7 +225,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     out.add_argument(
         "--flags-csv",
-        help="also write values and quality flags to this CSV (quality_flag_<col> per column with several)",
+        help="also write values and quality flags to this CSV (quality_flag_<col> per column with several; "
+        "with several input files, a source column names each row's file)",
     )
     out.add_argument(
         "--gaps-csv",
@@ -355,6 +357,8 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
                 f"{path} has columns {list(table.columns)}; {paths[0]} has {list(tables[0].columns)}"
             )
     frame = tables[0] if len(tables) == 1 else pd.concat(tables, ignore_index=True)
+    # The input file of each row, for the flags CSV's source column (P-26).
+    args.sources = None if len(tables) == 1 else np.repeat(paths, [len(t) for t in tables])
     sep = "," if _is_parquet(paths[0]) else _delimiter(args)  # only used for the CSV hints below
 
     if args.timestamp_col not in frame.columns:
@@ -512,11 +516,19 @@ def _exit_status(args: argparse.Namespace, report: QualityReport | FrameQualityR
     return int(any(_issue_found(r, name) for r in reports for name in names))
 
 
-def _write_flags(args: argparse.Namespace, flagged: pd.DataFrame) -> None:
+def _write_flags(args: argparse.Namespace, flagged: pd.DataFrame, flag_col: str) -> None:
     """Write the flagged table in the input's CSV format (delimiter and decimal mark).
 
-    Lines end in ``\n`` on every platform, so the file is the same on Windows.
+    With several input files, a last ``source`` column names each row's file (P-26); rows that
+    ``--insert-missing`` added have none. Lines end in ``\n`` on every platform, so the file is
+    the same on Windows.
     """
+    if args.sources is not None:
+        # Input rows keep their order; only inserted rows carry MISSING_INTERVAL.
+        original = (flagged[flag_col].to_numpy() & QualityFlag.MISSING_INTERVAL) == 0
+        source = np.full(len(flagged), "", dtype=object)
+        source[original] = args.sources
+        flagged = flagged.assign(source=source)
     flagged.to_csv(
         args.flags_csv,
         sep=_delimiter(args),
@@ -598,6 +610,10 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
     args.jump_max_rate = _rate_option(args.jump_max_rate)
 
     frame = _read_frame(args, stdin)
+    if args.flags_csv and args.sources is not None and "source" in [args.timestamp_col, *frame.columns]:
+        raise CliError(
+            "with several input files --flags-csv adds a 'source' column; a column is already named so"
+        )
     unknown = [c for c in args.unit_by_column if c not in frame.columns]
     if unknown:
         raise CliError(
@@ -655,7 +671,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
         )
         flagged = flagged.rename(columns={VALUE_COLUMN: series.name})
         flagged.index.name = args.timestamp_col
-        _write_flags(args, flagged)
+        _write_flags(args, flagged, FLAG_COLUMN)
 
     return _exit_status(args, report)
 
@@ -841,7 +857,7 @@ def _run_frame_report(
             frame, freq=freq, insert_missing=args.insert_missing, origin=origin, tz=tz, **checks
         )
         flagged.index.name = args.timestamp_col
-        _write_flags(args, flagged)
+        _write_flags(args, flagged, flag_column(str(frame.columns[0])))
     return _exit_status(args, report)
 
 
