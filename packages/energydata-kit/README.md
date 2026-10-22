@@ -117,6 +117,9 @@ same delimiter and decimal format as the input, with a `quality_flag` column, pl
 `--gaps-csv gaps.csv` writes every gap, also beyond `--max-listed`, as
 `column,start,end,missing_count`, on the same grid as the report.
 Calendar steps work as in the library: `--freq D --tz Europe/Stockholm`.
+Several files, such as monthly exports, are read as one table:
+`energydata-kit report jan.csv feb.csv mar.csv` (same columns, all CSV or
+all Parquet; a timestamp in two files counts as a duplicate).
 Repeat `--value-col` for one report covering several columns (check options
 then apply to every column). `--unit kWh` describes a single column; for
 several, repeat `--unit kwh=kWh --unit pv=kW` (`--resolution`,

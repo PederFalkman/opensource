@@ -447,6 +447,25 @@ flagged = pd.read_csv("flagged.csv")
 assert len(flagged) == 96 - 2 + 2  # original rows plus the two inserted ones
 ```
 
+Exports that come in parts, say one file per month, are read together:
+the files are stacked in the order given and reported as one table.
+
+```python
+parts = pd.read_csv("meter.csv")
+parts.iloc[:48].to_csv("meter_a.csv", index=False)
+parts.iloc[48:].to_csv("meter_b.csv", index=False)
+```
+
+```bash
+energydata-kit report meter_a.csv meter_b.csv --freq 15min -o halves.json
+```
+
+```python
+halves = json.loads(Path("halves.json").read_text())
+assert halves["fingerprint"] == report["fingerprint"]  # the same data as meter.csv
+assert halves["n_missing_intervals"] == report["n_missing_intervals"]
+```
+
 For several value columns, `--unit COLUMN=UNIT` gives each one its unit,
 without writing a Table Schema; the other metadata options apply to every
 named column, and without `--value-col` the named columns are the ones

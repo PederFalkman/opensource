@@ -978,3 +978,39 @@ def test_compare_ignores_explained_gaps(tmp_path):
     for path, name in [(full, "b2.json"), (gap, "a2.json")]:
         run("report", str(path), "--freq", "1h", "-o", str(tmp_path / name))
     assert run("compare", str(tmp_path / "b2.json"), str(tmp_path / "a2.json"), "--fail-if-worse")[0] == 1
+
+
+def test_several_input_files(tmp_path):
+    # P-25: several files are read alike and stacked in order, as if they were one file.
+    rows = [f"2024-01-01T{h:02d}:00Z,{h}" for h in range(6)]
+    whole = write(tmp_path, "timestamp,kw\n" + "\n".join(rows) + "\n", "whole.csv")
+    jan = write(tmp_path, "timestamp,kw\n" + "\n".join(rows[:3]) + "\n", "jan.csv")
+    feb = write(tmp_path, "timestamp,kw\n" + "\n".join(rows[3:]) + "\n", "feb.csv")
+    one = run("report", str(whole), "--freq", "1h", "--flags-csv", str(tmp_path / "f1.csv"))
+    two = run("report", str(jan), str(feb), "--freq", "1h", "--flags-csv", str(tmp_path / "f2.csv"))
+    assert one == two and one[0] == 0  # the same report, byte for byte
+    assert (tmp_path / "f1.csv").read_text() == (tmp_path / "f2.csv").read_text()
+    # A row in both files is a duplicate, as within one file.
+    overlap = write(tmp_path, "timestamp,kw\n" + "\n".join(rows[2:]) + "\n", "overlap.csv")
+    data = json.loads(run("report", str(jan), str(overlap), "--freq", "1h")[1])
+    assert data["n_duplicate_timestamps"] == 1
+    other = write(tmp_path, "timestamp,kwh\n" + rows[3] + "\n", "other.csv")
+    for argv, message in [
+        ([str(jan), str(other)], "other.csv has columns ['timestamp', 'kwh']; "),
+        ([str(jan), "-"], "standard input ('-') cannot be combined"),
+        ([str(jan), str(tmp_path / "x.parquet")], "all CSV or all Parquet"),
+        ([str(jan), str(tmp_path / "missing.csv")], "file not found: "),
+    ]:
+        code, out, err = run("report", *argv, "--freq", "1h")
+        assert code == 2 and out == "" and message in err, (argv, err)
+
+
+def test_several_parquet_files(tmp_path):
+    pytest.importorskip("pyarrow")
+    index = pd.date_range("2024-01-01", periods=6, freq="1h", tz="UTC", name="timestamp")
+    frame = pd.DataFrame({"kw": range(6)}, index=index)
+    frame.iloc[:3].to_parquet(tmp_path / "a.parquet")
+    frame.iloc[3:].to_parquet(tmp_path / "b.parquet")
+    frame.to_parquet(tmp_path / "all.parquet")
+    two = run("report", str(tmp_path / "a.parquet"), str(tmp_path / "b.parquet"), "--freq", "1h")
+    assert two == run("report", str(tmp_path / "all.parquet"), "--freq", "1h") and two[0] == 0
