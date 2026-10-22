@@ -5,6 +5,8 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-22
+
 Two command-line additions approved as P-26 and P-27: with several input
 files the flags CSV names each row's file, and `--freq inferred` uses the
 most common step between timestamps on request. Also a fix for pandas
