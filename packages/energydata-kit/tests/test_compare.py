@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 from energydata_kit import (
@@ -47,6 +48,33 @@ def test_worse_when_more_flags_or_missing():
     assert compare_reports(good, report(inf_at=[7])).worse
     assert compare_reports(good, report(drop=[4])).worse
     assert not compare_reports(report(drop=[4]), good).worse
+
+
+def test_explained_gaps_are_not_worse():
+    # P-24: a gap inside a known outage is explained, as for report --fail-on-issues (P-21).
+    series = make_synthetic_series(periods=96)
+    hour = series.index[4]
+    outage = [(hour, hour + pd.Timedelta("15min"))]  # covers rows 4 and 5
+
+    def assess(s, **kw):
+        return assess_quality(s, freq="15min", **kw)
+
+    good = assess(series, known_outages=outage)
+    explained = assess(series.drop(series.index[[4, 5]]), known_outages=outage)
+    unexplained = assess(series.drop(series.index[[4, 20]]), known_outages=outage)
+    assert explained.n_missing_explained == explained.n_missing_intervals == 2
+    assert not compare_reports(good, explained).worse
+    assert compare_reports(good, unexplained).worse  # row 20 lies outside the outage
+    # Without outages on both sides the plain rule applies, as before.
+    assert compare_reports(assess(series), assess(series.drop(series.index[[4, 5]]))).worse
+    assert compare_reports(assess(series), explained).worse  # completeness fell, no outage before
+    # Frames: column by column.
+    frame = pd.DataFrame({"a": series, "b": series})
+    after = frame.drop(frame.index[[4, 5]])
+    assert not compare_reports(
+        assess_frame(frame, freq="15min", known_outages=outage),
+        assess_frame(after, freq="15min", known_outages=outage),
+    ).worse
 
 
 def test_parameters_and_metadata_issues():

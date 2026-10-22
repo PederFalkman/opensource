@@ -957,3 +957,24 @@ def test_fail_on_chooses_the_issues(tmp_path):
     ]:
         code, out, err = run(*base, *argv)
         assert code == 2 and out == "" and message in err, (argv, err)
+
+
+def test_compare_ignores_explained_gaps(tmp_path):
+    # P-24: compare --fail-if-worse agrees with report --fail-on-issues about explained gaps.
+    hours = ["2024-01-01T00:00Z", "2024-01-01T01:00Z", "2024-01-01T02:00Z", "2024-01-01T03:00Z"]
+    full = write(tmp_path, "timestamp,kw\n" + "".join(f"{h},1\n" for h in hours), "full.csv")
+    gap = write(
+        tmp_path, "timestamp,kw\n" + "".join(f"{h},1\n" for h in hours if "02:00" not in h), "gap.csv"
+    )
+    outage = ["--known-outage", "2024-01-01T02:00Z", "2024-01-01T02:00Z"]
+    for path, name in [(full, "before.json"), (gap, "after.json")]:
+        assert run("report", str(path), "--freq", "1h", *outage, "-o", str(tmp_path / name))[0] == 0
+    assert run("report", str(gap), "--freq", "1h", *outage, "--fail-on-issues")[0] == 0
+    code, out, _ = run(
+        "compare", str(tmp_path / "before.json"), str(tmp_path / "after.json"), "--fail-if-worse"
+    )
+    assert code == 0 and json.loads(out)["worse"] is False
+    # Without the outage, the same gap is worse, as before.
+    for path, name in [(full, "b2.json"), (gap, "a2.json")]:
+        run("report", str(path), "--freq", "1h", "-o", str(tmp_path / name))
+    assert run("compare", str(tmp_path / "b2.json"), str(tmp_path / "a2.json"), "--fail-if-worse")[0] == 1
