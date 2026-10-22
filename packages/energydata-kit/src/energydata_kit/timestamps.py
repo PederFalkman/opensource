@@ -229,9 +229,11 @@ def utc_ns(index: pd.DatetimeIndex) -> np.ndarray:
     creates microsecond indexes by default). Out-of-range values raise, as
     ``as_unit("ns")`` would.
     """
-    # .values is a datetime64 view (UTC for timezone-aware indexes) in the
-    # index's own unit; no copy.
-    values: np.ndarray = np.asarray(index.values).view("i8")
+    # A datetime64 view of the UTC values in the index's own unit; no copy.
+    # tz_convert(None) first: .values on a timezone-aware index is deprecated
+    # from pandas 3.1.
+    utc = index if index.tz is None else index.tz_convert(None)
+    values: np.ndarray = np.asarray(utc).view("i8")
     scale = _NS_PER_UNIT[index.unit]
     if scale == 1:
         return values

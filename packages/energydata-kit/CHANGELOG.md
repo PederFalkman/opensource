@@ -5,6 +5,17 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- No `Pandas4Warning` with pandas 3.1. Timestamp handling read the
+  nanosecond values of a timezone-aware index through `.values`, which
+  pandas 3.1 deprecates; it now drops the timezone with
+  `tz_convert(None)` first, which gives the same UTC values without a
+  copy. Results are unchanged. Under 0.6.0 the warning is a
+  `DeprecationWarning` that Python hides by default, so it shows only where
+  warnings are enabled, for example in a test suite that turns them into
+  errors.
+
 ## [0.6.0] - 2026-10-22
 
 Two changes approved as P-24 and P-25: `compare` now treats gaps inside
