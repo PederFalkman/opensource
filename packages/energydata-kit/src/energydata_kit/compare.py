@@ -265,14 +265,21 @@ def _compare_series(before: dict[str, Any], after: dict[str, Any]) -> tuple[dict
         if diff:
             changes[key] = diff
 
+    # Missing intervals inside known outages are explained, not worse (P-24, as report's
+    # --fail-on-issues since P-21); with outages on both sides, so is completeness.
+    def unexplained(r: dict[str, Any]) -> int:
+        return (r.get("n_missing_intervals") or 0) - (r.get("n_missing_explained") or 0)
+
+    key = "completeness"
+    if (
+        before.get("completeness_excluding_outages") is not None
+        and after.get("completeness_excluding_outages") is not None
+    ):
+        key = "completeness_excluding_outages"
     worse = (
         a_flags.get("ANY", 0) > b_flags.get("ANY", 0)
-        or (after.get("n_missing_intervals") or 0) > (before.get("n_missing_intervals") or 0)
-        or (
-            before.get("completeness") is not None
-            and after.get("completeness") is not None
-            and after["completeness"] < before["completeness"]
-        )
+        or unexplained(after) > unexplained(before)
+        or (before.get(key) is not None and after.get(key) is not None and after[key] < before[key])
     )
     return changes, worse
 
@@ -301,8 +308,11 @@ def compare_reports(before: ReportLike, after: ReportLike) -> ReportComparison:
     see ``lists_truncated``.
 
     ``worse`` is true if, for any series present in both reports, rows were
-    flagged more often (``flag_counts["ANY"]``), more intervals are missing,
-    or completeness fell. A removed column does not count as worse; check
+    flagged more often (``flag_counts["ANY"]``), more intervals are missing
+    outside known outages (``n_missing_intervals - n_missing_explained``),
+    or completeness fell; when both reports record known outages,
+    ``completeness_excluding_outages`` is compared instead of
+    ``completeness``. A removed column does not count as worse; check
     ``columns_removed``.
 
     Raises ``ValueError`` for another ``schema_version``, for a

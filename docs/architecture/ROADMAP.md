@@ -11,9 +11,9 @@ section "0.5.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 and 0.4.0
 (both 2026-10-21) were released as GitHub releases only; their records are
 kept there. Engineering for 0.5.0 is complete (OSS-149 and OSS-150, P-21
 and P-23), and the owner recorded the answers below on 2026-10-21; 0.5.0 was
-released the same day (OSS-152, #123). No 0.6.0 work is approved yet;
-candidates P-24 and P-25, with P-12, P-13, P-18, P-20 and P-22 carried
-over, are under "Proposed" below (OSS-154) and not approved.
+released the same day (OSS-152, #123). For 0.6.0 the owner approved P-24
+and P-25 on 2026-10-22; the other candidates (P-12, P-13, P-18, P-20 and
+P-22) are under "Proposed" below (OSS-154) and not approved.
 
 - [x] **G1 for 0.5.0.** Counsel confirmed that the code added since 0.4.0
       (`6cc79fd`) is covered (recorded 2026-10-21).
@@ -131,8 +131,8 @@ below.
 
 | ID | Candidate | Why | Effort | Risk and cost |
 |---|---|---|---|---|
-| P-24 | **`compare` treats explained gaps like `report` does.** A comparison is "worse" only when unexplained missing intervals rise (outside `--known-outage` periods) or, when both reports record outages, when `completeness_excluding_outages` falls; flagged rows count as before. | Checked on 2026-10-21: one hour missing inside a declared outage makes `report --fail-on-issues` exit 0 (since P-21) but `compare --fail-if-worse` exit 1, calling the data worse. The two commands disagree about the same gap. | S | The comparison's `worse` field keeps its name and type but changes meaning for reports with outages, and `--fail-if-worse` can then exit 0 where it exited 1; documented in the changelog. Reports without outages compare exactly as before. If that is not wanted, the rule can sit behind a `compare --ignore-explained` option instead. |
-| P-25 | **Several input files in one report** (`report jan.csv feb.csv mar.csv`). The files are read with the same options and stacked in the order given; duplicates across files are detected as within one file. | Meter exports usually come per month; today `report` takes one file (a second is refused as "unrecognized arguments"), so users join files by hand first, which loses which file a row came from. | S–M | No format change: the report covers the combined data, as if it were one file. All files must have the same columns (refused otherwise, exit 2). `--flags-csv` writes one combined file. Reading Parquet and CSV together is out of scope. |
+| P-24 | *Approved by the owner on 2026-10-22, as the default behaviour; done in OSS-155.* **`compare` treats explained gaps like `report` does.** A comparison is "worse" only when unexplained missing intervals rise (outside `--known-outage` periods) or, when both reports record outages, when `completeness_excluding_outages` falls; flagged rows count as before. | Checked on 2026-10-21: one hour missing inside a declared outage makes `report --fail-on-issues` exit 0 (since P-21) but `compare --fail-if-worse` exit 1, calling the data worse. The two commands disagree about the same gap. | S | The comparison's `worse` field keeps its name and type but changes meaning for reports with outages, and `--fail-if-worse` can then exit 0 where it exited 1; documented in the changelog. Reports without outages compare exactly as before. If that is not wanted, the rule can sit behind a `compare --ignore-explained` option instead. |
+| P-25 | *Approved by the owner on 2026-10-22; to be built in OSS-156.* **Several input files in one report** (`report jan.csv feb.csv mar.csv`). The files are read with the same options and stacked in the order given; duplicates across files are detected as within one file. | Meter exports usually come per month; today `report` takes one file (a second is refused as "unrecognized arguments"), so users join files by hand first, which loses which file a row came from. | S–M | No format change: the report covers the combined data, as if it were one file. All files must have the same columns (refused otherwise, exit 2). `--flags-csv` writes one combined file. Reading Parquet and CSV together is out of scope. |
 | P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below. | A long maintenance log makes a long command. | S | No format change. |
 | P-13 | *Carried over, not approved.* `origin="epoch"`. | A leading off-grid timestamp shifts the grid. | S | Fits schema 2. |
 | P-18 | *Carried over, not approved.* Compare full gap lists from `--gaps-csv`. | Only listed gaps are compared. | S–M | No report change. |
@@ -1550,13 +1550,29 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Status lines: 0.5.0 is the GitHub release, `main` is 0.6.0
       development.
 
-### OSS-154: 0.6.0 proposals — this change
+### OSS-154: 0.6.0 proposals — merged in [#125](https://github.com/PederFalkman/opensource/pull/125)
 
 - [x] P-24 and P-25 written up for the owner to approve one by one, ranked
       with P-12, P-13, P-18, P-20 and P-22 carried over; neither new item
       changes the report format. Both motivating behaviours (an explained
       gap failing `compare --fail-if-worse`; `report` refusing a second
       file) were checked on 2026-10-21. Docs only; nothing is authorized.
+- [x] The owner approved P-24 and P-25 on 2026-10-22, to be built one PR
+      each (P-24 first, as proposed: the default behaviour, not opt-in).
+      P-12, P-13, P-18, P-20 and P-22 are not approved.
+
+### OSS-155: `compare` treats explained gaps like `report` (P-24) — this change
+
+- [x] A series is worse when flagged rows rise, when missing intervals
+      outside known outages rise, or when completeness falls (compared
+      outside the outages when both reports record them). Reports without
+      outages compare as before; the comparison format is unchanged.
+- [x] Tests: an explained gap is not worse (single series and frame); an
+      unexplained one is; without outages on both sides the plain rule
+      applies; on the command line, `compare --fail-if-worse` exits 0 for
+      the case where `report --fail-on-issues` does. The comparison golden
+      files are unchanged. Help text, README, docstring and changelog
+      updated.
 
 ## Explicitly not planned
 

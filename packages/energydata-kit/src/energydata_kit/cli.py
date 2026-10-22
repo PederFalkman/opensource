@@ -266,7 +266,8 @@ def build_parser() -> argparse.ArgumentParser:
     cmp.add_argument(
         "--fail-if-worse",
         action="store_true",
-        help="exit with status 1 if more rows are flagged, more intervals are missing or completeness fell",
+        help="exit with status 1 if more rows are flagged, more intervals are missing outside known "
+        "outages, or completeness fell",
     )
     return parser
 
@@ -888,7 +889,9 @@ def _comparison_summary(data: dict[str, Any], markdown: bool = False) -> str:
     """A short human-readable summary of a comparison dict (``compare --format text`` or ``markdown``)."""
     verdict = "same data" if data["same_data"] else "data changed"
     if data["worse"]:
-        verdict += "; worse: more rows flagged, more intervals missing or lower completeness"
+        verdict += (
+            "; worse: more rows flagged, more intervals missing outside known outages or lower completeness"
+        )
     else:
         verdict += "; not worse"
     added, removed = ", ".join(data["columns_added"]), ", ".join(data["columns_removed"])

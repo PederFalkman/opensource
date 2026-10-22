@@ -5,6 +5,17 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- `compare_reports` (and `compare --fail-if-worse`) no longer call a
+  comparison worse because of missing intervals inside known outages: a
+  series is worse when flagged rows rise, when missing intervals outside
+  the outages (`n_missing_intervals - n_missing_explained`) rise, or when
+  completeness falls, compared as `completeness_excluding_outages` when
+  both reports record outages. This matches `report --fail-on-issues`
+  since 0.5.0. Reports without known outages compare exactly as before;
+  for reports with them, `worse` can now be `false` (and the exit status
+  0) where it was `true` (1). The comparison format is unchanged.
+
 ## [0.5.0] - 2026-10-21
 
 Two command-line changes for pipelines, approved as P-21 and P-23: gaps

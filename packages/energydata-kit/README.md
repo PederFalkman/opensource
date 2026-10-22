@@ -129,7 +129,9 @@ its columns become the default `--value-col`, and their resolution is the
 step when `--freq` is not given.
 `energydata-kit compare before.json after.json` prints what changed between
 two saved reports (`--format text` or `markdown` for a short summary per column); with `--fail-if-worse` it exits `1` if more rows are
-flagged, more intervals are missing or completeness fell.
+flagged, more intervals are missing outside the reports' known outages, or
+completeness fell (completeness outside the outages when both reports
+record them).
 Exit status: `0` OK, `1` issues found with `--fail-on-issues` (a flagged
 row, or a missing interval outside the `--known-outage` periods), with
 `--fail-on NAME` (only the named issues: a flag such as `NON_FINITE`, `ANY`,
