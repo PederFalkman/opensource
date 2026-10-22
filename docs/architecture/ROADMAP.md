@@ -11,9 +11,9 @@ section "0.5.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 and 0.4.0
 (both 2026-10-21) were released as GitHub releases only; their records are
 kept there. Engineering for 0.5.0 is complete (OSS-149 and OSS-150, P-21
 and P-23), and the owner recorded the answers below on 2026-10-21; 0.5.0 was
-released the same day (OSS-152, #123). No 0.6.0 work is approved yet; the
-remaining candidates (P-22, and P-12, P-13, P-18 and P-20) are under
-"Proposed" below (OSS-148) and not approved.
+released the same day (OSS-152, #123). No 0.6.0 work is approved yet;
+candidates P-24 and P-25, with P-12, P-13, P-18, P-20 and P-22 carried
+over, are under "Proposed" below (OSS-154) and not approved.
 
 - [x] **G1 for 0.5.0.** Counsel confirmed that the code added since 0.4.0
       (`6cc79fd`) is covered (recorded 2026-10-21).
@@ -118,6 +118,35 @@ and anything that downloads data.
 
 **Suggested order if approved:** P-3 and P-4 first (small, no schema change),
 then P-2 with P-6 as one schema-2 change, then P-5 if users ask for it.
+
+### P-24 and P-25: candidates for 0.6.0 (OSS-154)
+
+*Prepared by the assistant in OSS-154 for the owner to approve or reject one
+by one. Nothing here is authorized; none of it starts without approval.*
+Each item is generic data-quality or command-line tooling as defined in
+`IP_BOUNDARY.md` ("What *is* in scope"), ships no domain thresholds and
+touches nothing on the out-of-scope list. P-22, P-13, P-18, P-12 and P-20
+from earlier rounds were not approved and stay open; they are ranked again
+below.
+
+| ID | Candidate | Why | Effort | Risk and cost |
+|---|---|---|---|---|
+| P-24 | **`compare` treats explained gaps like `report` does.** A comparison is "worse" only when unexplained missing intervals rise (outside `--known-outage` periods) or, when both reports record outages, when `completeness_excluding_outages` falls; flagged rows count as before. | Checked on 2026-10-21: one hour missing inside a declared outage makes `report --fail-on-issues` exit 0 (since P-21) but `compare --fail-if-worse` exit 1, calling the data worse. The two commands disagree about the same gap. | S | The comparison's `worse` field keeps its name and type but changes meaning for reports with outages, and `--fail-if-worse` can then exit 0 where it exited 1; documented in the changelog. Reports without outages compare exactly as before. If that is not wanted, the rule can sit behind a `compare --ignore-explained` option instead. |
+| P-25 | **Several input files in one report** (`report jan.csv feb.csv mar.csv`). The files are read with the same options and stacked in the order given; duplicates across files are detected as within one file. | Meter exports usually come per month; today `report` takes one file (a second is refused as "unrecognized arguments"), so users join files by hand first, which loses which file a row came from. | S–M | No format change: the report covers the combined data, as if it were one file. All files must have the same columns (refused otherwise, exit 2). `--flags-csv` writes one combined file. Reading Parquet and CSV together is out of scope. |
+| P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below. | A long maintenance log makes a long command. | S | No format change. |
+| P-13 | *Carried over, not approved.* `origin="epoch"`. | A leading off-grid timestamp shifts the grid. | S | Fits schema 2. |
+| P-18 | *Carried over, not approved.* Compare full gap lists from `--gaps-csv`. | Only listed gaps are compared. | S–M | No report change. |
+| P-12, P-20 | *Carried over, not approved.* DST policy for calendar grids; single-row spikes. | Known limitations. | S–M, M | Report schema 3; only together. |
+
+Considered and not proposed:
+- **A `--fail-on`-style choice for `compare`:** `--fail-if-worse` with P-24
+  covers the common case; a per-issue choice can follow if asked for.
+- **Globs or directories as input** (`report data/*.csv`): the shell already
+  expands globs into P-25's list of files.
+
+**Suggested order if approved:** P-24 first (it makes `compare` agree with
+`report`, and is small), then P-25, then P-22. P-13 and P-18 as before;
+P-12 with P-20 only as a schema-3 change. Each needs its own approval.
 
 ### P-21 to P-23: candidates for 0.5.0 (OSS-148)
 
@@ -1511,7 +1540,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       *Release build* workflow passed and created the draft release, which
       the owner published on 2026-10-21.
 
-### OSS-153: open 0.6.0 development — this change
+### OSS-153: open 0.6.0 development — merged in [#124](https://github.com/PederFalkman/opensource/pull/124)
 
 - [x] `__version__` is `0.6.0.dev0`; new changelog entries go under
       `[Unreleased]`, and the released sections are not edited.
@@ -1520,6 +1549,14 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       is not release-ready, with the licence checks and `--guard` passing.
 - [x] Status lines: 0.5.0 is the GitHub release, `main` is 0.6.0
       development.
+
+### OSS-154: 0.6.0 proposals — this change
+
+- [x] P-24 and P-25 written up for the owner to approve one by one, ranked
+      with P-12, P-13, P-18, P-20 and P-22 carried over; neither new item
+      changes the report format. Both motivating behaviours (an explained
+      gap failing `compare --fail-if-worse`; `report` refusing a second
+      file) were checked on 2026-10-21. Docs only; nothing is authorized.
 
 ## Explicitly not planned
 
