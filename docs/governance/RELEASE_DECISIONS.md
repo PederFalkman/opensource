@@ -1,5 +1,69 @@
 # Release decisions for energydata-kit
 
+## 0.6.0 (in preparation)
+
+**Status:** open. Engineering for 0.6.0 is complete (OSS-155 and OSS-156)
+and nothing is decided here. `main` stays at `0.6.0.dev0` with the upload
+guard until the owner answers the questions below. The 0.5.0 to 0.1.0
+records follow and are unchanged.
+
+**What 0.6.0 contains** (approved as P-24 and P-25 by the owner on
+2026-10-22; proposals in `docs/architecture/ROADMAP.md`, OSS-154):
+
+- `compare_reports` and `compare --fail-if-worse` treat missing intervals
+  inside known outages as explained, like `report --fail-on-issues` (P-24,
+  OSS-155, #126). This changes `worse` (1 → 0) for comparisons of reports
+  with outages; the release notes say so. Without outages, comparisons are
+  unchanged.
+- `report FILE...` reads several input files as one table (P-25,
+  OSS-156, #127).
+- No report- or comparison-format change (schema 2), no new or renamed
+  public Python name, nothing removed. The changelog's `[Unreleased]`
+  section has the release notes.
+
+**What did not change since 0.5.0** (`git diff 34cf9c7` on
+`pyproject.toml`, 2026-10-22): no runtime dependency, optional extra,
+version range or data file was added or changed. The only `pyproject.toml`
+change is the restored upload guard (OSS-153). `THIRD_PARTY_LICENSES.md` is
+unchanged.
+
+| Gate | State for 0.6.0 | Open question |
+|---|---|---|
+| G1 Ownership | Counsel confirmed ownership for 0.1.0 (D2) and for the code added up to 0.5.0. Commits since the 0.5.0 release commit (`34cf9c7`), on `main` at `9f8b8f4`: 8, of which 4 by the AI coding assistant in the owner's sessions (all with changes) and 4 by the owner (pull-request merges #124 to #127); no external contributor | Does counsel's confirmation cover the code added since 0.5.0, or should counsel confirm again? |
+| G2 Licence | Passed: Apache-2.0, unchanged | — |
+| G3 IP boundary review | The `IP boundary` CI job passed on every 0.6.0 PR. P-24 changes which report counts decide "worse"; P-25 changes how the command line reads its input | Will the technical lead review and sign off the diff from 0.5.0? |
+| G4 Third-party licences | Unchanged since 0.5.0 (no dependency change) | Is the 0.5.0 position enough? |
+| G5 CI green | Green on every 0.6.0 PR; re-checked on the release commit | — |
+| G6 Documentation honest | README, changelog and guide updated with each step; the guide's several-files example runs in the test suite | Review on the release commit |
+| G7 Publication (D6) | D6 approved 0.5.0 only; it does not carry over | GitHub release only, like 0.1.0 to 0.5.0, or also a package index? |
+
+**For the G3 reviewer** (the technical lead). The package code to review
+is the diff from the 0.5.0 release commit to the 0.6.0 release commit:
+`git diff 34cf9c7 <release commit> -- packages/energydata-kit/src`
+(3 files, about 70 added lines: `cli.py`, `compare.py` and the version in
+`__init__.py`). Points to confirm, each also checked by a tool:
+
+- No new import: besides the standard library, the code still imports only
+  numpy, pandas and Pint (Pandera and pyarrow optional).
+  `python tools/check_ip_boundary.py`, run in CI, refuses forbidden imports
+  and any dependency off the reviewed allowlist.
+- No domain limits ship: the comparison uses counts already in the reports,
+  and the file list is the caller's.
+- Tests and examples use synthetic data only; no customer data,
+  endpoints or credentials.
+- Nothing forecasts, optimises, or computes grid, capacity or financial
+  quantities: the changes decide when a comparison is worse and read
+  several files.
+
+**After the decisions:** a release PR built from `RELEASE_CHECKLIST.md`
+sets `__version__` to `0.6.0`, moves `[Unreleased]` under a dated
+`## [0.6.0]` heading, records the answers under G1, G3 and G4, and adds the
+owner's D6 line naming `energydata-kit 0.6.0`; only with that line does it
+remove the upload guard. It passes `check_release_readiness.py --strict`.
+The owner then tags the merged commit `energydata-kit-v0.6.0`, the
+*Release build* workflow prepares the draft GitHub release, and the owner
+publishes it. None of this is done before the owner's decisions.
+
 ## 0.5.0 (released 2026-10-21)
 
 **Status:** decided 2026-10-21. The repository owner recorded the answers for G1,
