@@ -12,9 +12,9 @@ section "0.8.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 releases only; their records are kept there. Engineering for 0.8.0 is
 complete (OSS-167 and OSS-168, P-29 and P-30), and the owner recorded the
 answers below on 2026-10-23; 0.8.0 was released the same day (OSS-170,
-#142). No 0.9.0 work is approved yet; the remaining candidates (P-31, and
-P-12, P-13, P-18, P-20, P-22 and P-28 carried over) are under "Proposed"
-below (OSS-166) and not approved.
+#142). No 0.9.0 work is approved yet; the candidates (P-32 to P-34, and
+P-12, P-13, P-18, P-20, P-22, P-28 and P-31 carried over) are under
+"Proposed" below (OSS-172) and not approved.
 
 - [x] **G1 for 0.8.0.** Counsel confirmed that the code added since 0.7.0
       (`230483c`) is covered (recorded 2026-10-23).
@@ -152,6 +152,41 @@ and anything that downloads data.
 
 **Suggested order if approved:** P-3 and P-4 first (small, no schema change),
 then P-2 with P-6 as one schema-2 change, then P-5 if users ask for it.
+
+### P-32 to P-34: candidates for 0.9.0 (OSS-172)
+
+*Prepared by the assistant in OSS-172 for the owner to approve or reject one
+by one. Nothing here is authorized; none of it starts without approval.*
+Each item is generic data-quality or command-line tooling as defined in
+`IP_BOUNDARY.md` ("What *is* in scope"), ships no domain thresholds and
+touches nothing on the out-of-scope list. P-31, P-22, P-13, P-18, P-28,
+P-12 and P-20 from earlier rounds were not approved and stay open; they are
+ranked again below. Like P-29 and P-30, all three new items concern
+reading real exports, and none changes the report format. Each motivating
+behaviour was checked on 2026-10-23 on `main` at `ff885c2` (0.9.0.dev0).
+
+| ID | Candidate | Why | Effort | Risk and cost |
+|---|---|---|---|---|
+| P-32 | **Lines before the header** (`report --skip-rows N`): the first N lines of each CSV file are ignored, so the header is line N+1. | Checked: a file that starts with `Meter export`, `Meter ID;12345` and a blank line before `timestamp;kwh` is refused with "timestamp column 'timestamp' not found; columns: ['Meter export']". Users delete the preamble by hand first. | S | No format change. The count is the caller's; nothing is detected. With several files, every file skips the same number of lines. Refused with Parquet input and with a negative number. The flags CSV starts at the header, without the skipped lines. |
+| P-33 | **Thousands separators in values** (`report --thousands .`, also `,`, space or `'`). | Checked: with `--delimiter ';' --decimal ,`, values such as `1.234,5` are not read as numbers, so every row is flagged `NON_NUMERIC` and the command exits 0. The report looks like a data problem when it is a format one. | S | No format change. Must differ from `--decimal` and the delimiter (refused otherwise). The flags CSV writes values without separators, as pandas does; documented. CSV only. |
+| P-34 | **Date and time in separate columns** (`report --timestamp-col date --time-col time`): the two columns are joined with a space and read as one ISO 8601 timestamp, with the usual `--assume-tz` rules. | Checked: with `date;time;kwh`, passing `--timestamp-col date` reads only the date, so three hourly rows become one timestamp and the report shows 3 duplicates and 100% completeness. Wrong without an error. Considered for 0.8.0 and not proposed; now limited to the plain case. | S–M | No format change. Only ISO forms (`2026-01-01` and `00:00` or `00:00:00`); `24:00`, a missing part or any other form is refused (exit 2) rather than guessed. The flags CSV has one joined timestamp column, named after `--timestamp-col`; documented. |
+| P-31 | *Carried over, not approved.* **Unix epoch timestamps** (`--timestamp-unit s|ms`). As described for 0.8.0 below. | Epoch seconds are refused. | S–M | No format change. |
+| P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below. | A long maintenance log makes a long command. | S | No format change. |
+| P-13 | *Carried over, not approved.* `origin="epoch"`. | A leading off-grid timestamp shifts the grid. | S | Fits schema 2. |
+| P-18 | *Carried over, not approved.* Compare full gap lists from `--gaps-csv`. | Only listed gaps are compared. | S–M | No report change. |
+| P-28, P-12, P-20 | *Carried over, not approved.* Conflicting duplicates; DST policy for calendar grids; single-row spikes. | Known limitations. | M, S–M, M | Report schema 3; only together. |
+
+Considered and not proposed:
+- **Detecting the header row or the thousands separator:** a guess can be
+  wrong without an error; P-32 and P-33 keep both explicit.
+- **Footer lines** (totals after the data): rarer than a preamble; a footer
+  row's text timestamp is already refused with its position, so the user
+  sees it.
+
+**Suggested order if approved:** P-34 first (today it gives a wrong report
+without an error), then P-33 (it makes every value look bad), then P-32.
+P-31 and P-22 as before; P-13 and P-18 as before; P-28 with P-12 and P-20
+only as one schema-3 change. Each needs its own approval.
 
 ### P-29 to P-31: candidates for 0.8.0 (OSS-166)
 
@@ -1877,7 +1912,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       *Release build* workflow passed and created the draft release, which
       the owner published on 2026-10-23.
 
-### OSS-171: open 0.9.0 development — this change
+### OSS-171: open 0.9.0 development — merged in [#143](https://github.com/PederFalkman/opensource/pull/143)
 
 - [x] `__version__` is `0.9.0.dev0`; new changelog entries go under
       `[Unreleased]`, and the released sections are not edited.
@@ -1886,6 +1921,16 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       is not release-ready, with the licence checks and `--guard` passing.
 - [x] Status lines: 0.8.0 is the GitHub release, `main` is 0.9.0
       development.
+
+### OSS-172: 0.9.0 proposals — this change
+
+- [x] P-32 to P-34 written up for the owner to approve one by one, ranked
+      with P-12, P-13, P-18, P-20, P-22, P-28 and P-31 carried over; none of
+      the new items changes the report format. Each motivating behaviour
+      was checked on 2026-10-23 on `ff885c2` (a preamble refused as a
+      missing column; thousands separators flagged as non-numeric; a split
+      date and time read as duplicates without an error). Docs only;
+      nothing is authorized.
 
 ## Explicitly not planned
 
