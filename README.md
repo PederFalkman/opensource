@@ -3,9 +3,9 @@
 Open-source Python tools for energy data, scientific computing, engineering
 validation and reproducible workflows.
 
-> **Status: energydata-kit 0.7.0 is released as a GitHub release** (built
-> wheel and sdist attached to the tag; **not** on PyPI or any other index);
-> `main` is 0.8.0 development.
+> **Status: energydata-kit 0.8.0 is released as a GitHub release** (built
+> wheel and sdist attached to the tag; **not** on PyPI or any other index),
+> after 0.1.0 to 0.7.0.
 > Licensed **Apache-2.0** — the licence text is [`LICENSE`](LICENSE). The
 > release decisions are recorded in
 > [`RELEASE_DECISIONS.md`](docs/governance/RELEASE_DECISIONS.md); whether
@@ -19,7 +19,7 @@ dependencies, tests and version.
 
 | Package | Status | Description |
 |---|---|---|
-| [`energydata-kit`](packages/energydata-kit) | pre-alpha; 0.7.0 (GitHub release, not on PyPI); `main` is 0.8.0.dev0 | Quality checks for energy time series: UTC timestamp normalization, gap/duplicate detection (UTC or local-calendar grids), interval semantics, unit metadata, non-destructive quality flags, reproducible reports, optional Pandera checks and an `energydata-kit report` command line |
+| [`energydata-kit`](packages/energydata-kit) | pre-alpha; 0.8.0 (GitHub release, not on PyPI) | Quality checks for energy time series: UTC timestamp normalization, gap/duplicate detection (UTC or local-calendar grids), interval semantics, unit metadata, non-destructive quality flags, reproducible reports, optional Pandera checks and an `energydata-kit report` command line |
 
 ## Quick start
 

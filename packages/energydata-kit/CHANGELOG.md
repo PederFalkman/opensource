@@ -5,6 +5,8 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-23
+
 Two command-line additions for reading real exports, approved as P-29 and
 P-30: `--encoding` for CSV files that are not UTF-8, and known-outage
 times without a UTC offset read in `--assume-tz`. The report and

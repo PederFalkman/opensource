@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest. energydata-kit 0.7.0 is released on GitHub. It is licensed
+Thanks for your interest. energydata-kit 0.8.0 is released on GitHub. It is licensed
 Apache-2.0 (`LICENSE`), but external contributions cannot be accepted until
 contribution terms are in place (see `docs/governance/RELEASE_GATES.md`).
 Whether contributors will sign off commits (Developer Certificate of Origin)
