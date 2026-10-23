@@ -13,8 +13,9 @@ section "0.10.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 kept there. Engineering for 0.10.0 is complete (OSS-179 and OSS-180, P-35
 and P-36), and the owner recorded the answers below on 2026-10-23; 0.10.0
 was released the same day (OSS-182, #154). No 0.11.0 work is approved yet;
-the remaining candidates (P-12, P-13, P-18, P-20, P-22, P-28, P-31 and
-P-32, carried over) are under "Proposed" below (OSS-178) and not approved.
+the candidates (P-37 and P-38, and P-12, P-13, P-18, P-20, P-22, P-28, P-31
+and P-32 carried over) are under "Proposed" below (OSS-184) and not
+approved.
 
 - [x] **G1 for 0.10.0.** Counsel confirmed that the code added since 0.9.0
       (`e098747`) is covered (recorded 2026-10-23).
@@ -174,6 +175,41 @@ and anything that downloads data.
 
 **Suggested order if approved:** P-3 and P-4 first (small, no schema change),
 then P-2 with P-6 as one schema-2 change, then P-5 if users ask for it.
+
+### P-37 and P-38: candidates for 0.11.0 (OSS-184)
+
+*Prepared by the assistant in OSS-184 for the owner to approve or reject one
+by one. Nothing here is authorized; none of it starts without approval.*
+Each item is generic data-quality or command-line tooling as defined in
+`IP_BOUNDARY.md` ("What *is* in scope"), ships no domain thresholds and
+touches nothing on the out-of-scope list. P-32, P-31, P-22, P-13, P-18,
+P-28, P-12 and P-20 from earlier rounds were not approved and stay open;
+they are ranked again below. Neither new item changes the report format.
+Each motivating behaviour was checked on 2026-10-23 on `main` at `74a63b5`
+(0.11.0.dev0).
+
+| ID | Candidate | Why | Effort | Risk and cost |
+|---|---|---|---|---|
+| P-37 | **Fail on metadata issues** (`report --fail-on metadata`): the exit status is 1 when the report lists metadata issues (`SUM_OF_POWER`, `AVERAGED_ENERGY`, `MISSING_RESOLUTION`, `LABEL_ON_INSTANTANEOUS`). | Checked: `--unit kW --aggregation sum --resolution 1h --fail-on-issues` prints "metadata issues: SUM_OF_POWER" and exits 0; `--fail-on metadata` is refused as an unknown name. A pipeline that checks a schema file cannot fail on a description it reports as inconsistent. | S | No format change; the report already has `metadata_issues`. Opt-in as a new `--fail-on` name, like `empty` (P-35); `--fail-on-issues` keeps its exit status. The checks themselves are unchanged and stay generic unit/aggregation consistency, not domain limits. Multi-column reports fail if any column has an issue. |
+| P-38 | **Assess every value column** (`report --all-value-cols`): every column except the timestamp column (and `--time-col`) is assessed, as if each were passed with `--value-col`. | Checked: a CSV with columns `a`, `b`, `c` and no `--value-col` is refused with "pass --value-col; candidate columns: ['a', 'b', 'c']". A wide export (one column per meter) needs one `--value-col` per column, and a column added later is silently not assessed. | S | No format change: the result is the multi-column report that the same `--value-col` options give. Refused together with `--value-col`. A text column (for example a status code) is reported as `NON_NUMERIC`, which is honest but may surprise; the help says so. |
+| P-32 | *Carried over, not approved.* **Lines before the header** (`--skip-rows N`). As described for 0.9.0 below. | A preamble is refused as a missing column. | S | No format change. |
+| P-31 | *Carried over, not approved.* **Unix epoch timestamps** (`--timestamp-unit s|ms`). As described for 0.8.0 below. | Epoch seconds are refused. | S–M | No format change. |
+| P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below. | A long maintenance log makes a long command. | S | No format change. |
+| P-13 | *Carried over, not approved.* `origin="epoch"`. | A leading off-grid timestamp shifts the grid. | S | Fits schema 2. |
+| P-18 | *Carried over, not approved.* Compare full gap lists from `--gaps-csv`. | Only listed gaps are compared. | S–M | No report change. |
+| P-28, P-12, P-20 | *Carried over, not approved.* Conflicting duplicates; DST policy for calendar grids; single-row spikes. | Known limitations. | M, S–M, M | Report schema 3; only together. |
+
+Considered and not proposed:
+- **Adding metadata issues to `--fail-on-issues`:** it would change the exit
+  status of existing commands (a behaviour change); P-37 keeps it opt-in.
+- **Selecting columns by pattern** (`--value-col 'meter_*'`): more surface
+  than P-38 for the common case, and a glob over column names is easy to
+  get wrong; it can follow if asked for.
+
+**Suggested order if approved:** P-37 first (smallest, and it closes a gap
+in the exit status like P-35), then P-38. P-32, P-31 and P-22 as before;
+P-13 and P-18 as before; P-28 with P-12 and P-20 only as one schema-3
+change. Each needs its own approval.
 
 ### P-35 and P-36: candidates for 0.10.0 (OSS-178)
 
@@ -2114,7 +2150,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       *Release build* workflow passed and created the draft release, which
       the owner published on 2026-10-23.
 
-### OSS-183: open 0.11.0 development — this change
+### OSS-183: open 0.11.0 development — merged in [#155](https://github.com/PederFalkman/opensource/pull/155)
 
 - [x] `__version__` is `0.11.0.dev0`; new changelog entries go under
       `[Unreleased]`, and the released sections are not edited.
@@ -2123,6 +2159,15 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       is not release-ready, with the licence checks and `--guard` passing.
 - [x] Status lines: 0.10.0 is the GitHub release, `main` is 0.11.0
       development.
+
+### OSS-184: 0.11.0 proposals — this change
+
+- [x] P-37 and P-38 written up for the owner to approve one by one, ranked
+      with P-12, P-13, P-18, P-20, P-22, P-28, P-31 and P-32 carried over;
+      neither new item changes the report format. Both motivating
+      behaviours were checked on 2026-10-23 on `74a63b5` (a reported
+      `SUM_OF_POWER` exits 0 even with `--fail-on-issues`; a wide CSV needs
+      one `--value-col` per column). Docs only; nothing is authorized.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data
