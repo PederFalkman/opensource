@@ -132,6 +132,11 @@ def build_parser() -> argparse.ArgumentParser:
     cols = rep.add_argument_group("columns")
     cols.add_argument("--timestamp-col", default="timestamp", help="timestamp column (default: timestamp)")
     cols.add_argument(
+        "--time-col",
+        help="time-of-day column to join with --timestamp-col when the file splits date and time "
+        "(ISO forms only: 2026-01-01 and 13:45 or 13:45:00)",
+    )
+    cols.add_argument(
         "--value-col",
         action="append",
         help="value column; repeat for a multi-column report (default: the columns named by --schema "
@@ -344,7 +349,7 @@ def _read_table(args: argparse.Namespace, path: str, stdin: TextIO) -> pd.DataFr
             sep=_delimiter(args),
             decimal=args.decimal,
             encoding=args.encoding,
-            dtype={args.timestamp_col: str},
+            dtype={args.timestamp_col: str, **({args.time_col: str} if args.time_col else {})},
             keep_default_na=True,
         )
     except FileNotFoundError as exc:
@@ -385,6 +390,11 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
         raise CliError(
             f"timestamp column {args.timestamp_col!r} not found; columns: {list(frame.columns)}{hint}"
         )
+    if args.time_col is not None:
+        if args.time_col == args.timestamp_col:
+            raise CliError("--time-col must name a column other than --timestamp-col")
+        if args.time_col not in frame.columns:
+            raise CliError(f"time column {args.time_col!r} not found; columns: {list(frame.columns)}")
     value_cols = args.value_col
     if value_cols is None and args.schema_metadata:
         value_cols = [c for c in args.schema_metadata if c in frame.columns]
@@ -402,7 +412,7 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
                 f"--unit names columns that are not in the file: {missing}; columns: {list(frame.columns)}"
             )
     if value_cols is None:
-        others = [c for c in frame.columns if c != args.timestamp_col]
+        others = [c for c in frame.columns if c not in (args.timestamp_col, args.time_col)]
         if len(others) != 1:
             raise CliError(f"pass --value-col; candidate columns: {others}")
         value_cols = others
@@ -412,9 +422,12 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
     if len(set(value_cols)) != len(value_cols):
         raise CliError("each --value-col may be given only once")
 
+    stamps = (
+        frame[args.timestamp_col] if args.time_col is None else _joined_timestamps(args, frame, value_cols)
+    )
     try:
         index = normalize_timestamps(
-            frame[args.timestamp_col],
+            stamps,
             assume_tz=args.assume_tz,
             ambiguous=args.ambiguous,
             nonexistent=args.nonexistent,
@@ -433,6 +446,30 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
                 message += " (wall-clock times skipped at the start of DST: see --nonexistent)"
         raise CliError(message) from exc
     return pd.DataFrame({str(c): frame[c].to_numpy() for c in value_cols}, index=index)
+
+
+_ISO_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+_ISO_TIME = re.compile(r"([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?)?")
+
+
+def _joined_timestamps(args: argparse.Namespace, frame: pd.DataFrame, value_cols: list[str]) -> pd.Series:
+    """--timestamp-col and --time-col joined as one ISO 8601 timestamp per row (P-34).
+
+    Only the plain ISO forms are accepted; anything else (24:00, a missing part, 1/2/2026) is
+    refused with its rows rather than guessed.
+    """
+    if args.time_col in value_cols:
+        raise CliError(f"--time-col {args.time_col!r} is also a value column")
+    dates = frame[args.timestamp_col].astype("string").str.strip()
+    times = frame[args.time_col].astype("string").str.strip()
+    for name, parts, pattern in ((args.timestamp_col, dates, _ISO_DATE), (args.time_col, times, _ISO_TIME)):
+        bad = ~parts.fillna("").str.fullmatch(pattern.pattern)
+        if bad.any():
+            shown = ", ".join(f"position {i}: {parts.iloc[i]!r}" for i in bad.to_numpy().nonzero()[0][:3])
+            what = "YYYY-MM-DD" if pattern is _ISO_DATE else "HH:MM or HH:MM:SS, 00:00 to 23:59"
+            raise CliError(f"{int(bad.sum())} value(s) in {name!r} are not {what} ({shown})")
+    joined: pd.Series = dates + "T" + times
+    return joined
 
 
 def _outages_in_zone(args: argparse.Namespace) -> list[list[str]]:

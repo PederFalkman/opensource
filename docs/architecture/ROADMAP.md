@@ -12,9 +12,9 @@ section "0.8.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 releases only; their records are kept there. Engineering for 0.8.0 is
 complete (OSS-167 and OSS-168, P-29 and P-30), and the owner recorded the
 answers below on 2026-10-23; 0.8.0 was released the same day (OSS-170,
-#142). No 0.9.0 work is approved yet; the candidates (P-32 to P-34, and
-P-12, P-13, P-18, P-20, P-22, P-28 and P-31 carried over) are under
-"Proposed" below (OSS-172) and not approved.
+#142). For 0.9.0 the owner approved P-34 and P-33 on 2026-10-23 (OSS-173
+and OSS-174); P-32, and P-12, P-13, P-18, P-20, P-22, P-28 and P-31 carried
+over, are under "Proposed" below (OSS-172) and not approved.
 
 - [x] **G1 for 0.8.0.** Counsel confirmed that the code added since 0.7.0
       (`230483c`) is covered (recorded 2026-10-23).
@@ -168,8 +168,8 @@ behaviour was checked on 2026-10-23 on `main` at `ff885c2` (0.9.0.dev0).
 | ID | Candidate | Why | Effort | Risk and cost |
 |---|---|---|---|---|
 | P-32 | **Lines before the header** (`report --skip-rows N`): the first N lines of each CSV file are ignored, so the header is line N+1. | Checked: a file that starts with `Meter export`, `Meter ID;12345` and a blank line before `timestamp;kwh` is refused with "timestamp column 'timestamp' not found; columns: ['Meter export']". Users delete the preamble by hand first. | S | No format change. The count is the caller's; nothing is detected. With several files, every file skips the same number of lines. Refused with Parquet input and with a negative number. The flags CSV starts at the header, without the skipped lines. |
-| P-33 | **Thousands separators in values** (`report --thousands .`, also `,`, space or `'`). | Checked: with `--delimiter ';' --decimal ,`, values such as `1.234,5` are not read as numbers, so every row is flagged `NON_NUMERIC` and the command exits 0. The report looks like a data problem when it is a format one. | S | No format change. Must differ from `--decimal` and the delimiter (refused otherwise). The flags CSV writes values without separators, as pandas does; documented. CSV only. |
-| P-34 | **Date and time in separate columns** (`report --timestamp-col date --time-col time`): the two columns are joined with a space and read as one ISO 8601 timestamp, with the usual `--assume-tz` rules. | Checked: with `date;time;kwh`, passing `--timestamp-col date` reads only the date, so three hourly rows become one timestamp and the report shows 3 duplicates and 100% completeness. Wrong without an error. Considered for 0.8.0 and not proposed; now limited to the plain case. | S–M | No format change. Only ISO forms (`2026-01-01` and `00:00` or `00:00:00`); `24:00`, a missing part or any other form is refused (exit 2) rather than guessed. The flags CSV has one joined timestamp column, named after `--timestamp-col`; documented. |
+| P-33 | *Approved by the owner on 2026-10-23; OSS-174.* **Thousands separators in values** (`report --thousands .`, also `,`, space or `'`). | Checked: with `--delimiter ';' --decimal ,`, values such as `1.234,5` are not read as numbers, so every row is flagged `NON_NUMERIC` and the command exits 0. The report looks like a data problem when it is a format one. | S | No format change. Must differ from `--decimal` and the delimiter (refused otherwise). The flags CSV writes values without separators, as pandas does; documented. CSV only. |
+| P-34 | *Approved by the owner on 2026-10-23; done in OSS-173.* **Date and time in separate columns** (`report --timestamp-col date --time-col time`): the two columns are joined with a space and read as one ISO 8601 timestamp, with the usual `--assume-tz` rules. | Checked: with `date;time;kwh`, passing `--timestamp-col date` reads only the date, so three hourly rows become one timestamp and the report shows 3 duplicates and 100% completeness. Wrong without an error. Considered for 0.8.0 and not proposed; now limited to the plain case. | S–M | No format change. Only ISO forms (`2026-01-01` and `00:00` or `00:00:00`); `24:00`, a missing part or any other form is refused (exit 2) rather than guessed. The flags CSV has one joined timestamp column, named after `--timestamp-col`; documented. |
 | P-31 | *Carried over, not approved.* **Unix epoch timestamps** (`--timestamp-unit s|ms`). As described for 0.8.0 below. | Epoch seconds are refused. | S–M | No format change. |
 | P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below. | A long maintenance log makes a long command. | S | No format change. |
 | P-13 | *Carried over, not approved.* `origin="epoch"`. | A leading off-grid timestamp shifts the grid. | S | Fits schema 2. |
@@ -1922,7 +1922,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Status lines: 0.8.0 is the GitHub release, `main` is 0.9.0
       development.
 
-### OSS-172: 0.9.0 proposals — this change
+### OSS-172: 0.9.0 proposals — merged in [#144](https://github.com/PederFalkman/opensource/pull/144)
 
 - [x] P-32 to P-34 written up for the owner to approve one by one, ranked
       with P-12, P-13, P-18, P-20, P-22, P-28 and P-31 carried over; none of
@@ -1931,6 +1931,22 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       missing column; thousands separators flagged as non-numeric; a split
       date and time read as duplicates without an error). Docs only;
       nothing is authorized.
+- [x] The owner approved P-34 and P-33 on 2026-10-23, to be built one PR
+      each (P-34 first, as proposed). P-32, P-12, P-13, P-18, P-20, P-22,
+      P-28 and P-31 are not approved.
+
+### OSS-173: date and time in separate columns (P-34) — this change
+
+- [x] `report --time-col COL` joins that column with `--timestamp-col` as
+      `DATE` + `T` + `TIME` and reads the result like any ISO timestamp,
+      with `--assume-tz`, `--ambiguous` and `--nonexistent` as usual.
+- [x] Only `YYYY-MM-DD` and `HH:MM[:SS[.fff]]` (00:00 to 23:59) are
+      accepted; anything else, including `24:00` and a missing part, is
+      refused (exit 2) with the count and the first three rows. Also
+      refused: a time column that is missing, the timestamp column itself,
+      or a value column.
+- [x] No format change: the report and flags CSV equal those from the same
+      data with one ISO column. Tests, help text, README and changelog.
 
 ## Explicitly not planned
 
