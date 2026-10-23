@@ -13,6 +13,16 @@ versioning: [SemVer](https://semver.org/).
   passed it as if the data were perfect. Opt-in: `--fail-on-issues` and
   the other names keep their exit status for an empty file. The report
   format is unchanged.
+- `report --min-completeness FRACTION` exits with status 1 when
+  completeness is below the fraction the caller chooses (0 to 1; there is
+  no default), in the report or in any column of a multi-column report
+  (P-36). With `--known-outage`, completeness without the outages is
+  compared, as `compare --fail-if-worse` does. It fills the space between
+  `--fail-on gaps` (any missing interval) and not failing at all, and
+  combines with `--fail-on` and `--fail-on-issues`. When completeness is
+  not checked (no step, no rows, or no expected interval left) the command
+  is refused with status 2 instead of passing. The report format is
+  unchanged.
 
 ## [0.9.0] - 2026-10-23
 

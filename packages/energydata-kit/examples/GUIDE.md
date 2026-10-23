@@ -429,6 +429,9 @@ energydata-kit report meter.csv --freq 15min --fail-on-issues  # exit status: 1
 # --fail-on chooses which issues fail: the gaps here, but not the infinite value
 energydata-kit report meter.csv --freq 15min --fail-on STALE_VALUE --fail-on JUMP
 energydata-kit report meter.csv --freq 15min --fail-on gaps  # exit status: 1
+# --min-completeness sets your own limit; 94 of the 96 intervals (97.92%) are present
+energydata-kit report meter.csv --freq 15min --min-completeness 0.97
+energydata-kit report meter.csv --freq 15min --min-completeness 0.99  # exit status: 1
 # For a first look at an unknown file, --freq inferred uses the most common step:
 energydata-kit report meter.csv --freq inferred -o inferred.json
 ```
@@ -626,6 +629,6 @@ from_schema = json.loads(Path("report_schema.json").read_text())
 assert from_schema["metadata"]["unit"] == "kW" and from_schema["n_missing_intervals"] == 2
 ```
 
-Exit status: `0` OK, `1` issues found with `--fail-on-issues` or
-`--fail-if-worse`, `2` usage, input or file error, with the reason on
+Exit status: `0` OK, `1` issues found with `--fail-on-issues`, `--fail-on`,
+`--min-completeness` or `--fail-if-worse`, `2` usage, input or file error, with the reason on
 standard error. See `energydata-kit report --help` for every option.

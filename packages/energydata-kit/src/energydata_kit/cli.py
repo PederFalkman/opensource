@@ -11,7 +11,8 @@ runs :func:`energydata_kit.assess_frame` and prints one report with a section
 per column. ``energydata-kit compare before.json after.json`` prints what
 changed between two saved reports (:func:`energydata_kit.compare_reports`).
 
-Exit codes: 0 success; 1 ``--fail-on-issues`` and issues were found (or, for
+Exit codes: 0 success; 1 ``--fail-on-issues`` or ``--fail-on`` and issues were
+found, or completeness below ``--min-completeness`` (or, for
 ``compare``, ``--fail-if-worse`` and the second report is worse); 2 usage,
 input or data error.
 """
@@ -76,7 +77,20 @@ def _positive_int(text: str) -> int:
     return value
 
 
-_EXIT_REPORT = "exit status: 0 OK; 1 issues found with --fail-on-issues; 2 usage, input or file error"
+def _fraction(text: str) -> float:
+    try:
+        value = float(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"must be a number from 0 to 1, got {text!r}") from None
+    if not 0 <= value <= 1:
+        raise argparse.ArgumentTypeError(f"must be from 0 to 1, got {text}")
+    return value
+
+
+_EXIT_REPORT = (
+    "exit status: 0 OK; 1 issues found with --fail-on-issues or --fail-on, or completeness below "
+    "--min-completeness; 2 usage, input or file error"
+)
 _EXIT_COMPARE = "exit status: 0 OK; 1 worse with --fail-if-worse; 2 usage, input or file error"
 
 
@@ -86,7 +100,8 @@ def build_parser() -> argparse.ArgumentParser:
         prog=PROG,
         description="Quality checks for energy time-series data.",
         epilog=(
-            "exit status: 0 OK; 1 issues found (--fail-on-issues, --fail-if-worse); "
+            "exit status: 0 OK; 1 issues found (--fail-on-issues, --fail-on, --min-completeness, "
+            "--fail-if-worse); "
             "2 usage, input or file error"
         ),
     )
@@ -271,6 +286,14 @@ def build_parser() -> argparse.ArgumentParser:
         "or STALE_VALUE, ANY for any flagged row, gaps for any missing interval, or "
         "unexplained-gaps for missing intervals outside the --known-outage periods, "
         "or empty for a file without data rows",
+    )
+    out.add_argument(
+        "--min-completeness",
+        type=_fraction,
+        metavar="FRACTION",
+        help="exit with status 1 if completeness is below this fraction (0 to 1; e.g. 0.99), in any "
+        "column; with --known-outage, completeness without the outages is used. Needs a step "
+        "(--freq, or a resolution with --unit or --schema)",
     )
 
     cmp = sub.add_parser(
@@ -637,10 +660,45 @@ def _exit_status(args: argparse.Namespace, report: QualityReport | FrameQualityR
 
     --fail-on-issues: any flagged row or any missing interval outside the --known-outage periods
     (P-21). --fail-on NAME: only the named issues (P-23), including a file without data rows (P-35).
+    --min-completeness: completeness below the caller's fraction in any column (P-36); combines
+    with either.
     """
     names = ["ANY", "unexplained-gaps"] if args.fail_on_issues else args.fail_on or []
     reports = report.columns.values() if isinstance(report, FrameQualityReport) else [report]
-    return int(any(_issue_found(r, name) for r in reports for name in names))
+    if any(_issue_found(r, name) for r in reports for name in names):
+        return 1
+    limit = args.min_completeness
+    return int(limit is not None and any(_completeness(r) < limit for r in reports))
+
+
+def _completeness(r: QualityReport) -> float:
+    """The completeness --min-completeness compares (P-36); _check_completeness made sure it is known."""
+    value = r.completeness if r.completeness_excluding_outages is None else r.completeness_excluding_outages
+    assert value is not None
+    return value
+
+
+def _check_completeness(args: argparse.Namespace, report: QualityReport | FrameQualityReport) -> None:
+    """Refuse --min-completeness when completeness was not checked, rather than pass (P-36).
+
+    Runs before anything is written, so a refused command leaves no report behind.
+    """
+    if args.min_completeness is None:
+        return
+    reports = report.columns if isinstance(report, FrameQualityReport) else {None: report}
+    for column, r in reports.items():
+        where = "" if column is None else f" for column {column!r}"
+        if r.n_rows == 0:
+            why = "there are no rows (to fail on that, use --fail-on empty)"
+        elif r.n_expected_intervals is None:
+            why = "there is no step: pass --freq, or a resolution with --unit or --schema"
+        elif r.completeness is None:
+            why = "no expected interval lies within the data's time span"
+        elif args.known_outage and r.completeness_excluding_outages is None:
+            why = "every expected interval lies inside the --known-outage periods"
+        else:
+            continue
+        raise CliError(f"--min-completeness: completeness is not checked{where}; {why}")
 
 
 def _write_flags(args: argparse.Namespace, flagged: pd.DataFrame, flag_col: str) -> None:
@@ -793,6 +851,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
         known_outages=args.known_outage,
         max_listed=args.max_listed,
     )
+    _check_completeness(args, report)
     gap_grids = _gap_grids(args, {str(series.name): metadata}, [str(series.name)]) if args.gaps_csv else {}
     _write_report(args, report, stdout)
     if args.gaps_csv:
@@ -1024,6 +1083,7 @@ def _run_frame_report(
                 "give each column a resolution, or pass --freq"
             )
         freq, tz = next(iter(grids.values()), (None, None))
+    _check_completeness(args, report)
     gap_grids = _gap_grids(args, metadata, [str(c) for c in frame.columns]) if args.gaps_csv else {}
     _write_report(args, report, stdout)
     if args.gaps_csv:
