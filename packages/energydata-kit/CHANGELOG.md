@@ -5,6 +5,8 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-23
+
 Two opt-in exit-status options for `compare`, approved as P-39 and P-40:
 `--fail-on-removed-columns` fails when a column disappears between two
 reports, and `--fail-on-changed-parameters` fails when the reports were
