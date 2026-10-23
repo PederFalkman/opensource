@@ -153,7 +153,9 @@ flagged, more intervals are missing outside the reports' known outages, or
 completeness fell (completeness outside the outages when both reports
 record them). A removed column does not count as worse; add
 `--fail-on-removed-columns` to exit `1` when a column of the earlier report
-is missing from the later one.
+is missing from the later one, and `--fail-on-changed-parameters` to exit
+`1` when the reports were made with different parameters (step, bounds,
+known outages and so on), whose numbers are not like for like.
 Exit status: `0` OK, `1` issues found with `--fail-on-issues` (a flagged
 row, or a missing interval outside the `--known-outage` periods), with
 `--fail-on NAME` (only the named issues: a flag such as `NON_FINITE`, `ANY`,

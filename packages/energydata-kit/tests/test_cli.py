@@ -585,6 +585,30 @@ def test_fail_on_removed_columns(tmp_path):
     assert run("compare", reports["ac"], reports["ac"], "--fail-on-removed-columns")[0] == 0
 
 
+def test_fail_on_changed_parameters(tmp_path):
+    # P-40: reports made with different parameters can fail compare; the numbers are not like for like.
+    path = str(write(tmp_path, "timestamp,kw\n2026-01-01T00:00Z,1\n2026-01-01T02:00Z,3\n"))
+    reports = {}
+    for name, argv in [
+        ("1h", ["--freq", "1h"]),
+        ("2h", ["--freq", "2h"]),
+        ("1h-bounds", ["--freq", "1h", "--bounds", "0", "5"]),
+    ]:
+        reports[name] = str(tmp_path / f"{name}.json")
+        assert run("report", path, *argv, "-o", reports[name])[0] == 0
+    code, out, _ = run("compare", reports["1h"], reports["2h"], "--fail-if-worse", "--format", "text")
+    assert code == 0 and "parameters changed: freq" in out  # unchanged without the option
+    assert run("compare", reports["1h"], reports["2h"], "--fail-on-changed-parameters")[0] == 1
+    assert run("compare", reports["1h"], reports["1h-bounds"], "--fail-on-changed-parameters")[0] == 1
+    assert run("compare", reports["1h"], reports["1h"], "--fail-on-changed-parameters")[0] == 0
+    # Multi-column: a change in any column fails.
+    wide = str(write(tmp_path, "timestamp,a,b\n2026-01-01T00:00Z,1,1\n2026-01-01T01:00Z,2,2\n", "wide.csv"))
+    for name, freq in [("w1", "1h"), ("w2", "30min")]:
+        reports[name] = str(tmp_path / f"{name}.json")
+        run("report", wide, "--all-value-cols", "--freq", freq, "-o", reports[name])
+    assert run("compare", reports["w1"], reports["w2"], "--fail-on-changed-parameters")[0] == 1
+
+
 def test_compare_text_summary(tmp_path):
     gappy, fixed = write(tmp_path, GAPPY, name="gappy.csv"), write(tmp_path, FIXED, name="fixed.csv")
     before, after = tmp_path / "before.json", tmp_path / "after.json"
@@ -985,7 +1009,11 @@ def test_usage_errors_and_version(capsys):
             ["report"],
             "1 issues found with --fail-on-issues or --fail-on, or completeness below --min-completeness",
         ),
-        (["compare"], "1 worse with --fail-if-worse, or a column removed with --fail-on-removed-columns"),
+        (
+            ["compare"],
+            "1 worse with --fail-if-worse, a column removed with --fail-on-removed-columns, "
+            "or parameters changed with --fail-on-changed-parameters",
+        ),
     ],
 )
 def test_help_lists_exit_status(argv, status_1, capsys, monkeypatch):
