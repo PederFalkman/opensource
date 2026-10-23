@@ -13,9 +13,9 @@ section "0.11.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 records are kept there. Engineering for 0.11.0 is complete (OSS-185 and
 OSS-186, P-37 and P-38), and the owner recorded the answers below on
 2026-10-23; 0.11.0 was released the same day (OSS-188, #160). No 0.12.0
-work is approved yet; the remaining candidates (P-12, P-13, P-18, P-20,
-P-22, P-28, P-31 and P-32, carried over) are under "Proposed" below
-(OSS-184) and not approved.
+work is approved yet; the candidates (P-39 and P-40, and P-12, P-13, P-18,
+P-20, P-22, P-28, P-31 and P-32 carried over) are under "Proposed" below
+(OSS-190) and not approved.
 
 - [x] **G1 for 0.11.0.** Counsel confirmed that the code added since 0.10.0
       (`c1be62d`) is covered (recorded 2026-10-23).
@@ -186,6 +186,46 @@ and anything that downloads data.
 
 **Suggested order if approved:** P-3 and P-4 first (small, no schema change),
 then P-2 with P-6 as one schema-2 change, then P-5 if users ask for it.
+
+### P-39 and P-40: candidates for 0.12.0 (OSS-190)
+
+*Prepared by the assistant in OSS-190 for the owner to approve or reject one
+by one. Nothing here is authorized; none of it starts without approval.*
+Each item is generic data-quality or command-line tooling as defined in
+`IP_BOUNDARY.md` ("What *is* in scope"), ships no domain thresholds and
+touches nothing on the out-of-scope list. P-32, P-31, P-22, P-13, P-18,
+P-28, P-12 and P-20 from earlier rounds were not approved and stay open;
+they are ranked again below. Both new items concern `compare
+--fail-if-worse`, which pipelines use to catch regressions between runs;
+neither changes the report or comparison format. Each motivating behaviour
+was checked on 2026-10-23 on `main` at `a8af8e6` (0.12.0.dev0).
+
+| ID | Candidate | Why | Effort | Risk and cost |
+|---|---|---|---|---|
+| P-39 | **Fail when a column disappears** (`compare --fail-on-removed-columns`): the exit status is 1 when a column in the earlier report is missing from the later one. | Checked: reports of `a,b,c` and then `a,c` (both with `--all-value-cols`) give "columns removed: b" and exit 0 with `--fail-if-worse`, because a removed column does not count as worse (documented). A meter that drops out of an export passes a regression check unnoticed. | S | No format change; the comparison already lists removed columns. Opt-in, so `--fail-if-worse` keeps its documented meaning and exit status. Added columns never fail. |
+| P-40 | **Fail when the reports were made differently** (`compare --fail-on-changed-parameters`): the exit status is 1 when the two reports' parameters differ (for example the step, bounds or known outages). | Checked: the same data reported with `--freq 1h` and then `--freq 2h` gives "completeness 66.67% -> 100.00%", "parameters changed: freq", "not worse", and exits 0 with `--fail-if-worse`. The numbers are not comparable, but the comparison reads as an improvement. | S | No format change; the comparison already names changed parameters. Opt-in; the default keeps comparing across parameter changes, which is sometimes intended (for example a deliberate new step). It combines with `--fail-if-worse`. |
+| P-32 | *Carried over, not approved.* **Lines before the header** (`--skip-rows N`). As described for 0.9.0 below. | A preamble is refused as a missing column. | S | No format change. |
+| P-31 | *Carried over, not approved.* **Unix epoch timestamps** (`--timestamp-unit s|ms`). As described for 0.8.0 below. | Epoch seconds are refused. | S–M | No format change. |
+| P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below. | A long maintenance log makes a long command. | S | No format change. |
+| P-13 | *Carried over, not approved.* `origin="epoch"`. | A leading off-grid timestamp shifts the grid. | S | Fits schema 2. |
+| P-18 | *Carried over, not approved.* Compare full gap lists from `--gaps-csv`. | Only listed gaps are compared. | S–M | No report change. |
+| P-28, P-12, P-20 | *Carried over, not approved.* Conflicting duplicates; DST policy for calendar grids; single-row spikes. | Known limitations. | M, S–M, M | Report schema 3; only together. |
+
+Considered and not proposed:
+- **Counting a removed column or a parameter change as worse by default:**
+  it would change the documented meaning and exit status of
+  `--fail-if-worse`; P-39 and P-40 keep both opt-in.
+- **Comparing a single-series report with a multi-column one:** `compare`
+  refuses this (checked: reports of `a,b` and then `a` alone, both with
+  `--all-value-cols`, exit 2 with "cannot compare a single-series report
+  with a multi-column report"). The refusal is loud rather than silent, and
+  matching a series to a column needs a design of its own; it can follow
+  if asked for.
+
+**Suggested order if approved:** P-39 first (a lost column is the more
+likely silent regression), then P-40. P-32, P-31 and P-22 as before; P-13
+and P-18 as before; P-28 with P-12 and P-20 only as one schema-3 change.
+Each needs its own approval.
 
 ### P-37 and P-38: candidates for 0.11.0 (OSS-184)
 
@@ -2231,7 +2271,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       *Release build* workflow passed and created the draft release, which
       the owner published on 2026-10-23.
 
-### OSS-189: open 0.12.0 development — this change
+### OSS-189: open 0.12.0 development — merged in [#161](https://github.com/PederFalkman/opensource/pull/161)
 
 - [x] `__version__` is `0.12.0.dev0`; new changelog entries go under
       `[Unreleased]`, and the released sections are not edited.
@@ -2240,6 +2280,15 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       is not release-ready, with the licence checks and `--guard` passing.
 - [x] Status lines: 0.11.0 is the GitHub release, `main` is 0.12.0
       development.
+
+### OSS-190: 0.12.0 proposals — this change
+
+- [x] P-39 and P-40 written up for the owner to approve one by one, ranked
+      with P-12, P-13, P-18, P-20, P-22, P-28, P-31 and P-32 carried over;
+      neither new item changes the report or comparison format. Both
+      motivating behaviours were checked on 2026-10-23 on `a8af8e6` (a
+      removed column and a changed step both pass `compare
+      --fail-if-worse` with exit 0). Docs only; nothing is authorized.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data
