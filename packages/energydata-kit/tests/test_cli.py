@@ -566,6 +566,25 @@ def test_text_summary_says_why_completeness_is_missing(tmp_path):
     assert "  completeness: undefined (no expected interval within the data's time span)" in out.splitlines()
 
 
+def test_fail_on_removed_columns(tmp_path):
+    # P-39: a column that disappears can fail compare; --fail-if-worse alone still passes it.
+    reports = {}
+    for name, header in [("abc", "a,b,c"), ("ac", "a,c"), ("acd", "a,c,d")]:
+        cols = header.split(",")
+        rows = "".join(f"2026-01-01T0{h}:00Z," + ",".join("1" for _ in cols) + "\n" for h in range(2))
+        path = str(write(tmp_path, f"timestamp,{header}\n{rows}", f"{name}.csv"))
+        reports[name] = str(tmp_path / f"{name}.json")
+        assert run("report", path, "--freq", "1h", "--all-value-cols", "-o", reports[name])[0] == 0
+    code, out, _ = run("compare", reports["abc"], reports["ac"], "--fail-if-worse", "--format", "text")
+    assert code == 0 and "columns removed: b" in out  # unchanged without the option
+    assert run("compare", reports["abc"], reports["ac"], "--fail-on-removed-columns")[0] == 1
+    both = ["--fail-on-removed-columns", "--fail-if-worse"]
+    assert run("compare", reports["abc"], reports["ac"], *both)[0] == 1
+    # Added columns never fail; nor do unchanged ones.
+    assert run("compare", reports["ac"], reports["acd"], "--fail-on-removed-columns")[0] == 0
+    assert run("compare", reports["ac"], reports["ac"], "--fail-on-removed-columns")[0] == 0
+
+
 def test_compare_text_summary(tmp_path):
     gappy, fixed = write(tmp_path, GAPPY, name="gappy.csv"), write(tmp_path, FIXED, name="fixed.csv")
     before, after = tmp_path / "before.json", tmp_path / "after.json"
@@ -966,7 +985,7 @@ def test_usage_errors_and_version(capsys):
             ["report"],
             "1 issues found with --fail-on-issues or --fail-on, or completeness below --min-completeness",
         ),
-        (["compare"], "1 worse with --fail-if-worse"),
+        (["compare"], "1 worse with --fail-if-worse, or a column removed with --fail-on-removed-columns"),
     ],
 )
 def test_help_lists_exit_status(argv, status_1, capsys, monkeypatch):

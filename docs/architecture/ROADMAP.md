@@ -12,10 +12,10 @@ section "0.11.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 0.10.0 (all 2026-10-23) were released as GitHub releases only; their
 records are kept there. Engineering for 0.11.0 is complete (OSS-185 and
 OSS-186, P-37 and P-38), and the owner recorded the answers below on
-2026-10-23; 0.11.0 was released the same day (OSS-188, #160). No 0.12.0
-work is approved yet; the candidates (P-39 and P-40, and P-12, P-13, P-18,
-P-20, P-22, P-28, P-31 and P-32 carried over) are under "Proposed" below
-(OSS-190) and not approved.
+2026-10-23; 0.11.0 was released the same day (OSS-188, #160). For 0.12.0
+the owner approved P-39 and P-40 on 2026-10-23 (OSS-191 and OSS-192); P-12,
+P-13, P-18, P-20, P-22, P-28, P-31 and P-32, carried over, are under
+"Proposed" below (OSS-190) and not approved.
 
 - [x] **G1 for 0.11.0.** Counsel confirmed that the code added since 0.10.0
       (`c1be62d`) is covered (recorded 2026-10-23).
@@ -202,8 +202,8 @@ was checked on 2026-10-23 on `main` at `a8af8e6` (0.12.0.dev0).
 
 | ID | Candidate | Why | Effort | Risk and cost |
 |---|---|---|---|---|
-| P-39 | **Fail when a column disappears** (`compare --fail-on-removed-columns`): the exit status is 1 when a column in the earlier report is missing from the later one. | Checked: reports of `a,b,c` and then `a,c` (both with `--all-value-cols`) give "columns removed: b" and exit 0 with `--fail-if-worse`, because a removed column does not count as worse (documented). A meter that drops out of an export passes a regression check unnoticed. | S | No format change; the comparison already lists removed columns. Opt-in, so `--fail-if-worse` keeps its documented meaning and exit status. Added columns never fail. |
-| P-40 | **Fail when the reports were made differently** (`compare --fail-on-changed-parameters`): the exit status is 1 when the two reports' parameters differ (for example the step, bounds or known outages). | Checked: the same data reported with `--freq 1h` and then `--freq 2h` gives "completeness 66.67% -> 100.00%", "parameters changed: freq", "not worse", and exits 0 with `--fail-if-worse`. The numbers are not comparable, but the comparison reads as an improvement. | S | No format change; the comparison already names changed parameters. Opt-in; the default keeps comparing across parameter changes, which is sometimes intended (for example a deliberate new step). It combines with `--fail-if-worse`. |
+| P-39 | *Approved by the owner on 2026-10-23; done in OSS-191.* **Fail when a column disappears** (`compare --fail-on-removed-columns`): the exit status is 1 when a column in the earlier report is missing from the later one. | Checked: reports of `a,b,c` and then `a,c` (both with `--all-value-cols`) give "columns removed: b" and exit 0 with `--fail-if-worse`, because a removed column does not count as worse (documented). A meter that drops out of an export passes a regression check unnoticed. | S | No format change; the comparison already lists removed columns. Opt-in, so `--fail-if-worse` keeps its documented meaning and exit status. Added columns never fail. |
+| P-40 | *Approved by the owner on 2026-10-23; OSS-192.* **Fail when the reports were made differently** (`compare --fail-on-changed-parameters`): the exit status is 1 when the two reports' parameters differ (for example the step, bounds or known outages). | Checked: the same data reported with `--freq 1h` and then `--freq 2h` gives "completeness 66.67% -> 100.00%", "parameters changed: freq", "not worse", and exits 0 with `--fail-if-worse`. The numbers are not comparable, but the comparison reads as an improvement. | S | No format change; the comparison already names changed parameters. Opt-in; the default keeps comparing across parameter changes, which is sometimes intended (for example a deliberate new step). It combines with `--fail-if-worse`. |
 | P-32 | *Carried over, not approved.* **Lines before the header** (`--skip-rows N`). As described for 0.9.0 below. | A preamble is refused as a missing column. | S | No format change. |
 | P-31 | *Carried over, not approved.* **Unix epoch timestamps** (`--timestamp-unit s|ms`). As described for 0.8.0 below. | Epoch seconds are refused. | S–M | No format change. |
 | P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below. | A long maintenance log makes a long command. | S | No format change. |
@@ -2281,7 +2281,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Status lines: 0.11.0 is the GitHub release, `main` is 0.12.0
       development.
 
-### OSS-190: 0.12.0 proposals — this change
+### OSS-190: 0.12.0 proposals — merged in [#162](https://github.com/PederFalkman/opensource/pull/162)
 
 - [x] P-39 and P-40 written up for the owner to approve one by one, ranked
       with P-12, P-13, P-18, P-20, P-22, P-28, P-31 and P-32 carried over;
@@ -2289,6 +2289,17 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       motivating behaviours were checked on 2026-10-23 on `a8af8e6` (a
       removed column and a changed step both pass `compare
       --fail-if-worse` with exit 0). Docs only; nothing is authorized.
+- [x] The owner approved P-39 and P-40 on 2026-10-23, to be built one PR
+      each (P-39 first, as proposed). P-12, P-13, P-18, P-20, P-22, P-28,
+      P-31 and P-32 are not approved.
+
+### OSS-191: fail when a column disappears (P-39) — this change
+
+- [x] `compare --fail-on-removed-columns` exits 1 when a column of the
+      earlier report is missing from the later one.
+- [x] Opt-in: `--fail-if-worse` keeps its meaning and still passes a
+      removed column; added columns never fail.
+- [x] No format change. Tests, help text, README and changelog.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data
