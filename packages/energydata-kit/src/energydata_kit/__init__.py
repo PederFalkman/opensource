@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "0.9.0.dev0"
+__version__ = "0.9.0"
 
 from energydata_kit.compare import ReportComparison, compare_reports
 from energydata_kit.flags import (

@@ -5,6 +5,8 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-23
+
 Two more command-line options for reading real exports, approved as P-34
 and P-33: `--time-col` joins separate date and time columns, and
 `--thousands` reads values with a thousands separator. The report and
