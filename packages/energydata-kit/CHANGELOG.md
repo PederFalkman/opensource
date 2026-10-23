@@ -13,6 +13,13 @@ versioning: [SemVer](https://semver.org/).
   Before, they were printed and the command exited 0, even with
   `--fail-on-issues`. Opt-in: `--fail-on-issues` and the other names keep
   their exit status. The checks and the report format are unchanged.
+- `report --all-value-cols` assesses every column except the timestamp
+  column (and `--time-col`), giving the same report as one `--value-col`
+  per column, in file order (P-38). Before, a file with several value
+  columns needed each named, and a column added to an export later was
+  silently not assessed. Refused together with `--value-col`. A text
+  column is reported as `NON_NUMERIC` rather than skipped. The report
+  format is unchanged.
 
 ## [0.10.0] - 2026-10-23
 

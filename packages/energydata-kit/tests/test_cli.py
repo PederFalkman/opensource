@@ -1120,6 +1120,30 @@ def test_fail_on_empty(tmp_path):
         assert run("report", empty, "--value-col", "kwh", "--freq", "1h", *argv)[0] == 0, argv
 
 
+def test_all_value_cols(tmp_path):
+    # P-38: every column but the timestamps is assessed, as with one --value-col per column.
+    text = "timestamp,a,b,c\n2026-01-01T00:00Z,1,2,x\n2026-01-01T01:00Z,1,inf,y\n2026-01-01T03:00Z,1,2,z\n"
+    path = str(write(tmp_path, text))
+    assert "pass --value-col" in run("report", path, "--freq", "1h")[2]  # unchanged without the option
+    code, out, _ = run("report", path, "--freq", "1h", "--all-value-cols")
+    each = run("report", path, "--freq", "1h", "--value-col", "a", "--value-col", "b", "--value-col", "c")
+    assert code == each[0] == 0 and out == each[1]
+    data = json.loads(out)
+    assert list(data["columns"]) == ["a", "b", "c"]
+    assert data["columns"]["c"]["flag_counts"]["NON_NUMERIC"] == 3  # a text column is reported, not skipped
+    # A --time-col is not a value column; one other column gives a single-column report.
+    joined = str(write(tmp_path, "date,time,kwh\n2026-01-01,00:00,1\n2026-01-01,01:00,2\n", "joined.csv"))
+    argv = ["report", joined, "--timestamp-col", "date", "--time-col", "time", "--assume-tz", "UTC"]
+    assert json.loads(run(*argv, "--all-value-cols")[1])["n_rows"] == 2
+    only = str(write(tmp_path, "timestamp\n2026-01-01T00:00Z\n", "only.csv"))
+    for argv, message in [
+        (["report", path, "--all-value-cols", "--value-col", "a"], "--all-value-cols and --value-col"),
+        (["report", only, "--all-value-cols"], "no column besides the timestamps"),
+    ]:
+        code, out, err = run(*argv)
+        assert code == 2 and out == "" and message in err, argv
+
+
 def test_fail_on_metadata(tmp_path):
     # P-37: metadata issues can fail the command; before, they were reported and it exited 0.
     path = str(write(tmp_path, "timestamp,kw,kwh\n2026-01-01T00:00Z,1,1\n2026-01-01T01:00Z,2,2\n"))

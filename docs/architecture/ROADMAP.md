@@ -191,7 +191,7 @@ Each motivating behaviour was checked on 2026-10-23 on `main` at `74a63b5`
 | ID | Candidate | Why | Effort | Risk and cost |
 |---|---|---|---|---|
 | P-37 | *Approved by the owner on 2026-10-23; done in OSS-185.* **Fail on metadata issues** (`report --fail-on metadata`): the exit status is 1 when the report lists metadata issues (`SUM_OF_POWER`, `AVERAGED_ENERGY`, `MISSING_RESOLUTION`, `LABEL_ON_INSTANTANEOUS`). | Checked: `--unit kW --aggregation sum --resolution 1h --fail-on-issues` prints "metadata issues: SUM_OF_POWER" and exits 0; `--fail-on metadata` is refused as an unknown name. A pipeline that checks a schema file cannot fail on a description it reports as inconsistent. | S | No format change; the report already has `metadata_issues`. Opt-in as a new `--fail-on` name, like `empty` (P-35); `--fail-on-issues` keeps its exit status. The checks themselves are unchanged and stay generic unit/aggregation consistency, not domain limits. Multi-column reports fail if any column has an issue. |
-| P-38 | *Approved by the owner on 2026-10-23; OSS-186.* **Assess every value column** (`report --all-value-cols`): every column except the timestamp column (and `--time-col`) is assessed, as if each were passed with `--value-col`. | Checked: a CSV with columns `a`, `b`, `c` and no `--value-col` is refused with "pass --value-col; candidate columns: ['a', 'b', 'c']". A wide export (one column per meter) needs one `--value-col` per column, and a column added later is silently not assessed. | S | No format change: the result is the multi-column report that the same `--value-col` options give. Refused together with `--value-col`. A text column (for example a status code) is reported as `NON_NUMERIC`, which is honest but may surprise; the help says so. |
+| P-38 | *Approved by the owner on 2026-10-23; done in OSS-186.* **Assess every value column** (`report --all-value-cols`): every column except the timestamp column (and `--time-col`) is assessed, as if each were passed with `--value-col`. | Checked: a CSV with columns `a`, `b`, `c` and no `--value-col` is refused with "pass --value-col; candidate columns: ['a', 'b', 'c']". A wide export (one column per meter) needs one `--value-col` per column, and a column added later is silently not assessed. | S | No format change: the result is the multi-column report that the same `--value-col` options give. Refused together with `--value-col`. A text column (for example a status code) is reported as `NON_NUMERIC`, which is honest but may surprise; the help says so. |
 | P-32 | *Carried over, not approved.* **Lines before the header** (`--skip-rows N`). As described for 0.9.0 below. | A preamble is refused as a missing column. | S | No format change. |
 | P-31 | *Carried over, not approved.* **Unix epoch timestamps** (`--timestamp-unit s|ms`). As described for 0.8.0 below. | Epoch seconds are refused. | S–M | No format change. |
 | P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below. | A long maintenance log makes a long command. | S | No format change. |
@@ -2172,7 +2172,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       each (P-37 first, as proposed). P-12, P-13, P-18, P-20, P-22, P-28,
       P-31 and P-32 are not approved.
 
-### OSS-185: fail on metadata issues (P-37) — this change
+### OSS-185: fail on metadata issues (P-37) — merged in [#157](https://github.com/PederFalkman/opensource/pull/157)
 
 - [x] `--fail-on metadata` exits 1 when a report (or any column of a
       multi-column report) lists metadata issues; names stay case-blind.
@@ -2180,6 +2180,18 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       status when metadata issues are reported, as before.
 - [x] No format change; the metadata checks are unchanged. Tests, help
       text, README and changelog.
+
+### OSS-186: assess every value column (P-38) — this change
+
+- [x] `--all-value-cols` assesses every column except the timestamp column
+      and `--time-col`, in file order; the report equals the one from a
+      `--value-col` per column. One other column gives a single-column
+      report.
+- [x] Refused with `--value-col`, and when no column besides the
+      timestamps exists. A text column is reported as `NON_NUMERIC`, as the
+      help says.
+- [x] No format change; commands without the option are unchanged. Tests,
+      help text, README and changelog.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data
