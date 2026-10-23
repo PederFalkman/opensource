@@ -5,6 +5,17 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+Two more command-line options, approved as P-37 and P-38: `--fail-on
+metadata` fails when the report lists metadata issues, and
+`--all-value-cols` assesses every column of a wide file. The report and
+comparison formats are unchanged (schema 2) and no public Python name is
+added or changed.
+
+**Upgrading from 0.10.0.** Nothing needs to change: both options are
+opt-in, and commands that worked with 0.10.0 give the same output and
+exit status. If a script listed every column with `--value-col`, it can
+use `--all-value-cols` instead.
+
 ### Added
 
 - `report --fail-on metadata` exits with status 1 when the report lists
