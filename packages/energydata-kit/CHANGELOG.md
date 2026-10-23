@@ -5,6 +5,8 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-23
+
 Two exit-status options for pipelines, approved as P-35 and P-36:
 `--fail-on empty` fails on a file without data rows, and
 `--min-completeness` fails below a completeness the caller chooses. The
