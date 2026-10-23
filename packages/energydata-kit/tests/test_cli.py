@@ -961,8 +961,11 @@ def test_usage_errors_and_version(capsys):
 @pytest.mark.parametrize(
     ("argv", "status_1"),
     [
-        ([], "1 issues found (--fail-on-issues, --fail-if-worse)"),
-        (["report"], "1 issues found with --fail-on-issues"),
+        ([], "1 issues found (--fail-on-issues, --fail-on, --min-completeness, --fail-if-worse)"),
+        (
+            ["report"],
+            "1 issues found with --fail-on-issues or --fail-on, or completeness below --min-completeness",
+        ),
         (["compare"], "1 worse with --fail-if-worse"),
     ],
 )
@@ -1115,6 +1118,39 @@ def test_fail_on_empty(tmp_path):
     # Opt-in: --fail-on-issues and the other names keep their exit status for an empty file.
     for argv in (["--fail-on-issues"], ["--fail-on", "gaps"], ["--fail-on", "ANY"]):
         assert run("report", empty, "--value-col", "kwh", "--freq", "1h", *argv)[0] == 0, argv
+
+
+def test_min_completeness(tmp_path):
+    # P-36: the caller's limit between "any gap" (--fail-on gaps) and never failing.
+    rows = [f"2024-01-01T{h:02d}:00Z,1,1" for h in range(24) if h != 5]  # 05:00 missing: 23 of 24
+    path = str(write(tmp_path, "timestamp,a,b\n" + "\n".join(rows) + "\n"))
+    one = ["report", path, "--value-col", "a", "--freq", "1h"]
+    assert run(*one, "--min-completeness", "0.95")[0] == 0  # 95.83%
+    assert run(*one, "--min-completeness", "0.99")[0] == 1
+    assert run(*one, "--min-completeness", "0")[0] == 0
+    assert run(*one, "--min-completeness", "1")[0] == 1
+    # With a known outage, completeness without it is compared, as compare does (P-24).
+    outage = ["--known-outage", "2024-01-01T05:00Z", "2024-01-01T05:00Z"]
+    assert run(*one, "--min-completeness", "1", *outage)[0] == 0
+    # Multi-column: any column below fails; combines with --fail-on.
+    both = ["report", path, "--value-col", "a", "--value-col", "b", "--freq", "1h"]
+    assert run(*both, "--min-completeness", "0.99")[0] == 1
+    assert run(*both, "--min-completeness", "0.9", "--fail-on", "NON_FINITE")[0] == 0
+    assert run(*both, "--min-completeness", "0.9", "--fail-on", "gaps")[0] == 1
+    # Not checked is refused (exit 2, no report written), not passed.
+    empty = str(write(tmp_path, "timestamp,a\n", "empty.csv"))
+    for argv, message in [
+        (["report", path, "--value-col", "a"], "completeness is not checked; there is no step"),
+        (["report", path, "--value-col", "a", "--value-col", "b"], "for column 'a'; there is no step"),
+        (["report", empty, "--freq", "1h"], "there are no rows (to fail on that, use --fail-on empty)"),
+        ([*one, "--known-outage", "2024-01-01T00:00Z", "2024-01-01T23:00Z"], "inside the --known-outage"),
+    ]:
+        code, out, err = run(*argv, "--min-completeness", "0.5")
+        assert code == 2 and out == "" and message in err, argv
+    for value in ("1.5", "-0.1", "most", "nan"):
+        with pytest.raises(SystemExit) as exc:
+            run(*one, "--min-completeness", value)
+        assert exc.value.code == 2, value
 
 
 def test_fail_on_chooses_the_issues(tmp_path):
