@@ -163,6 +163,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="value column; repeat for a multi-column report (default: the columns named by --schema "
         "or --unit COLUMN=UNIT, else the only other column)",
     )
+    rep.add_argument(
+        "--all-value-cols",
+        action="store_true",
+        help="assess every column except the timestamp column (and --time-col), as if each were "
+        "passed with --value-col; a text column is reported as NON_NUMERIC",
+    )
 
     ts = rep.add_argument_group("timestamps")
     ts.add_argument("--assume-tz", help="IANA zone for naive timestamps, e.g. Europe/Stockholm")
@@ -446,6 +452,13 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
         if args.time_col not in frame.columns:
             raise CliError(f"time column {args.time_col!r} not found; columns: {list(frame.columns)}")
     value_cols = args.value_col
+    if args.all_value_cols:
+        # Every other column, in file order (P-38); a column added later is assessed too.
+        value_cols = [c for c in frame.columns if c not in (args.timestamp_col, args.time_col)]
+        if not value_cols:
+            raise CliError(
+                f"--all-value-cols: no column besides the timestamps; columns: {list(frame.columns)}"
+            )
     if value_cols is None and args.schema_metadata:
         value_cols = [c for c in args.schema_metadata if c in frame.columns]
         if not value_cols:
@@ -785,6 +798,8 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
         raise CliError("--insert-missing only affects --flags-csv")
     if args.schema and args.unit is not None:
         raise CliError("--schema and --unit both set metadata; use one")
+    if args.all_value_cols and args.value_col:
+        raise CliError("--all-value-cols and --value-col both choose the columns; use one")
     if args.fail_on_issues and args.fail_on:
         raise CliError("--fail-on-issues and --fail-on both choose what fails; use one")
     args.fail_on = _fail_on(args.fail_on)
