@@ -5,6 +5,18 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+Two command-line additions for reading real exports, approved as P-29 and
+P-30: `--encoding` for CSV files that are not UTF-8, and known-outage
+times without a UTC offset read in `--assume-tz`. The report and
+comparison formats are unchanged (schema 2) and no public Python name is
+added or changed.
+
+**Upgrading from 0.7.0.** Nothing needs to change: both additions are
+opt-in, and commands that worked with 0.7.0 give the same output. Only
+two error cases differ: a CSV that is not UTF-8 is still refused, with a
+hint to pass `--encoding`, and a `--known-outage` time without an offset
+is now accepted when `--assume-tz` is given instead of being refused.
+
 ### Added
 
 - `report --encoding NAME` reads CSV input in another text encoding, e.g.
