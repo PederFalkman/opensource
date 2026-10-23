@@ -112,7 +112,8 @@ metadata issues per column; `--format markdown` gives the same summary as
 Markdown, to paste into an issue or pull request. Use the JSON report for
 anything automated. Files separated by `;`, tab or `|` are
 read with `--delimiter ';'` (or `--delimiter tab`); `--decimal ,` reads
-decimal commas such as `1,5`. Files that are not UTF-8 (many European
+decimal commas such as `1,5`, and `--thousands .` (or `,`, `'`, `space`)
+reads values such as `1.234,5`. Files that are not UTF-8 (many European
 exports are Latin-1 or Windows-1252) are read with `--encoding latin-1`; the
 encoding is never guessed. `--known-outage START END` takes ISO 8601 times
 with an offset; with `--assume-tz`, times without one are read in that zone,

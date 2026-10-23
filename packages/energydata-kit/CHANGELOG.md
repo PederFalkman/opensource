@@ -16,6 +16,13 @@ versioning: [SemVer](https://semver.org/).
   `--timestamp-col`. Before, passing the date column alone read every row
   of a day as the same timestamp, without an error. The report format is
   unchanged.
+- `report --thousands SEP` reads values with a thousands separator, e.g.
+  `--delimiter ';' --decimal , --thousands .` for `1.234,5` (P-33); the
+  choices are `.`, `,`, `'` and `space`. Before, such values were not read
+  as numbers, so every row was flagged `NON_NUMERIC` while the command
+  exited 0. The separator must differ from `--decimal` and the delimiter
+  (refused otherwise), and it applies to CSV input only. The flags CSV
+  writes the values without it. The report format is unchanged.
 
 ## [0.8.0] - 2026-10-23
 
