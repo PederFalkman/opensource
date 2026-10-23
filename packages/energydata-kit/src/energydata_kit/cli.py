@@ -92,8 +92,9 @@ _EXIT_REPORT = (
     "--min-completeness; 2 usage, input or file error"
 )
 _EXIT_COMPARE = (
-    "exit status: 0 OK; 1 worse with --fail-if-worse, or a column removed with "
-    "--fail-on-removed-columns; 2 usage, input or file error"
+    "exit status: 0 OK; 1 worse with --fail-if-worse, a column removed with "
+    "--fail-on-removed-columns, or parameters changed with --fail-on-changed-parameters; "
+    "2 usage, input or file error"
 )
 
 
@@ -334,6 +335,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="exit with status 1 if a column of the earlier report is missing from the later one "
         "(a removed column does not count as worse; added columns never fail)",
+    )
+    cmp.add_argument(
+        "--fail-on-changed-parameters",
+        action="store_true",
+        help="exit with status 1 if the reports were made with different parameters (for example the "
+        "step, bounds or known outages), so their numbers are not like for like",
     )
     return parser
 
@@ -1239,7 +1246,10 @@ def _run_compare(args: argparse.Namespace, stdout: TextIO) -> int:
         stdout.write(text)
     worse = args.fail_if_worse and comparison.worse
     removed = args.fail_on_removed_columns and bool(comparison.columns_removed)  # P-39
-    return int(worse or removed)
+    changed = args.fail_on_changed_parameters and any(  # P-40
+        "parameters" in series for series in comparison.changes.values()
+    )
+    return int(worse or removed or changed)
 
 
 def main(

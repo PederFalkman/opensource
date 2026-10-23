@@ -13,6 +13,13 @@ versioning: [SemVer](https://semver.org/).
   0, even with `--fail-if-worse`, so a meter that dropped out of an export
   passed unnoticed. Opt-in: `--fail-if-worse` keeps its meaning, and added
   columns never fail. The comparison format is unchanged.
+- `compare --fail-on-changed-parameters` exits with status 1 when the two
+  reports were made with different parameters, for example another step,
+  bounds or known outages, in any column (P-40). Before, the same data
+  reported with `--freq 1h` and then `2h` read as a completeness
+  improvement, "parameters changed: freq", and exited 0 with
+  `--fail-if-worse`. Opt-in: comparing across a deliberate change still
+  works by default. The comparison format is unchanged.
 
 ## [0.11.0] - 2026-10-23
 

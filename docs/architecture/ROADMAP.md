@@ -203,7 +203,7 @@ was checked on 2026-10-23 on `main` at `a8af8e6` (0.12.0.dev0).
 | ID | Candidate | Why | Effort | Risk and cost |
 |---|---|---|---|---|
 | P-39 | *Approved by the owner on 2026-10-23; done in OSS-191.* **Fail when a column disappears** (`compare --fail-on-removed-columns`): the exit status is 1 when a column in the earlier report is missing from the later one. | Checked: reports of `a,b,c` and then `a,c` (both with `--all-value-cols`) give "columns removed: b" and exit 0 with `--fail-if-worse`, because a removed column does not count as worse (documented). A meter that drops out of an export passes a regression check unnoticed. | S | No format change; the comparison already lists removed columns. Opt-in, so `--fail-if-worse` keeps its documented meaning and exit status. Added columns never fail. |
-| P-40 | *Approved by the owner on 2026-10-23; OSS-192.* **Fail when the reports were made differently** (`compare --fail-on-changed-parameters`): the exit status is 1 when the two reports' parameters differ (for example the step, bounds or known outages). | Checked: the same data reported with `--freq 1h` and then `--freq 2h` gives "completeness 66.67% -> 100.00%", "parameters changed: freq", "not worse", and exits 0 with `--fail-if-worse`. The numbers are not comparable, but the comparison reads as an improvement. | S | No format change; the comparison already names changed parameters. Opt-in; the default keeps comparing across parameter changes, which is sometimes intended (for example a deliberate new step). It combines with `--fail-if-worse`. |
+| P-40 | *Approved by the owner on 2026-10-23; done in OSS-192.* **Fail when the reports were made differently** (`compare --fail-on-changed-parameters`): the exit status is 1 when the two reports' parameters differ (for example the step, bounds or known outages). | Checked: the same data reported with `--freq 1h` and then `--freq 2h` gives "completeness 66.67% -> 100.00%", "parameters changed: freq", "not worse", and exits 0 with `--fail-if-worse`. The numbers are not comparable, but the comparison reads as an improvement. | S | No format change; the comparison already names changed parameters. Opt-in; the default keeps comparing across parameter changes, which is sometimes intended (for example a deliberate new step). It combines with `--fail-if-worse`. |
 | P-32 | *Carried over, not approved.* **Lines before the header** (`--skip-rows N`). As described for 0.9.0 below. | A preamble is refused as a missing column. | S | No format change. |
 | P-31 | *Carried over, not approved.* **Unix epoch timestamps** (`--timestamp-unit s|ms`). As described for 0.8.0 below. | Epoch seconds are refused. | S–M | No format change. |
 | P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below. | A long maintenance log makes a long command. | S | No format change. |
@@ -2293,12 +2293,22 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       each (P-39 first, as proposed). P-12, P-13, P-18, P-20, P-22, P-28,
       P-31 and P-32 are not approved.
 
-### OSS-191: fail when a column disappears (P-39) — this change
+### OSS-191: fail when a column disappears (P-39) — merged in [#163](https://github.com/PederFalkman/opensource/pull/163)
 
 - [x] `compare --fail-on-removed-columns` exits 1 when a column of the
       earlier report is missing from the later one.
 - [x] Opt-in: `--fail-if-worse` keeps its meaning and still passes a
       removed column; added columns never fail.
+- [x] No format change. Tests, help text, README and changelog.
+
+### OSS-192: fail when the reports were made differently (P-40) — this change
+
+- [x] `compare --fail-on-changed-parameters` exits 1 when the reports'
+      parameters differ in any column (for example the step, bounds or
+      known outages), as listed under "parameters changed".
+- [x] Opt-in: comparing across a deliberate parameter change still works
+      by default; combines with `--fail-if-worse` and
+      `--fail-on-removed-columns`.
 - [x] No format change. Tests, help text, README and changelog.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
