@@ -91,7 +91,10 @@ _EXIT_REPORT = (
     "exit status: 0 OK; 1 issues found with --fail-on-issues or --fail-on, or completeness below "
     "--min-completeness; 2 usage, input or file error"
 )
-_EXIT_COMPARE = "exit status: 0 OK; 1 worse with --fail-if-worse; 2 usage, input or file error"
+_EXIT_COMPARE = (
+    "exit status: 0 OK; 1 worse with --fail-if-worse, or a column removed with "
+    "--fail-on-removed-columns; 2 usage, input or file error"
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -325,6 +328,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="exit with status 1 if more rows are flagged, more intervals are missing outside known "
         "outages, or completeness fell",
+    )
+    cmp.add_argument(
+        "--fail-on-removed-columns",
+        action="store_true",
+        help="exit with status 1 if a column of the earlier report is missing from the later one "
+        "(a removed column does not count as worse; added columns never fail)",
     )
     return parser
 
@@ -1228,7 +1237,9 @@ def _run_compare(args: argparse.Namespace, stdout: TextIO) -> int:
         Path(args.output).write_text(text, encoding="utf-8", newline="\n")  # same bytes on Windows
     else:
         stdout.write(text)
-    return 1 if args.fail_if_worse and comparison.worse else 0
+    worse = args.fail_if_worse and comparison.worse
+    removed = args.fail_on_removed_columns and bool(comparison.columns_removed)  # P-39
+    return int(worse or removed)
 
 
 def main(

@@ -5,6 +5,15 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `compare --fail-on-removed-columns` exits with status 1 when a column of
+  the earlier report is missing from the later one (P-39). Before, a
+  removed column was listed ("columns removed: b") and the command exited
+  0, even with `--fail-if-worse`, so a meter that dropped out of an export
+  passed unnoticed. Opt-in: `--fail-if-worse` keeps its meaning, and added
+  columns never fail. The comparison format is unchanged.
+
 ## [0.11.0] - 2026-10-23
 
 Two more command-line options, approved as P-37 and P-38: `--fail-on
