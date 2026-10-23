@@ -15,6 +15,15 @@ versioning: [SemVer](https://semver.org/).
   the input's delimiter and decimal mark. An unknown encoding is refused,
   and so is `--encoding` with Parquet input or standard input. The report
   format is unchanged.
+- With `--assume-tz`, `report --known-outage` reads times without a UTC
+  offset in that zone, as the data's own timestamps are (P-30), e.g.
+  `--assume-tz Europe/Oslo --known-outage "2026-01-01 02:00" "2026-01-01 04:00"`.
+  The report records the periods in UTC, exactly as if they had been given
+  with an offset. A time skipped at the start of DST follows
+  `--nonexistent`; a time repeated at the end of DST is refused, with a
+  hint to give it with an offset. Without `--assume-tz`, a time without an
+  offset is refused as before, and the Python API (`known_outages=`) still
+  requires timezone-aware timestamps.
 
 ## [0.7.0] - 2026-10-22
 

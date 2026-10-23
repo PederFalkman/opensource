@@ -114,7 +114,9 @@ anything automated. Files separated by `;`, tab or `|` are
 read with `--delimiter ';'` (or `--delimiter tab`); `--decimal ,` reads
 decimal commas such as `1,5`. Files that are not UTF-8 (many European
 exports are Latin-1 or Windows-1252) are read with `--encoding latin-1`; the
-encoding is never guessed. `--flags-csv` writes the original rows, in the
+encoding is never guessed. `--known-outage START END` takes ISO 8601 times
+with an offset; with `--assume-tz`, times without one are read in that zone,
+as the data's own timestamps are. `--flags-csv` writes the original rows, in the
 same delimiter and decimal format as the input, with a `quality_flag` column, plus inserted rows with `--insert-missing`.
 `--gaps-csv gaps.csv` writes every gap, also beyond `--max-listed`, as
 `column,start,end,missing_count`, on the same grid as the report.
