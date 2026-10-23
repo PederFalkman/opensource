@@ -11,10 +11,10 @@ section "0.7.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 (all 2026-10-21) and 0.6.0 (2026-10-22) were released as GitHub releases
 only; their records are kept there. Engineering for 0.7.0 is complete
 (OSS-161 and OSS-162, P-26 and P-27), and the owner recorded the answers
-below on 2026-10-22; 0.7.0 was released the same day (OSS-164, #136). No
-0.8.0 work is approved yet; the candidates (P-29 to P-31, and P-12, P-13,
-P-18, P-20, P-22 and P-28 carried over) are under "Proposed" below
-(OSS-166) and not approved.
+below on 2026-10-22; 0.7.0 was released the same day (OSS-164, #136). For
+0.8.0 the owner approved P-29 and P-30 on 2026-10-23 (OSS-167 and OSS-168);
+P-31, and P-12, P-13, P-18, P-20, P-22 and P-28 carried over, are under
+"Proposed" below (OSS-166) and not approved.
 
 - [x] **G1 for 0.7.0.** Counsel confirmed that the code added since 0.6.0
       (`ba19231`) is covered (recorded 2026-10-22).
@@ -156,8 +156,8 @@ changes the report format. Each motivating behaviour was checked on
 
 | ID | Candidate | Why | Effort | Risk and cost |
 |---|---|---|---|---|
-| P-29 | **Input encoding for CSV** (`report --encoding latin-1`, default UTF-8 as now). The flags and gaps CSVs are written in the same encoding, as they already follow the input's delimiter and decimal mark. | Checked: a Latin-1 file with a column `förbrukning` (`--delimiter ';' --decimal ,`, as many European exports are) is refused with "could not read CSV: 'utf-8' codec can't decode byte 0xf6". Users must re-encode the file first. | S | No format change. The encoding is named by the caller and never guessed (no detection library). An unknown name is refused (exit 2); Parquet ignores it, so with Parquet input it is refused rather than silently unused. |
-| P-30 | **Known outages in the data's time zone.** With `--assume-tz`, a naive `--known-outage` timestamp is read in that zone, as the data's own timestamps are; without it, naive outages are refused as now. | Checked: `report naive.csv --assume-tz Europe/Oslo --known-outage "2026-01-01 02:00" "2026-01-01 02:00"` is refused with "known outage must be timezone-aware", although the same wall-clock text in the data is accepted. Users convert maintenance times to UTC offsets by hand. | S | No format change: the report already records the outages in UTC. A naive time in a DST gap or overlap follows `--nonexistent` and `--ambiguous` like the data, or is refused. The Python API (`known_outages=`) keeps requiring aware timestamps; only the command line reads them in `--assume-tz`. |
+| P-29 | *Approved by the owner on 2026-10-23; done in OSS-167.* **Input encoding for CSV** (`report --encoding latin-1`, default UTF-8 as now). The flags and gaps CSVs are written in the same encoding, as they already follow the input's delimiter and decimal mark. | Checked: a Latin-1 file with a column `förbrukning` (`--delimiter ';' --decimal ,`, as many European exports are) is refused with "could not read CSV: 'utf-8' codec can't decode byte 0xf6". Users must re-encode the file first. | S | No format change. The encoding is named by the caller and never guessed (no detection library). An unknown name is refused (exit 2); Parquet ignores it, so with Parquet input it is refused rather than silently unused. |
+| P-30 | *Approved by the owner on 2026-10-23; OSS-168.* **Known outages in the data's time zone.** With `--assume-tz`, a naive `--known-outage` timestamp is read in that zone, as the data's own timestamps are; without it, naive outages are refused as now. | Checked: `report naive.csv --assume-tz Europe/Oslo --known-outage "2026-01-01 02:00" "2026-01-01 02:00"` is refused with "known outage must be timezone-aware", although the same wall-clock text in the data is accepted. Users convert maintenance times to UTC offsets by hand. | S | No format change: the report already records the outages in UTC. A naive time in a DST gap or overlap follows `--nonexistent` and `--ambiguous` like the data, or is refused. The Python API (`known_outages=`) keeps requiring aware timestamps; only the command line reads them in `--assume-tz`. |
 | P-31 | **Unix epoch timestamps** (`report --timestamp-unit s`, also `ms`). Integer or decimal seconds (or milliseconds) since 1970-01-01 UTC are read as UTC timestamps. | Checked: a file with `timestamp` values `1767225600,1767229200` (two hours in 2026) is refused with "could not parse 2 timestamp(s) as ISO 8601". Exports from APIs and loggers often use epoch seconds. | S–M | No format change: timestamps become UTC as ISO input does. Opt-in, so a column of numbers is never taken as epoch time by guess; `--assume-tz` is refused with it (epoch time has no local zone). Whether `normalize_timestamps` should gain the same option, a public API addition, is a separate choice; the command line can convert before calling it. |
 | P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below; pairs naturally with P-30. | A long maintenance log makes a long command. | S | No format change. |
 | P-13 | *Carried over, not approved.* `origin="epoch"`. | A leading off-grid timestamp shifts the grid. | S | Fits schema 2. |
@@ -1802,7 +1802,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Status lines: 0.7.0 is the GitHub release, `main` is 0.8.0
       development.
 
-### OSS-166: 0.8.0 proposals — this change
+### OSS-166: 0.8.0 proposals — merged in [#138](https://github.com/PederFalkman/opensource/pull/138)
 
 - [x] P-29 to P-31 written up for the owner to approve one by one, ranked
       with P-12, P-13, P-18, P-20, P-22 and P-28 carried over; none of the
@@ -1810,6 +1810,21 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       checked on 2026-10-22 on `5f9480c` (a Latin-1 file refused, a naive
       `--known-outage` refused despite `--assume-tz`, epoch-second
       timestamps refused). Docs only; nothing is authorized.
+- [x] The owner approved P-29 and P-30 on 2026-10-23, to be built one PR
+      each (P-29 first, as proposed). P-31, P-12, P-13, P-18, P-20, P-22
+      and P-28 are not approved.
+
+### OSS-167: input encoding for CSV (P-29) — this change
+
+- [x] `report --encoding NAME` reads CSV input in that encoding (default
+      UTF-8, as before); the name is checked with Python's codec registry
+      before any file is read, and never guessed. `--flags-csv` and
+      `--gaps-csv` are written in the same encoding.
+- [x] A UTF-8 decode error now suggests `--encoding latin-1`. Refused
+      (exit 2): an unknown encoding, `--encoding` with Parquet input, and
+      with standard input (already decoded text).
+- [x] No format change: a Latin-1 file gives the same report as the same
+      data in UTF-8. Tests, README and changelog.
 
 ## Explicitly not planned
 

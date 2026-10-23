@@ -277,6 +277,32 @@ def test_input_errors_exit_2_without_traceback(tmp_path, argv, message):
     assert "Traceback" not in err
 
 
+def test_encoding(tmp_path):
+    # P-29: a non-UTF-8 export is read with --encoding; the flags and gaps CSVs keep it.
+    text = "tid;förbrukning\n2026-01-01T00:00Z;1,5\n2026-01-01T01:00Z;1,5\n2026-01-01T03:00Z;2,5\n"
+    path = tmp_path / "latin1.csv"
+    path.write_bytes(text.encode("latin-1"))
+    utf8 = tmp_path / "utf8.csv"
+    utf8.write_text(text, encoding="utf-8")
+    options = ["--timestamp-col", "tid", "--delimiter", ";", "--decimal", ",", "--freq", "1h"]
+    code, out, err = run("report", str(path), *options)
+    assert code == 2 and out == "" and "codec can't decode" in err and "--encoding latin-1" in err
+    flags, gaps = tmp_path / "flags.csv", tmp_path / "gaps.csv"
+    written = ["--stale-min-run", "2", "--flags-csv", str(flags), "--gaps-csv", str(gaps)]
+    code, out, err = run("report", str(path), *options, "--encoding", "latin-1", *written)
+    assert (code, err) == (0, "")
+    same = run("report", str(utf8), *options, "--stale-min-run", "2")[1]
+    assert out == same  # the same report as from the UTF-8 file
+    assert flags.read_bytes().startswith("tid;förbrukning;quality_flag\n".encode("latin-1"))
+    assert pd.read_csv(gaps, sep=";", encoding="latin-1")["column"].tolist() == ["förbrukning"]
+    for argv, message in [
+        ([str(path), "--encoding", "no-such-codec"], "unknown encoding: 'no-such-codec'"),
+        (["-", "--encoding", "latin-1"], "standard input is read as text already"),
+    ]:
+        code, out, err = run("report", *argv)
+        assert code == 2 and out == "" and message in err, argv
+
+
 def test_edge_case_files(tmp_path):
     empty = tmp_path / "empty.csv"
     empty.write_text("")
@@ -712,8 +738,9 @@ def test_parquet_input_gives_the_same_report_as_csv(tmp_path, timestamps_as):
 
 def test_parquet_rejects_csv_options_and_explains_a_missing_pyarrow(tmp_path, monkeypatch):
     path = _parquet(tmp_path, pd.read_csv(io.StringIO(CLEAN)))
-    code, _, err = run("report", path, "--decimal", ",")
-    assert code == 2 and "apply to CSV files only" in err
+    for option in (["--decimal", ","], ["--encoding", "latin-1"]):
+        code, _, err = run("report", path, *option)
+        assert code == 2 and "apply to CSV files only" in err, option
 
     def no_pyarrow(*args, **kwargs):
         raise ImportError("Unable to find a usable engine; tried using: 'pyarrow'")
