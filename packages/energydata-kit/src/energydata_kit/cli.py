@@ -221,8 +221,9 @@ def build_parser() -> argparse.ArgumentParser:
         action="append",
         default=[],
         metavar=("START", "END"),
-        help="a period in which data is known to be missing, as timezone-aware ISO 8601 timestamps "
-        "(both included); repeatable. Missing intervals inside are counted as explained",
+        help="a period in which data is known to be missing, as ISO 8601 timestamps (both included; "
+        "with an offset, or without one in --assume-tz); repeatable. Missing intervals inside are "
+        "counted as explained",
     )
     out = rep.add_argument_group("output")
     out.add_argument("-o", "--output", help="write the report here instead of standard output")
@@ -434,6 +435,51 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
     return pd.DataFrame({str(c): frame[c].to_numpy() for c in value_cols}, index=index)
 
 
+def _outages_in_zone(args: argparse.Namespace) -> list[list[str]]:
+    """The --known-outage ends, with naive ones read in --assume-tz like the data (P-30).
+
+    Without --assume-tz they are passed on unchanged, so a naive end is refused as before.
+    """
+    if args.assume_tz is None:
+        return [list(pair) for pair in args.known_outage]
+    outages = []
+    for pair in args.known_outage:
+        ends = []
+        for text in pair:
+            try:
+                naive = pd.Timestamp(text).tz is None
+            except (TypeError, ValueError):  # unreadable: the report says so, as before
+                naive = False
+            if naive:
+                try:
+                    utc = normalize_timestamps(
+                        [text],
+                        assume_tz=args.assume_tz,
+                        ambiguous=args.ambiguous,
+                        nonexistent=args.nonexistent,
+                    )
+                except TimestampError as exc:
+                    # One timestamp has no neighbours to infer DST from; an offset settles it.
+                    # Decided by localising again, not from pandas' message, which varies by version.
+                    wall = pd.Timestamp(text)
+                    shifted = wall.tz_localize(args.assume_tz, ambiguous="NaT", nonexistent="shift_forward")
+                    skipped = not pd.isna(shifted) and pd.isna(
+                        wall.tz_localize(args.assume_tz, ambiguous="NaT", nonexistent="NaT")
+                    )
+                    why = (
+                        "skipped at the start of DST (see --nonexistent)"
+                        if skipped
+                        else "repeated at the end of DST"
+                    )
+                    raise CliError(
+                        f"--known-outage {text!r} is {why} in {args.assume_tz}; give it with a UTC offset"
+                    ) from exc
+                text = utc[0].isoformat()
+            ends.append(text)
+        outages.append(ends)
+    return outages
+
+
 def _load_schema(path: str) -> dict[str, MeasurementMetadata]:
     """Metadata per column from a Table Schema file, in field order."""
     try:
@@ -636,6 +682,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
     args.jump_max_rate = _rate_option(args.jump_max_rate)
 
     frame = _read_frame(args, stdin)
+    args.known_outage = _outages_in_zone(args)  # after the data, so --assume-tz is known to be valid
     args.freq_inferred = args.freq == "inferred"
     if args.freq_inferred:
         # Opt-in (P-27): the step the report records as inferred_resolution becomes the grid, as if

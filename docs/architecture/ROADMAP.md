@@ -157,7 +157,7 @@ changes the report format. Each motivating behaviour was checked on
 | ID | Candidate | Why | Effort | Risk and cost |
 |---|---|---|---|---|
 | P-29 | *Approved by the owner on 2026-10-23; done in OSS-167.* **Input encoding for CSV** (`report --encoding latin-1`, default UTF-8 as now). The flags and gaps CSVs are written in the same encoding, as they already follow the input's delimiter and decimal mark. | Checked: a Latin-1 file with a column `förbrukning` (`--delimiter ';' --decimal ,`, as many European exports are) is refused with "could not read CSV: 'utf-8' codec can't decode byte 0xf6". Users must re-encode the file first. | S | No format change. The encoding is named by the caller and never guessed (no detection library). An unknown name is refused (exit 2); Parquet ignores it, so with Parquet input it is refused rather than silently unused. |
-| P-30 | *Approved by the owner on 2026-10-23; OSS-168.* **Known outages in the data's time zone.** With `--assume-tz`, a naive `--known-outage` timestamp is read in that zone, as the data's own timestamps are; without it, naive outages are refused as now. | Checked: `report naive.csv --assume-tz Europe/Oslo --known-outage "2026-01-01 02:00" "2026-01-01 02:00"` is refused with "known outage must be timezone-aware", although the same wall-clock text in the data is accepted. Users convert maintenance times to UTC offsets by hand. | S | No format change: the report already records the outages in UTC. A naive time in a DST gap or overlap follows `--nonexistent` and `--ambiguous` like the data, or is refused. The Python API (`known_outages=`) keeps requiring aware timestamps; only the command line reads them in `--assume-tz`. |
+| P-30 | *Approved by the owner on 2026-10-23; done in OSS-168.* **Known outages in the data's time zone.** With `--assume-tz`, a naive `--known-outage` timestamp is read in that zone, as the data's own timestamps are; without it, naive outages are refused as now. | Checked: `report naive.csv --assume-tz Europe/Oslo --known-outage "2026-01-01 02:00" "2026-01-01 02:00"` is refused with "known outage must be timezone-aware", although the same wall-clock text in the data is accepted. Users convert maintenance times to UTC offsets by hand. | S | No format change: the report already records the outages in UTC. A naive time in a DST gap or overlap follows `--nonexistent` and `--ambiguous` like the data, or is refused. The Python API (`known_outages=`) keeps requiring aware timestamps; only the command line reads them in `--assume-tz`. |
 | P-31 | **Unix epoch timestamps** (`report --timestamp-unit s`, also `ms`). Integer or decimal seconds (or milliseconds) since 1970-01-01 UTC are read as UTC timestamps. | Checked: a file with `timestamp` values `1767225600,1767229200` (two hours in 2026) is refused with "could not parse 2 timestamp(s) as ISO 8601". Exports from APIs and loggers often use epoch seconds. | S–M | No format change: timestamps become UTC as ISO input does. Opt-in, so a column of numbers is never taken as epoch time by guess; `--assume-tz` is refused with it (epoch time has no local zone). Whether `normalize_timestamps` should gain the same option, a public API addition, is a separate choice; the command line can convert before calling it. |
 | P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below; pairs naturally with P-30. | A long maintenance log makes a long command. | S | No format change. |
 | P-13 | *Carried over, not approved.* `origin="epoch"`. | A leading off-grid timestamp shifts the grid. | S | Fits schema 2. |
@@ -1814,7 +1814,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       each (P-29 first, as proposed). P-31, P-12, P-13, P-18, P-20, P-22
       and P-28 are not approved.
 
-### OSS-167: input encoding for CSV (P-29) — this change
+### OSS-167: input encoding for CSV (P-29) — merged in [#139](https://github.com/PederFalkman/opensource/pull/139)
 
 - [x] `report --encoding NAME` reads CSV input in that encoding (default
       UTF-8, as before); the name is checked with Python's codec registry
@@ -1825,6 +1825,19 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       with standard input (already decoded text).
 - [x] No format change: a Latin-1 file gives the same report as the same
       data in UTF-8. Tests, README and changelog.
+
+### OSS-168: known outages in the data's time zone (P-30) — this change
+
+- [x] With `--assume-tz`, each `--known-outage` end without a UTC offset is
+      localised in that zone with the same `--ambiguous` and
+      `--nonexistent` policies as the data, then passed on in UTC; ends
+      with an offset, and every end without `--assume-tz`, are passed on
+      unchanged. The report is byte-identical to the one with the UTC
+      times given.
+- [x] A time skipped at the start of DST follows `--nonexistent`; a single
+      repeated time cannot be placed and is refused (exit 2) with a hint
+      to give an offset. The Python API is unchanged.
+- [x] Tests, help text, README and changelog.
 
 ## Explicitly not planned
 

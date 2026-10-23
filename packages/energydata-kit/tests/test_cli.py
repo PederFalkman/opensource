@@ -277,6 +277,38 @@ def test_input_errors_exit_2_without_traceback(tmp_path, argv, message):
     assert "Traceback" not in err
 
 
+def test_known_outage_in_assume_tz(tmp_path):
+    # P-30: with --assume-tz, a naive --known-outage is read in that zone, like the data.
+    rows = ["2026-01-01 00:00,1", "2026-01-01 01:00,2", "2026-01-01 03:00,4"]
+    path = str(write(tmp_path, "timestamp,kwh\n" + "\n".join(rows) + "\n", "naive.csv"))
+    base = ["report", path, "--assume-tz", "Europe/Oslo", "--freq", "1h"]
+    local = run(*base, "--known-outage", "2026-01-01 02:00", "2026-01-01 02:00")
+    offset = run(*base, "--known-outage", "2026-01-01T01:00Z", "2026-01-01T01:00Z")
+    assert local == offset and local[0] == 0  # the same report, byte for byte
+    data = json.loads(local[1])
+    assert data["parameters"]["known_outages"] == [["2026-01-01T01:00:00+00:00"] * 2]
+    assert data["n_missing_explained"] == 1
+    # DST: a skipped time follows --nonexistent; one repeated time cannot be placed.
+    spring = ["--known-outage", "2026-03-29 02:30", "2026-03-29 02:30"]
+    shifted = json.loads(run(*base, "--nonexistent", "shift_forward", *spring)[1])
+    assert shifted["parameters"]["known_outages"] == [["2026-03-29T01:00:00+00:00"] * 2]
+    for argv, message in [
+        (spring, "is skipped at the start of DST (see --nonexistent) in Europe/Oslo"),
+        (["--known-outage", "2026-10-25 02:30", "2026-10-25 02:30"], "is repeated at the end of DST"),
+    ]:
+        code, out, err = run(*base, *argv)
+        assert code == 2 and out == "" and message in err and "give it with a UTC offset" in err, argv
+    # An unknown --assume-tz is reported for the data first, without a traceback.
+    code, out, err = run("report", path, "--assume-tz", "Not/AZone", "--freq", "1h", *spring)
+    assert code == 2 and out == "" and "could not localize to Not/AZone" in err
+    # Without --assume-tz a naive outage is refused as before.
+    aware = str(write(tmp_path, "timestamp,kwh\n2026-01-01T00:00Z,1\n2026-01-01T02:00Z,2\n", "aware.csv"))
+    code, out, err = run(
+        "report", aware, "--freq", "1h", "--known-outage", "2026-01-01 01:00", "2026-01-01 01:00"
+    )
+    assert code == 2 and out == "" and "known outage must be timezone-aware" in err
+
+
 def test_encoding(tmp_path):
     # P-29: a non-UTF-8 export is read with --encoding; the flags and gaps CSVs keep it.
     text = "tid;förbrukning\n2026-01-01T00:00Z;1,5\n2026-01-01T01:00Z;1,5\n2026-01-01T03:00Z;2,5\n"
