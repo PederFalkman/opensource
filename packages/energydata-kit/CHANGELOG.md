@@ -5,6 +5,18 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+Two more command-line options for reading real exports, approved as P-34
+and P-33: `--time-col` joins separate date and time columns, and
+`--thousands` reads values with a thousands separator. The report and
+comparison formats are unchanged (schema 2) and no public Python name is
+added or changed.
+
+**Upgrading from 0.8.0.** Nothing needs to change: both options are
+opt-in, and commands that worked with 0.8.0 give the same output. If you
+worked around these formats before (joining date and time by hand, or
+removing separators), you can drop the workaround; the report is the
+same.
+
 ### Added
 
 - `report --time-col COL` joins a time-of-day column with `--timestamp-col`
