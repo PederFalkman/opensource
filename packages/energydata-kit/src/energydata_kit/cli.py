@@ -269,7 +269,8 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="NAME",
         help="exit with status 1 only for these issues (repeatable): a flag name such as NON_FINITE "
         "or STALE_VALUE, ANY for any flagged row, gaps for any missing interval, or "
-        "unexplained-gaps for missing intervals outside the --known-outage periods",
+        "unexplained-gaps for missing intervals outside the --known-outage periods, "
+        "or empty for a file without data rows",
     )
 
     cmp = sub.add_parser(
@@ -599,23 +600,24 @@ def _metadata(args: argparse.Namespace, name: str) -> MeasurementMetadata | None
     )
 
 
-_GAP_ISSUES = ("gaps", "unexplained-gaps")
+# Issue names besides the flags; "empty" (P-35) is a file without data rows.
+_NAMED_ISSUES = ("gaps", "unexplained-gaps", "empty")
 
 
 def _fail_on(names: list[str] | None) -> list[str] | None:
-    """--fail-on names, checked and normalised: flag names in upper case, gap names in lower case."""
+    """--fail-on names, checked and normalised: flag names in upper case, the other names in lower case."""
     if names is None:
         return None
     known = [m.name for m in QualityFlag if m.name and m.value and m is not QualityFlag.MISSING_INTERVAL]
     known.append("ANY")
     checked = []
     for name in names:
-        if name.lower() in _GAP_ISSUES:
+        if name.lower() in _NAMED_ISSUES:
             checked.append(name.lower())
         elif name.upper() in known:
             checked.append(name.upper())
         else:
-            raise CliError(f"--fail-on {name!r} is not an issue name; use one of {[*known, *_GAP_ISSUES]}")
+            raise CliError(f"--fail-on {name!r} is not an issue name; use one of {[*known, *_NAMED_ISSUES]}")
     return checked
 
 
@@ -625,6 +627,8 @@ def _issue_found(r: QualityReport, name: str) -> bool:
         return r.n_missing_intervals > 0
     if name == "unexplained-gaps":
         return unexplained > 0
+    if name == "empty":
+        return r.n_rows == 0
     return r.flag_counts.get(name, 0) > 0
 
 
@@ -632,7 +636,7 @@ def _exit_status(args: argparse.Namespace, report: QualityReport | FrameQualityR
     """1 when an issue that should fail the command was found, else 0.
 
     --fail-on-issues: any flagged row or any missing interval outside the --known-outage periods
-    (P-21). --fail-on NAME: only the named issues (P-23).
+    (P-21). --fail-on NAME: only the named issues (P-23), including a file without data rows (P-35).
     """
     names = ["ANY", "unexplained-gaps"] if args.fail_on_issues else args.fail_on or []
     reports = report.columns.values() if isinstance(report, FrameQualityReport) else [report]

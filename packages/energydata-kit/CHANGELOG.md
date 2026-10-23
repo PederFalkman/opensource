@@ -5,6 +5,15 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `report --fail-on empty` exits with status 1 when the input has no data
+  rows, e.g. an export that came back with only its header (P-35). Before,
+  such a file always exited 0, even with `--fail-on-issues`, so a pipeline
+  passed it as if the data were perfect. Opt-in: `--fail-on-issues` and
+  the other names keep their exit status for an empty file. The report
+  format is unchanged.
+
 ## [0.9.0] - 2026-10-23
 
 Two more command-line options for reading real exports, approved as P-34
