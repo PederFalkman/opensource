@@ -90,7 +90,7 @@ python -m pytest tools/tests
   `docs/architecture/PERFORMANCE.md`.
 - User-visible changes, including public API, `QualityFlag` values and the
   report schema, need an entry under `## [Unreleased]` in the package
-  `CHANGELOG.md`. The released sections (`## [0.1.0]` to `## [0.11.0]`) are not edited; the
+  `CHANGELOG.md`. The released sections (`## [0.1.0]` to `## [0.12.0]`) are not edited; the
   release PR folds `[Unreleased]` into the new dated section.
 
 ## Pull request checklist
