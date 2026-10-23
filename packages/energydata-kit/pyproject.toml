@@ -26,10 +26,6 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering",
     "Typing :: Typed",
-    # PyPI rejects uploads carrying this classifier. D6 approved 0.8.0 as a
-    # GitHub release only, so it is back for 0.9.0 development; a release PR
-    # removes it only with a new D6 approval naming that version (OSS-171).
-    "Private :: Do Not Upload",
 ]
 dependencies = [
     "numpy>=1.26",
