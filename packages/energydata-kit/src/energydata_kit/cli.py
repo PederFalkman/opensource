@@ -283,9 +283,9 @@ def build_parser() -> argparse.ArgumentParser:
         action="append",
         metavar="NAME",
         help="exit with status 1 only for these issues (repeatable): a flag name such as NON_FINITE "
-        "or STALE_VALUE, ANY for any flagged row, gaps for any missing interval, or "
+        "or STALE_VALUE, ANY for any flagged row, gaps for any missing interval, "
         "unexplained-gaps for missing intervals outside the --known-outage periods, "
-        "or empty for a file without data rows",
+        "empty for a file without data rows, or metadata for metadata issues such as SUM_OF_POWER",
     )
     out.add_argument(
         "--min-completeness",
@@ -623,8 +623,9 @@ def _metadata(args: argparse.Namespace, name: str) -> MeasurementMetadata | None
     )
 
 
-# Issue names besides the flags; "empty" (P-35) is a file without data rows.
-_NAMED_ISSUES = ("gaps", "unexplained-gaps", "empty")
+# Issue names besides the flags; "empty" (P-35) is a file without data rows, "metadata" (P-37)
+# any metadata issue the report lists.
+_NAMED_ISSUES = ("gaps", "unexplained-gaps", "empty", "metadata")
 
 
 def _fail_on(names: list[str] | None) -> list[str] | None:
@@ -652,6 +653,8 @@ def _issue_found(r: QualityReport, name: str) -> bool:
         return unexplained > 0
     if name == "empty":
         return r.n_rows == 0
+    if name == "metadata":
+        return bool(r.metadata_issues)
     return r.flag_counts.get(name, 0) > 0
 
 
@@ -659,7 +662,8 @@ def _exit_status(args: argparse.Namespace, report: QualityReport | FrameQualityR
     """1 when an issue that should fail the command was found, else 0.
 
     --fail-on-issues: any flagged row or any missing interval outside the --known-outage periods
-    (P-21). --fail-on NAME: only the named issues (P-23), including a file without data rows (P-35).
+    (P-21). --fail-on NAME: only the named issues (P-23), including a file without data rows (P-35)
+    and metadata issues (P-37).
     --min-completeness: completeness below the caller's fraction in any column (P-36); combines
     with either.
     """

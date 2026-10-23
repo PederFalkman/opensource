@@ -1120,6 +1120,25 @@ def test_fail_on_empty(tmp_path):
         assert run("report", empty, "--value-col", "kwh", "--freq", "1h", *argv)[0] == 0, argv
 
 
+def test_fail_on_metadata(tmp_path):
+    # P-37: metadata issues can fail the command; before, they were reported and it exited 0.
+    path = str(write(tmp_path, "timestamp,kw,kwh\n2026-01-01T00:00Z,1,1\n2026-01-01T01:00Z,2,2\n"))
+    one = ["report", path, "--value-col", "kw", "--freq", "1h"]
+    sum_of_power = ["--unit", "kW", "--aggregation", "sum", "--resolution", "1h"]
+    code, out, _ = run(*one, *sum_of_power, "--fail-on", "metadata")
+    assert code == 1 and json.loads(out)["metadata_issues"][0]["code"] == "SUM_OF_POWER"
+    assert run(*one, *sum_of_power, "--fail-on", "METADATA")[0] == 1  # names are case-blind
+    assert run(*one, "--unit", "kW", "--fail-on", "metadata")[0] == 0  # consistent metadata
+    assert run(*one, "--fail-on", "metadata")[0] == 0  # no metadata at all
+    # Multi-column: one column with an issue fails the command.
+    both = ["report", path, "--value-col", "kw", "--value-col", "kwh", "--freq", "1h"]
+    units = ["--unit", "kw=kW", "--unit", "kwh=kWh", "--aggregation", "sum", "--resolution", "1h"]
+    assert run(*both, *units, "--fail-on", "metadata")[0] == 1
+    # Opt-in: --fail-on-issues and the other names keep exit status 0.
+    for argv in (["--fail-on-issues"], ["--fail-on", "ANY"], ["--fail-on", "gaps"]):
+        assert run(*one, *sum_of_power, *argv)[0] == 0, argv
+
+
 def test_min_completeness(tmp_path):
     # P-36: the caller's limit between "any gap" (--fail-on gaps) and never failing.
     rows = [f"2024-01-01T{h:02d}:00Z,1,1" for h in range(24) if h != 5]  # 05:00 missing: 23 of 24
