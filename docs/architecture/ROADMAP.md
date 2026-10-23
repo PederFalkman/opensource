@@ -12,9 +12,9 @@ section "0.9.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 were released as GitHub releases only; their records are kept there.
 Engineering for 0.9.0 is complete (OSS-173 and OSS-174, P-34 and P-33), and
 the owner recorded the answers below on 2026-10-23; 0.9.0 was released the
-same day (OSS-176, #148). No 0.10.0 work is approved yet; the remaining
-candidates (P-32, and P-12, P-13, P-18, P-20, P-22, P-28 and P-31 carried
-over) are under "Proposed" below (OSS-172) and not approved.
+same day (OSS-176, #148). No 0.10.0 work is approved yet; the candidates
+(P-35 and P-36, and P-12, P-13, P-18, P-20, P-22, P-28, P-31 and P-32
+carried over) are under "Proposed" below (OSS-178) and not approved.
 
 - [x] **G1 for 0.9.0.** Counsel confirmed that the code added since 0.8.0
       (`32411b5`) is covered (recorded 2026-10-23).
@@ -163,6 +163,41 @@ and anything that downloads data.
 
 **Suggested order if approved:** P-3 and P-4 first (small, no schema change),
 then P-2 with P-6 as one schema-2 change, then P-5 if users ask for it.
+
+### P-35 and P-36: candidates for 0.10.0 (OSS-178)
+
+*Prepared by the assistant in OSS-178 for the owner to approve or reject one
+by one. Nothing here is authorized; none of it starts without approval.*
+Each item is generic data-quality or command-line tooling as defined in
+`IP_BOUNDARY.md` ("What *is* in scope"), ships no domain thresholds and
+touches nothing on the out-of-scope list. P-32, P-31, P-22, P-13, P-18,
+P-28, P-12 and P-20 from earlier rounds were not approved and stay open;
+they are ranked again below. After four rounds about reading files, both
+new items concern the exit status pipelines rely on, and neither changes
+the report format. Each motivating behaviour was checked on 2026-10-23 on
+`main` at `9a88919` (0.10.0.dev0).
+
+| ID | Candidate | Why | Effort | Risk and cost |
+|---|---|---|---|---|
+| P-35 | **Fail on a file without data** (`report --fail-on empty`): the exit status is 1 when the input has no data rows. | Checked: a CSV with only its header gives "kwh: 0 rows … completeness: not checked (no rows)" and exits 0, even with `--fail-on-issues` or `--fail-on gaps`. A pipeline whose export came back empty passes as if the data were perfect. | S | No format change; the report already has `n_rows`. Opt-in as a new `--fail-on` name, so existing commands keep their exit status. Whether `--fail-on-issues` should include it by default is a separate choice (a behaviour change) and is not part of this proposal. |
+| P-36 | **Fail below a completeness the caller chooses** (`report --min-completeness 0.99`): the exit status is 1 when completeness is below the value; with known outages, `completeness_excluding_outages` is used, as `compare` does since P-24. | Checked: `--fail-on gaps` is all or nothing, so one missing hour in a day (95.83%) fails exactly like a missing week, and nothing between "any gap" and "never" can be expressed. The option list has no completeness limit. | S | No format change. The limit is the caller's (a fraction from 0 to 1; no default, nothing shipped), in line with "every limit stays caller-supplied". A report without a step (completeness not checked) is refused with this option rather than passed. Multi-column reports fail if any column is below. |
+| P-32 | *Carried over, not approved.* **Lines before the header** (`--skip-rows N`). As described for 0.9.0 below. | A preamble is refused as a missing column. | S | No format change. |
+| P-31 | *Carried over, not approved.* **Unix epoch timestamps** (`--timestamp-unit s|ms`). As described for 0.8.0 below. | Epoch seconds are refused. | S–M | No format change. |
+| P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below. | A long maintenance log makes a long command. | S | No format change. |
+| P-13 | *Carried over, not approved.* `origin="epoch"`. | A leading off-grid timestamp shifts the grid. | S | Fits schema 2. |
+| P-18 | *Carried over, not approved.* Compare full gap lists from `--gaps-csv`. | Only listed gaps are compared. | S–M | No report change. |
+| P-28, P-12, P-20 | *Carried over, not approved.* Conflicting duplicates; DST policy for calendar grids; single-row spikes. | Known limitations. | M, S–M, M | Report schema 3; only together. |
+
+Considered and not proposed:
+- **A default completeness limit:** it would be a domain threshold shipped
+  by the package; P-36 leaves the number to the caller.
+- **Failing on fewer rows than a number:** completeness already measures
+  missing data against the grid; a row count adds little beyond P-35.
+
+**Suggested order if approved:** P-35 first (a silent pass on an empty
+export is the bigger risk, and it is small), then P-36. P-32, P-31 and
+P-22 as before; P-13 and P-18 as before; P-28 with P-12 and P-20 only as
+one schema-3 change. Each needs its own approval.
 
 ### P-32 to P-34: candidates for 0.9.0 (OSS-172)
 
@@ -1998,7 +2033,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       *Release build* workflow passed and created the draft release, which
       the owner published on 2026-10-23.
 
-### OSS-177: open 0.10.0 development — this change
+### OSS-177: open 0.10.0 development — merged in [#149](https://github.com/PederFalkman/opensource/pull/149)
 
 - [x] `__version__` is `0.10.0.dev0`; new changelog entries go under
       `[Unreleased]`, and the released sections are not edited.
@@ -2007,6 +2042,15 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       is not release-ready, with the licence checks and `--guard` passing.
 - [x] Status lines: 0.9.0 is the GitHub release, `main` is 0.10.0
       development.
+
+### OSS-178: 0.10.0 proposals — this change
+
+- [x] P-35 and P-36 written up for the owner to approve one by one, ranked
+      with P-12, P-13, P-18, P-20, P-22, P-28, P-31 and P-32 carried over;
+      neither new item changes the report format. Both motivating
+      behaviours were checked on 2026-10-23 on `9a88919` (an empty export
+      exits 0 even with `--fail-on-issues`; no limit between "any gap" and
+      "never"). Docs only; nothing is authorized.
 
 ## Explicitly not planned
 
