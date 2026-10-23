@@ -341,6 +341,35 @@ def test_time_col(tmp_path):
         assert code == 2 and out == "" and message in err, (path.name, extra, err)
 
 
+def test_thousands(tmp_path):
+    # P-33: values with a thousands separator are numbers, not NON_NUMERIC flags.
+    rows = ["2026-01-01T00:00Z;1.234,5", "2026-01-01T01:00Z;1.240,0", "2026-01-01T03:00Z;999,5"]
+    path = str(write(tmp_path, "timestamp;kwh\n" + "\n".join(rows) + "\n", "t.csv"))
+    plain = str(
+        write(tmp_path, "timestamp;kwh\n" + "\n".join(r.replace(".", "") for r in rows) + "\n", "p.csv")
+    )
+    base = ["--delimiter", ";", "--decimal", ",", "--freq", "1h"]
+    before = json.loads(run("report", path, *base)[1])
+    assert before["flag_counts"]["NON_NUMERIC"] == 3  # every row, even 999,5: the old, misleading result
+    flags = tmp_path / "flags.csv"
+    out = run("report", path, *base, "--thousands", ".", "--flags-csv", str(flags))
+    assert out == run("report", plain, *base) and out[0] == 0  # the same report as without separators
+    assert flags.read_text().splitlines()[1:3] == [
+        "2026-01-01T00:00:00+0000;1234,5;0",
+        "2026-01-01T01:00:00+0000;1240,0;0",
+    ]
+    for sep, text in [("space", "1 234.5"), ("'", "1'234.5"), (",", "1,234.5")]:
+        f = str(write(tmp_path, f"timestamp;kwh\n2026-01-01T00:00Z;{text}\n", "s.csv"))
+        data = json.loads(run("report", f, "--delimiter", ";", "--thousands", sep)[1])
+        assert data["flag_counts"]["NON_NUMERIC"] == 0, sep
+    for argv, message in [
+        ([path, *base, "--thousands", ","], "--thousands and --decimal are both ','"),
+        ([path, "--delimiter", "'", "--thousands", "'"], '--delimiter and --thousands are both "\'"'),
+    ]:
+        code, out, err = run("report", *argv)
+        assert code == 2 and out == "" and message in err, argv
+
+
 def test_encoding(tmp_path):
     # P-29: a non-UTF-8 export is read with --encoding; the flags and gaps CSVs keep it.
     text = "tid;förbrukning\n2026-01-01T00:00Z;1,5\n2026-01-01T01:00Z;1,5\n2026-01-01T03:00Z;2,5\n"
@@ -802,7 +831,7 @@ def test_parquet_input_gives_the_same_report_as_csv(tmp_path, timestamps_as):
 
 def test_parquet_rejects_csv_options_and_explains_a_missing_pyarrow(tmp_path, monkeypatch):
     path = _parquet(tmp_path, pd.read_csv(io.StringIO(CLEAN)))
-    for option in (["--decimal", ","], ["--encoding", "latin-1"]):
+    for option in (["--decimal", ","], ["--encoding", "latin-1"], ["--thousands", ","]):
         code, _, err = run("report", path, *option)
         assert code == 2 and "apply to CSV files only" in err, option
 

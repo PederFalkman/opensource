@@ -124,6 +124,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="decimal mark in values, e.g. ',' with --delimiter ';' (default: .)",
     )
     csv_fmt.add_argument(
+        "--thousands",
+        choices=[".", ",", "'", "space"],
+        help="thousands separator in values, e.g. '.' for 1.234,5 with --decimal ',' "
+        "(default: none); --flags-csv writes the values without it",
+    )
+    csv_fmt.add_argument(
         "--encoding",
         help="text encoding of the input files, e.g. latin-1 or cp1252 (default: UTF-8); "
         "--flags-csv and --gaps-csv are written in the same encoding",
@@ -301,6 +307,18 @@ def _delimiter(args: argparse.Namespace) -> str:
         )
     if sep == args.decimal:
         raise CliError(f"--delimiter and --decimal are both {sep!r}")
+    if sep == _thousands(args):
+        raise CliError(f"--delimiter and --thousands are both {sep!r}")
+    return sep
+
+
+def _thousands(args: argparse.Namespace) -> str | None:
+    """The --thousands separator as a character (P-33); never the decimal mark."""
+    if args.thousands is None:
+        return None
+    sep = " " if args.thousands == "space" else str(args.thousands)
+    if sep == args.decimal:
+        raise CliError(f"--thousands and --decimal are both {sep!r}")
     return sep
 
 
@@ -313,8 +331,15 @@ def _is_parquet(path: str) -> bool:
 
 def _read_parquet(args: argparse.Namespace, path: str) -> pd.DataFrame:
     """Read a Parquet input file (optional [parquet] extra: pyarrow)."""
-    if args.delimiter != "," or args.decimal != "." or args.encoding is not None:
-        raise CliError("--delimiter, --decimal and --encoding apply to CSV files only, not Parquet")
+    if (
+        args.delimiter != ","
+        or args.decimal != "."
+        or args.encoding is not None
+        or args.thousands is not None
+    ):
+        raise CliError(
+            "--delimiter, --decimal, --thousands and --encoding apply to CSV files only, not Parquet"
+        )
     if Path(path).is_dir():  # pandas would read it as a partitioned dataset
         raise CliError(f"{path} is a directory; pass a single Parquet file")
     try:
@@ -348,6 +373,7 @@ def _read_table(args: argparse.Namespace, path: str, stdin: TextIO) -> pd.DataFr
             stdin if path == "-" else path,
             sep=_delimiter(args),
             decimal=args.decimal,
+            thousands=_thousands(args),
             encoding=args.encoding,
             dtype={args.timestamp_col: str, **({args.time_col: str} if args.time_col else {})},
             keep_default_na=True,
