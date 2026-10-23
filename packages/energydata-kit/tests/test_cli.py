@@ -609,6 +609,21 @@ def test_fail_on_changed_parameters(tmp_path):
     assert run("compare", reports["w1"], reports["w2"], "--fail-on-changed-parameters")[0] == 1
 
 
+def test_fail_on_changed_metadata(tmp_path):
+    # P-41: reports that describe the data differently can fail compare; P-40 covers parameters only.
+    path = str(write(tmp_path, "timestamp,kw\n2026-01-01T00:00Z,1\n2026-01-01T01:00Z,2\n"))
+    reports = {}
+    for name, argv in [("kw", ["--unit", "kW"]), ("kwh", ["--unit", "kWh"]), ("none", [])]:
+        reports[name] = str(tmp_path / f"{name}.json")
+        assert run("report", path, "--freq", "1h", *argv, "-o", reports[name])[0] == 0
+    both = ["--fail-if-worse", "--fail-on-changed-parameters", "--format", "text"]
+    code, out, _ = run("compare", reports["kw"], reports["kwh"], *both)
+    assert code == 0 and "metadata changed: unit" in out  # unchanged without the option
+    assert run("compare", reports["kw"], reports["kwh"], "--fail-on-changed-metadata")[0] == 1
+    assert run("compare", reports["none"], reports["kw"], "--fail-on-changed-metadata")[0] == 1
+    assert run("compare", reports["kw"], reports["kw"], "--fail-on-changed-metadata")[0] == 0
+
+
 def test_compare_text_summary(tmp_path):
     gappy, fixed = write(tmp_path, GAPPY, name="gappy.csv"), write(tmp_path, FIXED, name="fixed.csv")
     before, after = tmp_path / "before.json", tmp_path / "after.json"
@@ -1012,12 +1027,13 @@ def test_usage_errors_and_version(capsys):
         (
             ["compare"],
             "1 worse with --fail-if-worse, a column removed with --fail-on-removed-columns, "
-            "or parameters changed with --fail-on-changed-parameters",
+            "parameters changed with --fail-on-changed-parameters, or metadata changed with "
+            "--fail-on-changed-metadata",
         ),
     ],
 )
 def test_help_lists_exit_status(argv, status_1, capsys, monkeypatch):
-    monkeypatch.setenv("COLUMNS", "200")  # keep argparse from wrapping the epilog
+    monkeypatch.setenv("COLUMNS", "300")  # keep argparse from wrapping the epilog
     with pytest.raises(SystemExit) as exc:
         main([*argv, "--help"])
     out = capsys.readouterr().out
