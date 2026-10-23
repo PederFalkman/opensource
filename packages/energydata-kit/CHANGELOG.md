@@ -5,6 +5,17 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+Two opt-in exit-status options for `compare`, approved as P-39 and P-40:
+`--fail-on-removed-columns` fails when a column disappears between two
+reports, and `--fail-on-changed-parameters` fails when the reports were
+made differently. The report and comparison formats are unchanged (schema
+2) and no public Python name is added or changed.
+
+**Upgrading from 0.11.0.** Nothing needs to change: both options are
+opt-in, and commands that worked with 0.11.0 give the same output and
+exit status. A pipeline that checked `columns_removed` or the changed
+parameters in the comparison JSON itself can use these options instead.
+
 ### Added
 
 - `compare --fail-on-removed-columns` exits with status 1 when a column of
