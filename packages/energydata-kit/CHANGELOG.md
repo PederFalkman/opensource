@@ -5,6 +5,18 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+Two exit-status options for pipelines, approved as P-35 and P-36:
+`--fail-on empty` fails on a file without data rows, and
+`--min-completeness` fails below a completeness the caller chooses. The
+report and comparison formats are unchanged (schema 2) and no public
+Python name is added or changed.
+
+**Upgrading from 0.9.0.** Nothing needs to change: both options are
+opt-in, and commands that worked with 0.9.0 give the same output and exit
+status. If a pipeline checked for empty files or parsed `completeness`
+from the JSON report to fail below a limit, it can use these options
+instead.
+
 ### Added
 
 - `report --fail-on empty` exits with status 1 when the input has no data

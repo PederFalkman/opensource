@@ -1,5 +1,72 @@
 # Release decisions for energydata-kit
 
+## 0.10.0 (in preparation)
+
+**Status:** open. Engineering for 0.10.0 is complete (OSS-179 and OSS-180)
+and nothing is decided here. `main` stays at `0.10.0.dev0` with the upload
+guard until the owner answers the questions below. The 0.9.0 to 0.1.0
+records follow and are unchanged.
+
+**What 0.10.0 contains** (P-35 and P-36 approved by the owner on
+2026-10-23; proposals in `docs/architecture/ROADMAP.md`, OSS-178):
+
+- `report --fail-on empty` exits with status 1 when the input has no data
+  rows (P-35, OSS-179, #151). Before, an export that came back with only
+  its header exited 0, even with `--fail-on-issues`.
+- `report --min-completeness FRACTION` exits with status 1 when
+  completeness is below the caller's fraction, without the known outages
+  when they are given (P-36, OSS-180, #152). Before, `--fail-on gaps`
+  was the only completeness-based failure, all or nothing. When
+  completeness is not checked the option is refused (status 2) rather
+  than passed.
+- No report- or comparison-format change (schema 2), no new or renamed
+  public Python name, nothing removed, and no change to the output or exit
+  status of commands that worked with 0.9.0. The changelog's
+  `[Unreleased]` section has the release notes.
+
+**What did not change since 0.9.0** (`git diff e098747` on
+`pyproject.toml`, 2026-10-23): no runtime dependency, optional extra,
+version range or data file was added or changed. The only `pyproject.toml`
+change is the restored upload guard (OSS-177). `THIRD_PARTY_LICENSES.md` is
+unchanged.
+
+| Gate | State for 0.10.0 | Open question |
+|---|---|---|
+| G1 Ownership | Counsel confirmed ownership for 0.1.0 (D2) and for the code added up to 0.9.0. Commits since the 0.9.0 release commit (`e098747`), on `main` at `76b58d1`: 8, of which 4 by the AI coding assistant in the owner's sessions (all with changes) and 4 by the owner (pull-request merges #149 to #152); no external contributor | Does counsel's confirmation cover the code added since 0.9.0, or should counsel confirm again? |
+| G2 Licence | Passed: Apache-2.0, unchanged | — |
+| G3 IP boundary review | The `IP boundary` CI job passed on every 0.10.0 PR. P-35 and P-36 change only when `report` exits with status 1, from numbers the report already has | Will the technical lead review and sign off the diff from 0.9.0? |
+| G4 Third-party licences | Unchanged since 0.9.0 (no dependency change) | Is the 0.9.0 position enough? |
+| G5 CI green | Green on every 0.10.0 PR and on `main`; re-checked on the release commit | — |
+| G6 Documentation honest | README, guide, changelog and help text updated with each step; both options are covered by tests on the lowest and current pandas | Review on the release commit |
+| G7 Publication (D6) | D6 approved 0.9.0 only; it does not carry over | GitHub release only, like 0.1.0 to 0.9.0, or also a package index? |
+
+**For the G3 reviewer** (the technical lead). The package code to review
+is the diff from the 0.9.0 release commit to the 0.10.0 release commit:
+`git diff e098747 <release commit> -- packages/energydata-kit/src`
+(2 files, about 75 added lines: `cli.py` and the version in
+`__init__.py`). Points to confirm, each also checked by a tool:
+
+- No new import: besides the standard library, the code still imports only
+  numpy, pandas and Pint (Pandera and pyarrow optional).
+  `python tools/check_ip_boundary.py`, run in CI, refuses forbidden imports
+  and any dependency off the reviewed allowlist.
+- No domain limits ship: the completeness fraction is the caller's, with
+  no default; the package suggests no value.
+- Tests and examples use synthetic data only; no customer data,
+  endpoints or credentials.
+- Nothing forecasts, optimises, or computes grid, capacity or financial
+  quantities: the changes compare the report's row count and completeness
+  with what the caller asked for and set the exit status.
+
+**After the decisions:** a release PR built from `RELEASE_CHECKLIST.md`
+sets `__version__` to `0.10.0`, moves `[Unreleased]` under a dated
+`## [0.10.0]` heading, records the answers under G1, G3 and G4, and adds
+the owner's D6 line naming `energydata-kit 0.10.0`; only with that line
+does it remove the upload guard. It passes `check_release_readiness.py
+--strict`. The owner then tags the merged commit `energydata-kit-v0.10.0`,
+the *Release build* workflow prepares the draft GitHub release, and the
+owner publishes it. None of this is done before the owner's decisions.
+
 ## 0.9.0 (released 2026-10-23)
 
 **Status:** decided 2026-10-23. The repository owner recorded the answers for G1,

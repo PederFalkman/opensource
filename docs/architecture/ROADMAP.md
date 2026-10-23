@@ -7,15 +7,24 @@ Merged items stay listed here as a record of what was agreed.
 ## Open decisions (owners required)
 
 Questions and evidence for each: `docs/governance/RELEASE_DECISIONS.md`,
-section "0.9.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
-(all 2026-10-21), 0.6.0 and 0.7.0 (both 2026-10-22) and 0.8.0 (2026-10-23)
-were released as GitHub releases only; their records are kept there.
-Engineering for 0.9.0 is complete (OSS-173 and OSS-174, P-34 and P-33), and
-the owner recorded the answers below on 2026-10-23; 0.9.0 was released the
-same day (OSS-176, #148). For 0.10.0 the owner approved P-35 and P-36 on
-2026-10-23 (OSS-179 and OSS-180); P-12, P-13, P-18, P-20, P-22, P-28, P-31
-and P-32, carried over, are under "Proposed" below (OSS-178) and not
-approved.
+section "0.10.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
+(all 2026-10-21), 0.6.0 and 0.7.0 (both 2026-10-22), and 0.8.0 and 0.9.0
+(both 2026-10-23) were released as GitHub releases only; their records are
+kept there. Engineering for 0.10.0 is complete (OSS-179 and OSS-180, P-35
+and P-36); it waits on the questions below. The other candidates (P-12,
+P-13, P-18, P-20, P-22, P-28, P-31 and P-32, carried over) are under
+"Proposed" below (OSS-178) and not approved.
+
+- [ ] **G1 for 0.10.0.** Does counsel's confirmation cover the code added
+      since 0.9.0 (`e098747`), or should counsel confirm again?
+- [ ] **G3 for 0.10.0.** Technical-lead sign-off of the IP-boundary review
+      of the diff from 0.9.0 (2 source files, about 75 added lines).
+- [ ] **G4 for 0.10.0.** No dependency changed; is the 0.9.0 position
+      enough?
+- [ ] **D6 for 0.10.0 (G7).** GitHub release only, like 0.9.0, or also a
+      package index?
+
+Recorded for 0.9.0:
 
 - [x] **G1 for 0.9.0.** Counsel confirmed that the code added since 0.8.0
       (`32411b5`) is covered (recorded 2026-10-23).
@@ -2064,7 +2073,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       exit status 0 for an empty file, as before.
 - [x] No format change. Tests, help text, README and changelog.
 
-### OSS-180: fail below a completeness the caller chooses (P-36) — this change
+### OSS-180: fail below a completeness the caller chooses (P-36) — merged in [#152](https://github.com/PederFalkman/opensource/pull/152)
 
 - [x] `--min-completeness FRACTION` exits 1 when completeness is below the
       caller's fraction (0 to 1, no default) in the report or in any column
@@ -2077,7 +2086,17 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] No format change; nothing shipped as a limit. Tests, help text,
       README and changelog.
 
-## Explicitly not planned
+### OSS-181: prepare the 0.10.0 release — this change
+
+- [x] `RELEASE_DECISIONS.md` gains a 0.10.0 section: what the release
+      contains (P-35, P-36), what did not change since 0.9.0 (no
+      dependency, extra or data file), the open questions per gate (G1,
+      G3, G4, D6) and a guide for the G3 reviewer. It decides nothing;
+      earlier records are kept.
+- [x] Changelog `[Unreleased]` reads as release notes: a summary and
+      "Upgrading from 0.9.0" (nothing to change). Version stays
+      `0.10.0.dev0`; the upload guard stays.
+- [x] "Open decisions" above lists the 0.10.0 questions.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data
