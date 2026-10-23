@@ -1103,6 +1103,20 @@ def test_fail_on_issues_ignores_explained_gaps(tmp_path):
     assert run("report", flagged, "--freq", "1h", "--fail-on-issues", *whole)[0] == 1
 
 
+def test_fail_on_empty(tmp_path):
+    # P-35: a file without data rows can fail the command; before, it always exited 0.
+    empty = str(write(tmp_path, "timestamp,kwh,pv\n", "empty.csv"))
+    full = str(write(tmp_path, "timestamp,kwh\n2026-01-01T00:00Z,1\n2026-01-01T01:00Z,2\n", "full.csv"))
+    assert run("report", empty, "--value-col", "kwh", "--freq", "1h", "--fail-on", "empty")[0] == 1
+    assert run("report", empty, "--value-col", "kwh", "--fail-on", "EMPTY")[0] == 1  # names are case-blind
+    both = ["--value-col", "kwh", "--value-col", "pv", "--fail-on", "empty"]
+    assert run("report", empty, *both)[0] == 1  # multi-column reports too
+    assert run("report", full, "--freq", "1h", "--fail-on", "empty")[0] == 0
+    # Opt-in: --fail-on-issues and the other names keep their exit status for an empty file.
+    for argv in (["--fail-on-issues"], ["--fail-on", "gaps"], ["--fail-on", "ANY"]):
+        assert run("report", empty, "--value-col", "kwh", "--freq", "1h", *argv)[0] == 0, argv
+
+
 def test_fail_on_chooses_the_issues(tmp_path):
     # P-23: --fail-on NAME fails only on the named issues; --fail-on-issues is unchanged.
     rows = ["2024-01-01T00:00Z,5", "2024-01-01T01:00Z,5", "2024-01-01T02:00Z,5", "2024-01-01T04:00Z,inf"]
