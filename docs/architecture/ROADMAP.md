@@ -13,8 +13,9 @@ section "0.12.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 kept there. Engineering for 0.12.0 is complete (OSS-191 and OSS-192, P-39
 and P-40), and the owner recorded the answers below on 2026-10-23; 0.12.0
 was released the same day (OSS-194, #166). No 0.13.0 work is approved yet;
-the remaining candidates (P-12, P-13, P-18, P-20, P-22, P-28, P-31 and
-P-32, carried over) are under "Proposed" below (OSS-190) and not approved.
+the candidates (P-41 and P-42, and P-12, P-13, P-18, P-20, P-22, P-28, P-31
+and P-32 carried over) are under "Proposed" below (OSS-196) and not
+approved.
 
 - [x] **G1 for 0.12.0.** Counsel confirmed that the code added since 0.11.0
       (`29bf8ee`) is covered (recorded 2026-10-23).
@@ -196,6 +197,43 @@ and anything that downloads data.
 
 **Suggested order if approved:** P-3 and P-4 first (small, no schema change),
 then P-2 with P-6 as one schema-2 change, then P-5 if users ask for it.
+
+### P-41 and P-42: candidates for 0.13.0 (OSS-196)
+
+*Prepared by the assistant in OSS-196 for the owner to approve or reject one
+by one. Nothing here is authorized; none of it starts without approval.*
+Each item is generic data-quality or command-line tooling as defined in
+`IP_BOUNDARY.md` ("What *is* in scope"), ships no domain thresholds and
+touches nothing on the out-of-scope list. P-32, P-31, P-22, P-13, P-18,
+P-28, P-12 and P-20 from earlier rounds were not approved and stay open;
+they are ranked again below. Neither new item changes the report or
+comparison format. Each motivating behaviour was checked on 2026-10-23 on
+`main` at `b5a6978` (0.13.0.dev0).
+
+| ID | Candidate | Why | Effort | Risk and cost |
+|---|---|---|---|---|
+| P-41 | **Fail when the reports describe the data differently** (`compare --fail-on-changed-metadata`): the exit status is 1 when the two reports' metadata differ (for example the unit, aggregation or resolution). | Checked: the same data reported with `--unit kW` and then `--unit kWh` gives "metadata changed: unit", "not worse", and exits 0 even with `--fail-if-worse --fail-on-changed-parameters`, because P-40 looks only at parameters. A changed unit makes the numbers mean something else, but the check passes. | S | No format change; the comparison already names changed metadata. Opt-in like P-40, which it mirrors; a deliberate change still compares by default. |
+| P-42 | **Point out column names that differ only by spaces**: when a named column is not found and a column of the file matches it once surrounding spaces are removed, the error says so. | Checked: a header `timestamp, kwh` (a space after the comma, common in hand-edited and some exported files) with `--value-col kwh` gives "value column 'kwh' not found; columns: ['timestamp', ' kwh']" and exits 2. The difference is easy to miss in the list. | S | Message only: the command still refuses (exit 2), and nothing is renamed or guessed. The same hint for `--timestamp-col` and `--time-col`. No format change. |
+| P-32 | *Carried over, not approved.* **Lines before the header** (`--skip-rows N`). As described for 0.9.0 below. | A preamble is refused as a missing column. | S | No format change. |
+| P-31 | *Carried over, not approved.* **Unix epoch timestamps** (`--timestamp-unit s|ms`). As described for 0.8.0 below. | Epoch seconds are refused. | S–M | No format change. |
+| P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below. | A long maintenance log makes a long command. | S | No format change. |
+| P-13 | *Carried over, not approved.* `origin="epoch"`. | A leading off-grid timestamp shifts the grid. | S | Fits schema 2. |
+| P-18 | *Carried over, not approved.* Compare full gap lists from `--gaps-csv`. | Only listed gaps are compared. | S–M | No report change. |
+| P-28, P-12, P-20 | *Carried over, not approved.* Conflicting duplicates; DST policy for calendar grids; single-row spikes. | Known limitations. | M, S–M, M | Report schema 3; only together. |
+
+Considered and not proposed:
+- **Stripping spaces from column names automatically:** it would silently
+  change which column a name refers to (and could make two columns
+  collide); P-42 only points the difference out and leaves the fix to the
+  caller.
+- **A byte-order mark at the start of a UTF-8 file:** checked, already
+  handled (a file starting with a BOM reads its first column name
+  correctly), so nothing is proposed.
+
+**Suggested order if approved:** P-41 first (it closes the same kind of
+silent pass as P-40), then P-42. P-32, P-31 and P-22 as before; P-13 and
+P-18 as before; P-28 with P-12 and P-20 only as one schema-3 change. Each
+needs its own approval.
 
 ### P-39 and P-40: candidates for 0.12.0 (OSS-190)
 
@@ -2348,7 +2386,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       *Release build* workflow passed and created the draft release, which
       the owner published on 2026-10-23.
 
-### OSS-195: open 0.13.0 development — this change
+### OSS-195: open 0.13.0 development — merged in [#167](https://github.com/PederFalkman/opensource/pull/167)
 
 - [x] `__version__` is `0.13.0.dev0`; new changelog entries go under
       `[Unreleased]`, and the released sections are not edited.
@@ -2357,6 +2395,16 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       is not release-ready, with the licence checks and `--guard` passing.
 - [x] Status lines: 0.12.0 is the GitHub release, `main` is 0.13.0
       development.
+
+### OSS-196: 0.13.0 proposals — this change
+
+- [x] P-41 and P-42 written up for the owner to approve one by one, ranked
+      with P-12, P-13, P-18, P-20, P-22, P-28, P-31 and P-32 carried over;
+      neither new item changes the report or comparison format. Both
+      motivating behaviours were checked on 2026-10-23 on `b5a6978` (a
+      changed unit passes `compare` with every option; a header with a
+      space after the comma is refused without pointing at it). Docs
+      only; nothing is authorized.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data
