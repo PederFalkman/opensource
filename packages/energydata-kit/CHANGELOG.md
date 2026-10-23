@@ -5,6 +5,8 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-23
+
 Two more command-line options, approved as P-37 and P-38: `--fail-on
 metadata` fails when the report lists metadata issues, and
 `--all-value-cols` assesses every column of a wide file. The report and
