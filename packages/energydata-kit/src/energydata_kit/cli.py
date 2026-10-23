@@ -19,6 +19,7 @@ input or data error.
 from __future__ import annotations
 
 import argparse
+import codecs
 import json
 import re
 import sys
@@ -121,6 +122,11 @@ def build_parser() -> argparse.ArgumentParser:
         choices=[".", ","],
         default=".",
         help="decimal mark in values, e.g. ',' with --delimiter ';' (default: .)",
+    )
+    csv_fmt.add_argument(
+        "--encoding",
+        help="text encoding of the input files, e.g. latin-1 or cp1252 (default: UTF-8); "
+        "--flags-csv and --gaps-csv are written in the same encoding",
     )
 
     cols = rep.add_argument_group("columns")
@@ -301,8 +307,8 @@ def _is_parquet(path: str) -> bool:
 
 def _read_parquet(args: argparse.Namespace, path: str) -> pd.DataFrame:
     """Read a Parquet input file (optional [parquet] extra: pyarrow)."""
-    if args.delimiter != "," or args.decimal != ".":
-        raise CliError("--delimiter and --decimal apply to CSV files only, not Parquet")
+    if args.delimiter != "," or args.decimal != "." or args.encoding is not None:
+        raise CliError("--delimiter, --decimal and --encoding apply to CSV files only, not Parquet")
     if Path(path).is_dir():  # pandas would read it as a partitioned dataset
         raise CliError(f"{path} is a directory; pass a single Parquet file")
     try:
@@ -336,6 +342,7 @@ def _read_table(args: argparse.Namespace, path: str, stdin: TextIO) -> pd.DataFr
             stdin if path == "-" else path,
             sep=_delimiter(args),
             decimal=args.decimal,
+            encoding=args.encoding,
             dtype={args.timestamp_col: str},
             keep_default_na=True,
         )
@@ -343,7 +350,10 @@ def _read_table(args: argparse.Namespace, path: str, stdin: TextIO) -> pd.DataFr
         raise CliError(f"file not found: {path}") from exc
     except (pd.errors.ParserError, pd.errors.EmptyDataError, UnicodeDecodeError) as exc:
         where = f" {path}" if len(args.csv) > 1 else ""
-        raise CliError(f"could not read CSV{where}: {exc}") from exc
+        hint = ""
+        if isinstance(exc, UnicodeDecodeError) and args.encoding is None:
+            hint = " (if the file is not UTF-8, name its encoding, e.g. --encoding latin-1)"
+        raise CliError(f"could not read CSV{where}: {exc}{hint}") from exc
 
 
 def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
@@ -537,6 +547,7 @@ def _write_flags(args: argparse.Namespace, flagged: pd.DataFrame, flag_col: str)
         args.flags_csv,
         sep=_delimiter(args),
         decimal=args.decimal,
+        encoding=args.encoding,
         date_format="%Y-%m-%dT%H:%M:%S%z",
         lineterminator="\n",
     )
@@ -583,6 +594,7 @@ def _write_gaps(
     table.to_csv(
         args.gaps_csv,
         sep=_delimiter(args),
+        encoding=args.encoding,
         index=False,
         date_format="%Y-%m-%dT%H:%M:%S%z",
         lineterminator="\n",
@@ -601,6 +613,14 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
     if args.fail_on_issues and args.fail_on:
         raise CliError("--fail-on-issues and --fail-on both choose what fails; use one")
     args.fail_on = _fail_on(args.fail_on)
+    if args.encoding is not None:
+        # Named by the caller, never detected (P-29); checked before any file is read.
+        try:
+            codecs.lookup(args.encoding)
+        except LookupError:
+            raise CliError(f"unknown encoding: {args.encoding!r}") from None
+        if "-" in args.csv:
+            raise CliError("--encoding applies to files; standard input is read as text already")
     if args.unit is None and (
         args.resolution
         or args.timezone

@@ -5,6 +5,17 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `report --encoding NAME` reads CSV input in another text encoding, e.g.
+  `--encoding latin-1` or `cp1252` for many European exports (P-29). The
+  default stays UTF-8, and the encoding is never guessed; when a file is
+  not UTF-8 the error now suggests the option. `--flags-csv` and
+  `--gaps-csv` are written in the same encoding, as they already follow
+  the input's delimiter and decimal mark. An unknown encoding is refused,
+  and so is `--encoding` with Parquet input or standard input. The report
+  format is unchanged.
+
 ## [0.7.0] - 2026-10-22
 
 Two command-line additions approved as P-26 and P-27: with several input
