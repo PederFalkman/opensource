@@ -5,6 +5,15 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `report --fail-on metadata` exits with status 1 when the report lists
+  metadata issues, such as `SUM_OF_POWER` for `--unit kW --aggregation
+  sum` (P-37), in the report or in any column of a multi-column report.
+  Before, they were printed and the command exited 0, even with
+  `--fail-on-issues`. Opt-in: `--fail-on-issues` and the other names keep
+  their exit status. The checks and the report format are unchanged.
+
 ## [0.10.0] - 2026-10-23
 
 Two exit-status options for pipelines, approved as P-35 and P-36:

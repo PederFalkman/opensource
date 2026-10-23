@@ -153,8 +153,8 @@ record them).
 Exit status: `0` OK, `1` issues found with `--fail-on-issues` (a flagged
 row, or a missing interval outside the `--known-outage` periods), with
 `--fail-on NAME` (only the named issues: a flag such as `NON_FINITE`, `ANY`,
-`gaps`, `unexplained-gaps`, or `empty` for a file without data rows;
-repeatable), with `--min-completeness FRACTION` (completeness below the
+`gaps`, `unexplained-gaps`, `empty` for a file without data rows, or
+`metadata` for metadata issues such as `SUM_OF_POWER`; repeatable), with `--min-completeness FRACTION` (completeness below the
 fraction you choose, from 0 to 1; without the `--known-outage` periods when
 they are given) or with `--fail-if-worse`, `2` usage, input or file error (for example a directory
 given as the CSV, or `-o` in a folder that does not exist). `python -m energydata_kit` is equivalent. See
