@@ -1,6 +1,6 @@
 # Release decisions for energydata-kit
 
-## 0.8.0 (prepared 2026-10-23, OSS-169)
+## 0.8.0 (released 2026-10-23)
 
 **Status:** decided 2026-10-23. The repository owner recorded the answers for G1,
 G3, G4 and D6 on 2026-10-23 (below; the written confirmations are held by the
