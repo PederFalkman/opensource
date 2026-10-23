@@ -309,6 +309,38 @@ def test_known_outage_in_assume_tz(tmp_path):
     assert code == 2 and out == "" and "known outage must be timezone-aware" in err
 
 
+def test_time_col(tmp_path):
+    # P-34: date and time in separate columns are joined, not read as the date alone.
+    split = write(
+        tmp_path, "date;time;kwh\n2026-01-01;00:00;1\n2026-01-01;01:00;2\n2026-01-01;03:00;4\n", "s.csv"
+    )
+    joined = write(
+        tmp_path, "date;kwh\n2026-01-01T00:00;1\n2026-01-01T01:00;2\n2026-01-01T03:00;4\n", "j.csv"
+    )
+    common = ["--delimiter", ";", "--timestamp-col", "date", "--assume-tz", "Europe/Oslo", "--freq", "1h"]
+    flags = [tmp_path / "f1.csv", tmp_path / "f2.csv"]
+    out = run("report", str(split), *common, "--time-col", "time", "--flags-csv", str(flags[0]))
+    same = run("report", str(joined), *common, "--flags-csv", str(flags[1]))
+    assert out == same and out[0] == 0  # the same report as from one ISO column
+    assert flags[0].read_text() == flags[1].read_text()  # one joined timestamp column, named "date"
+    assert json.loads(out[1])["n_missing_intervals"] == 1
+    # Without --time-col only the date is read: three rows on one timestamp (the old, silent result).
+    alone = json.loads(run("report", str(split), *common[:4], "--value-col", "kwh", "--assume-tz", "UTC")[1])
+    assert alone["n_duplicate_timestamps"] == 1
+    bad = write(tmp_path, "date;time;kwh\n2026-01-01;23:00;1\n2026-01-01;24:00;2\n2026-01-02;;3\n", "b.csv")
+    us = write(tmp_path, "date;time;kwh\n01/02/2026;00:00;1\n", "us.csv")
+    for path, extra, message in [
+        (bad, [], "2 value(s) in 'time' are not HH:MM or HH:MM:SS, 00:00 to 23:59 (position 1: '24:00'"),
+        (us, [], "1 value(s) in 'date' are not YYYY-MM-DD (position 0: '01/02/2026')"),
+        (split, ["--time-col", "nope"], "time column 'nope' not found"),
+        (split, ["--time-col", "date"], "must name a column other than --timestamp-col"),
+        (split, ["--time-col", "time", "--value-col", "time"], "--time-col 'time' is also a value column"),
+    ]:
+        argv = ["--time-col", "time"] if path is not split else []
+        code, out, err = run("report", str(path), *common, *argv, *extra)
+        assert code == 2 and out == "" and message in err, (path.name, extra, err)
+
+
 def test_encoding(tmp_path):
     # P-29: a non-UTF-8 export is read with --encoding; the flags and gaps CSVs keep it.
     text = "tid;förbrukning\n2026-01-01T00:00Z;1,5\n2026-01-01T01:00Z;1,5\n2026-01-01T03:00Z;2,5\n"

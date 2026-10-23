@@ -5,6 +5,18 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `report --time-col COL` joins a time-of-day column with `--timestamp-col`
+  when a file splits date and time, e.g. `date;time;kwh` (P-34). Only the
+  plain ISO forms are accepted (`2026-01-01` and `13:45` or `13:45:00`);
+  `24:00`, a missing part or any other form is refused with the first rows
+  that fail, rather than guessed. The usual `--assume-tz` rules apply. The
+  flags CSV has one joined timestamp column, named after
+  `--timestamp-col`. Before, passing the date column alone read every row
+  of a day as the same timestamp, without an error. The report format is
+  unchanged.
+
 ## [0.8.0] - 2026-10-23
 
 Two command-line additions for reading real exports, approved as P-29 and
