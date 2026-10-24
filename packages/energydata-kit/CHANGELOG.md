@@ -5,6 +5,16 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `compare --fail-on-changed-metadata` exits with status 1 when the two
+  reports describe the data differently, for example another unit,
+  aggregation or resolution, in any column (P-41). Before, the same data
+  reported with `--unit kW` and then `--unit kWh` gave "metadata changed:
+  unit" and exited 0 even with `--fail-if-worse
+  --fail-on-changed-parameters`. Opt-in, like
+  `--fail-on-changed-parameters`. The comparison format is unchanged.
+
 ## [0.12.0] - 2026-10-23
 
 Two opt-in exit-status options for `compare`, approved as P-39 and P-40:

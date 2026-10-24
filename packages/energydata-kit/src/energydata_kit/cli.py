@@ -93,8 +93,8 @@ _EXIT_REPORT = (
 )
 _EXIT_COMPARE = (
     "exit status: 0 OK; 1 worse with --fail-if-worse, a column removed with "
-    "--fail-on-removed-columns, or parameters changed with --fail-on-changed-parameters; "
-    "2 usage, input or file error"
+    "--fail-on-removed-columns, parameters changed with --fail-on-changed-parameters, or metadata "
+    "changed with --fail-on-changed-metadata; 2 usage, input or file error"
 )
 
 
@@ -341,6 +341,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="exit with status 1 if the reports were made with different parameters (for example the "
         "step, bounds or known outages), so their numbers are not like for like",
+    )
+    cmp.add_argument(
+        "--fail-on-changed-metadata",
+        action="store_true",
+        help="exit with status 1 if the reports describe the data differently (for example the unit, "
+        "aggregation or resolution)",
     )
     return parser
 
@@ -1249,7 +1255,10 @@ def _run_compare(args: argparse.Namespace, stdout: TextIO) -> int:
     changed = args.fail_on_changed_parameters and any(  # P-40
         "parameters" in series for series in comparison.changes.values()
     )
-    return int(worse or removed or changed)
+    described = args.fail_on_changed_metadata and any(  # P-41
+        "metadata" in series for series in comparison.changes.values()
+    )
+    return int(worse or removed or changed or described)
 
 
 def main(
