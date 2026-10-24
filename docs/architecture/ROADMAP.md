@@ -11,10 +11,10 @@ section "0.13.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 (all 2026-10-21), 0.6.0 and 0.7.0 (both 2026-10-22), and 0.8.0 to 0.12.0
 (all 2026-10-23) were released as GitHub releases only; their records are
 kept there. Engineering for 0.13.0 is complete (OSS-197 and OSS-198, P-41
-and P-42), and the owner recorded the answers below on 2026-10-24; the
-release PR is OSS-200. The other candidates (P-12,
-P-13, P-18, P-20, P-22, P-28, P-31 and P-32, carried over) are under
-"Proposed" below (OSS-196) and not approved.
+and P-42), and the owner recorded the answers below on 2026-10-24; 0.13.0
+was released the same day (OSS-200, #172). No 0.14.0 work is approved yet;
+the remaining candidates (P-12, P-13, P-18, P-20, P-22, P-28, P-31 and
+P-32, carried over) are under "Proposed" below (OSS-196) and not approved.
 
 - [x] **G1 for 0.13.0.** Counsel confirmed that the code added since 0.12.0
       (`4c7bd98`) is covered (recorded 2026-10-24).
@@ -2450,7 +2450,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       a hint). Version stays `0.13.0.dev0`; the upload guard stays.
 - [x] "Open decisions" above lists the 0.13.0 questions.
 
-### OSS-200: release energydata-kit 0.13.0 — this change
+### OSS-200: release energydata-kit 0.13.0 — merged in [#172](https://github.com/PederFalkman/opensource/pull/172)
 
 - [x] Decisions recorded by the owner on 2026-10-24: G1 counsel confirmed, G3
       signed off, G4 the 0.12.0 position stands, D6 GitHub release only,
@@ -2461,10 +2461,19 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       expects nothing to fail (`--strict` exits 0, `--guard` passes), and the
       status lines in both READMEs, `SECURITY.md`, `CONTRIBUTING.md` and
       `RELEASE_GATES.md` name 0.13.0 as a GitHub release.
-- [ ] After merge (owner): tag the merge commit `energydata-kit-v0.13.0`,
-      check the digests and publish the draft GitHub release the *Release
-      build* workflow creates. Then the next development cycle restores the
-      upload guard.
+- [x] After merge (owner): tagged `energydata-kit-v0.13.0` on `bf1a2ed`; the
+      *Release build* workflow passed and created the draft release, which
+      the owner published on 2026-10-24.
+
+### OSS-201: open 0.14.0 development — this change
+
+- [x] `__version__` is `0.14.0.dev0`; new changelog entries go under
+      `[Unreleased]`, and the released sections are not edited.
+- [x] The `Private :: Do Not Upload` guard is back: D6 approved 0.13.0 only,
+      as a GitHub release. The readiness test again expects a package that
+      is not release-ready, with the licence checks and `--guard` passing.
+- [x] Status lines: 0.13.0 is the GitHub release, `main` is 0.14.0
+      development.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data
