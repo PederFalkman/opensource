@@ -1,5 +1,75 @@
 # Release decisions for energydata-kit
 
+## 0.14.0 (in preparation)
+
+**Status:** open. Engineering for 0.14.0 is complete (OSS-203 and OSS-204)
+and nothing is decided here. `main` stays at `0.14.0.dev0` with the upload
+guard until the owner answers the questions below. The 0.13.0 to 0.1.0
+records follow and are unchanged.
+
+**What 0.14.0 contains** (P-43 and P-44 approved by the owner on
+2026-10-24; proposals in `docs/architecture/ROADMAP.md`, OSS-202):
+
+- `report` refuses `-o`, `--flags-csv` or `--gaps-csv` naming one of its
+  input files or the same path as another of them, and `compare` refuses
+  `-o` naming either report; the command exits 2 before anything is
+  written (P-43, OSS-203, #175). Before, such a command replaced the file
+  and exited 0.
+- `report --insert-missing` without a step (no `--freq`, and no
+  resolution from `--unit` or `--schema`) is refused before anything is
+  written, with a message naming the options (P-44, OSS-204, #176).
+  Before, the whole report was printed first and the command then failed
+  with the library's parameter name; it exited 2 either way.
+- No report- or comparison-format change (schema 2), no new or renamed
+  public Python name, nothing removed. **Behaviour change by default:**
+  only commands that destroyed a file (P-43) or already failed (P-44)
+  behave differently; every other command gives the same output and exit
+  status as with 0.13.0. The changelog's `[Unreleased]` section has the
+  release notes.
+
+**What did not change since 0.13.0** (`git diff bf1a2ed` on
+`pyproject.toml`, 2026-10-24): no runtime dependency, optional extra,
+version range or data file was added or changed. The only `pyproject.toml`
+change is the restored upload guard (OSS-201). `THIRD_PARTY_LICENSES.md` is
+unchanged.
+
+| Gate | State for 0.14.0 | Open question |
+|---|---|---|
+| G1 Ownership | Counsel confirmed ownership for 0.1.0 (D2) and for the code added up to 0.13.0. Commits since the 0.13.0 release commit (`bf1a2ed`), on `main` at `cb1af7d`: 8, of which 4 by the AI coding assistant in the owner's sessions (all with changes) and 4 by the owner (pull-request merges #173 to #176); no external contributor | Does counsel's confirmation cover the code added since 0.13.0, or should counsel confirm again? |
+| G2 Licence | Passed: Apache-2.0, unchanged | — |
+| G3 IP boundary review | The `IP boundary` CI job passed on every 0.14.0 PR. P-43 compares the command's own input and output paths before writing; P-44 moves an existing refusal ahead of the output and rewords it | Will the technical lead review and sign off the diff from 0.13.0? |
+| G4 Third-party licences | Unchanged since 0.13.0 (no dependency change) | Is the 0.13.0 position enough? |
+| G5 CI green | Green on every 0.14.0 PR and on `main`; re-checked on the release commit | — |
+| G6 Documentation honest | README, changelog and help text updated with each step; both changes are covered by tests on the lowest and current pandas | Review on the release commit |
+| G7 Publication (D6) | D6 approved 0.13.0 only; it does not carry over | GitHub release only, like 0.1.0 to 0.13.0, or also a package index? |
+
+**For the G3 reviewer** (the technical lead). The package code to review
+is the diff from the 0.13.0 release commit to the 0.14.0 release commit:
+`git diff bf1a2ed <release commit> -- packages/energydata-kit/src`
+(2 files, about 30 added lines: `cli.py` and the version in
+`__init__.py`). Points to confirm, each also checked by a tool:
+
+- No new import: besides the standard library, the code still imports only
+  numpy, pandas and Pint (Pandera and pyarrow optional).
+  `python tools/check_ip_boundary.py`, run in CI, refuses forbidden imports
+  and any dependency off the reviewed allowlist.
+- No domain limits ship: P-43 compares resolved file paths; P-44 checks
+  whether a step is known. No number is introduced.
+- Tests and examples use synthetic data only; no customer data,
+  endpoints or credentials.
+- Nothing forecasts, optimises, or computes grid, capacity or financial
+  quantities: the changes refuse unsafe command lines before anything is
+  written.
+
+**After the decisions:** a release PR built from `RELEASE_CHECKLIST.md`
+sets `__version__` to `0.14.0`, moves `[Unreleased]` under a dated
+`## [0.14.0]` heading, records the answers under G1, G3 and G4, and adds
+the owner's D6 line naming `energydata-kit 0.14.0`; only with that line
+does it remove the upload guard. It passes `check_release_readiness.py
+--strict`. The owner then tags the merged commit `energydata-kit-v0.14.0`,
+the *Release build* workflow prepares the draft GitHub release, and the
+owner publishes it. None of this is done before the owner's decisions.
+
 ## 0.13.0 (released 2026-10-24)
 
 **Status:** decided 2026-10-24. The repository owner recorded the answers for G1,
