@@ -12,9 +12,10 @@ section "0.14.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 2026-10-23) and 0.13.0 (2026-10-24) were released as GitHub releases only;
 their records are kept there. Engineering for 0.14.0 is complete (OSS-203
 and OSS-204, P-43 and P-44), and the owner recorded the answers below on
-2026-10-24; the release PR is OSS-206. The other
-candidates (P-12, P-13, P-18, P-20, P-22, P-28, P-31 and P-32, carried
-over) are under "Proposed" below (OSS-202) and not approved.
+2026-10-24; 0.14.0 was released the same day (OSS-206, #178). No 0.15.0
+work is approved yet; the remaining candidates (P-12, P-13, P-18, P-20,
+P-22, P-28, P-31 and P-32, carried over) are under "Proposed" below
+(OSS-202) and not approved.
 
 - [x] **G1 for 0.14.0.** Counsel confirmed that the code added since 0.13.0
       (`bf1a2ed`) is covered (recorded 2026-10-24).
@@ -2570,7 +2571,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       the upload guard stays.
 - [x] "Open decisions" above lists the 0.14.0 questions.
 
-### OSS-206: release energydata-kit 0.14.0 — this change
+### OSS-206: release energydata-kit 0.14.0 — merged in [#178](https://github.com/PederFalkman/opensource/pull/178)
 
 - [x] Decisions recorded by the owner on 2026-10-24: G1 counsel confirmed, G3
       signed off, G4 the 0.13.0 position stands, D6 GitHub release only,
@@ -2581,10 +2582,19 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       expects nothing to fail (`--strict` exits 0, `--guard` passes), and the
       status lines in both READMEs, `SECURITY.md`, `CONTRIBUTING.md` and
       `RELEASE_GATES.md` name 0.14.0 as a GitHub release.
-- [ ] After merge (owner): tag the merge commit `energydata-kit-v0.14.0`,
-      check the digests and publish the draft GitHub release the *Release
-      build* workflow creates. Then the next development cycle restores the
-      upload guard.
+- [x] After merge (owner): tagged `energydata-kit-v0.14.0` on `532fc23`; the
+      *Release build* workflow passed and created the draft release, which
+      the owner published on 2026-10-24.
+
+### OSS-207: open 0.15.0 development — this change
+
+- [x] `__version__` is `0.15.0.dev0`; new changelog entries go under
+      `[Unreleased]`, and the released sections are not edited.
+- [x] The `Private :: Do Not Upload` guard is back: D6 approved 0.14.0 only,
+      as a GitHub release. The readiness test again expects a package that
+      is not release-ready, with the licence checks and `--guard` passing.
+- [x] Status lines: 0.14.0 is the GitHub release, `main` is 0.15.0
+      development.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data
