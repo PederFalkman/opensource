@@ -663,6 +663,24 @@ def test_refuses_to_overwrite_inputs_and_outputs(tmp_path, monkeypatch):
     assert run("report", "in.csv", "--freq", "1h", "-o", "a.json")[0] == 0
 
 
+def test_insert_missing_needs_a_step(tmp_path):
+    # P-44: without a step, --insert-missing is refused before anything is written; before, the
+    # report was printed and the command then failed with "insert_missing requires freq".
+    one = str(write(tmp_path, "timestamp,kwh\n2026-01-01T00:00Z,1\n2026-01-01T02:00Z,2\n"))
+    two = str(write(tmp_path, "timestamp,a,b\n2026-01-01T00:00Z,1,1\n2026-01-01T02:00Z,2,2\n", "two.csv"))
+    flags = str(tmp_path / "flags.csv")
+    for argv in (["report", one], ["report", two, "--all-value-cols"]):
+        code, out, err = run(*argv, "--flags-csv", flags, "--insert-missing")
+        assert code == 2 and out == "", argv
+        assert "--insert-missing needs a step: pass --freq, or a resolution with --unit or --schema" in err
+        assert "insert_missing requires freq" not in err and not (tmp_path / "flags.csv").exists()
+    # With a step from --freq or from --unit --resolution, the rows are inserted as before.
+    assert run("report", one, "--freq", "1h", "--flags-csv", flags, "--insert-missing")[0] == 0
+    assert (tmp_path / "flags.csv").read_text().count("\n") == 4  # header and three rows
+    unit = ["--unit", "kWh", "--aggregation", "sum", "--resolution", "1h"]
+    assert run("report", one, *unit, "--flags-csv", flags, "--insert-missing")[0] == 0
+
+
 def test_fail_on_changed_metadata(tmp_path):
     # P-41: reports that describe the data differently can fail compare; P-40 covers parameters only.
     path = str(write(tmp_path, "timestamp,kw\n2026-01-01T00:00Z,1\n2026-01-01T01:00Z,2\n"))

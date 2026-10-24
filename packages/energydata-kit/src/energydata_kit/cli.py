@@ -826,6 +826,10 @@ def _write_gaps(
     )
 
 
+# P-44: refused before anything is written, in the command's own words.
+_INSERT_NEEDS_STEP = "--insert-missing needs a step: pass --freq, or a resolution with --unit or --schema"
+
+
 def _check_paths(inputs: Sequence[str], outputs: Sequence[tuple[str, str | None]]) -> None:
     """Refuse an output that would overwrite an input or another output (P-43).
 
@@ -927,13 +931,15 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
         max_listed=args.max_listed,
     )
     _check_completeness(args, report)
+    freq, tz = _grid_from_metadata(args.freq, args.tz, metadata)  # the report's grid
+    if args.insert_missing and freq is None:
+        raise CliError(_INSERT_NEEDS_STEP)
     gap_grids = _gap_grids(args, {str(series.name): metadata}, [str(series.name)]) if args.gaps_csv else {}
     _write_report(args, report, stdout)
     if args.gaps_csv:
         _write_gaps(args, series.index, gap_grids, origin)
 
     if args.flags_csv:
-        freq, tz = _grid_from_metadata(args.freq, args.tz, metadata)  # the report's grid
         flagged = flag_series(
             series,
             freq=freq,
@@ -1158,6 +1164,8 @@ def _run_frame_report(
                 "give each column a resolution, or pass --freq"
             )
         freq, tz = next(iter(grids.values()), (None, None))
+    if args.insert_missing and freq is None:
+        raise CliError(_INSERT_NEEDS_STEP)
     _check_completeness(args, report)
     gap_grids = _gap_grids(args, metadata, [str(c) for c in frame.columns]) if args.gaps_csv else {}
     _write_report(args, report, stdout)
