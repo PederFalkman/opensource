@@ -826,7 +826,26 @@ def _write_gaps(
     )
 
 
+def _check_paths(inputs: Sequence[str], outputs: Sequence[tuple[str, str | None]]) -> None:
+    """Refuse an output that would overwrite an input or another output (P-43).
+
+    Runs before anything is read or written. Paths are compared after resolving them, so
+    ``./in.csv`` and ``in.csv`` are the same file; ``-`` is not a file.
+    """
+    seen = {Path(p).resolve(): f"the input file {p!r}" for p in inputs if p != "-"}
+    for option, path in outputs:
+        if path is None or path == "-":
+            continue
+        key = Path(path).resolve()
+        if key in seen:
+            raise CliError(f"{option} {path!r} would overwrite {seen[key]}; nothing was written")
+        seen[key] = f"the {option} file"
+
+
 def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
+    _check_paths(
+        args.csv, [("-o", args.output), ("--flags-csv", args.flags_csv), ("--gaps-csv", args.gaps_csv)]
+    )
     if args.tz and not args.freq:
         raise CliError("--tz needs --freq")
     if args.tz and args.freq == "inferred":
@@ -1256,6 +1275,7 @@ def _comparison_summary(data: dict[str, Any], markdown: bool = False) -> str:
 
 
 def _run_compare(args: argparse.Namespace, stdout: TextIO) -> int:
+    _check_paths([args.before, args.after], [("-o", args.output)])
     comparison = compare_reports(_load_report(args.before), _load_report(args.after))
     if args.format == "json":
         text = comparison.to_json() + "\n"

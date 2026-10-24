@@ -12,10 +12,10 @@ section "0.13.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 (all 2026-10-23) were released as GitHub releases only; their records are
 kept there. Engineering for 0.13.0 is complete (OSS-197 and OSS-198, P-41
 and P-42), and the owner recorded the answers below on 2026-10-24; 0.13.0
-was released the same day (OSS-200, #172). No 0.14.0 work is approved yet;
-the candidates (P-43 and P-44, and P-12, P-13, P-18, P-20, P-22, P-28, P-31
-and P-32 carried over) are under "Proposed" below (OSS-202) and not
-approved.
+was released the same day (OSS-200, #172). For 0.14.0 the owner approved
+P-43 and P-44 on 2026-10-24 (OSS-203 and OSS-204); P-12, P-13, P-18, P-20,
+P-22, P-28, P-31 and P-32, carried over, are under "Proposed" below
+(OSS-202) and not approved.
 
 - [x] **G1 for 0.13.0.** Counsel confirmed that the code added since 0.12.0
       (`4c7bd98`) is covered (recorded 2026-10-24).
@@ -223,8 +223,8 @@ behaviour was checked on 2026-10-24 on `main` at `1e8912d` (0.14.0.dev0).
 
 | ID | Candidate | Why | Effort | Risk and cost |
 |---|---|---|---|---|
-| P-43 | **Refuse to overwrite an input or another output**: `report` refuses `-o`, `--flags-csv` or `--gaps-csv` naming one of its input files or the same path as each other, and `compare` refuses `-o` naming either report; exit 2 before anything is written. | Checked: `report in.csv --freq 1h -o in.csv` replaces the data file with the JSON report and exits 0; `--flags-csv in.csv` replaces it with the flagged table; `-o same.json --gaps-csv same.json` leaves only the gap list; `compare a.json b.json -o a.json` replaces the earlier report with the comparison. Each loses data without a word. | S | No format change. **Behaviour change by default**: only for commands that destroyed a file; they now exit 2 with a message naming the clash, and nothing is written. Paths are compared after resolving them, so `./in.csv` and `in.csv` count as the same file. Standard input and output (`-`) are not files and are not affected. |
-| P-44 | **Refuse `--insert-missing` without a step up front**: when no step is known (no `--freq`, and no resolution from `--unit` or `--schema`), the command exits 2 before writing anything, with a message in the command's own words. | Checked: `report data.csv --flags-csv f.csv --insert-missing` (no step) prints the whole JSON report to standard output and only then fails with "insert_missing requires freq", the library's parameter name, and exit 2. A pipeline sees a full report from a failed command. | S | No format change. **Behaviour change**: such a command already exited 2; it now prints no report first, and the message reads "--insert-missing needs a step: pass --freq, or a resolution with --unit or --schema". |
+| P-43 | *Approved by the owner on 2026-10-24; done in OSS-203.* **Refuse to overwrite an input or another output**: `report` refuses `-o`, `--flags-csv` or `--gaps-csv` naming one of its input files or the same path as each other, and `compare` refuses `-o` naming either report; exit 2 before anything is written. | Checked: `report in.csv --freq 1h -o in.csv` replaces the data file with the JSON report and exits 0; `--flags-csv in.csv` replaces it with the flagged table; `-o same.json --gaps-csv same.json` leaves only the gap list; `compare a.json b.json -o a.json` replaces the earlier report with the comparison. Each loses data without a word. | S | No format change. **Behaviour change by default**: only for commands that destroyed a file; they now exit 2 with a message naming the clash, and nothing is written. Paths are compared after resolving them, so `./in.csv` and `in.csv` count as the same file. Standard input and output (`-`) are not files and are not affected. |
+| P-44 | *Approved by the owner on 2026-10-24; OSS-204.* **Refuse `--insert-missing` without a step up front**: when no step is known (no `--freq`, and no resolution from `--unit` or `--schema`), the command exits 2 before writing anything, with a message in the command's own words. | Checked: `report data.csv --flags-csv f.csv --insert-missing` (no step) prints the whole JSON report to standard output and only then fails with "insert_missing requires freq", the library's parameter name, and exit 2. A pipeline sees a full report from a failed command. | S | No format change. **Behaviour change**: such a command already exited 2; it now prints no report first, and the message reads "--insert-missing needs a step: pass --freq, or a resolution with --unit or --schema". |
 | P-32 | *Carried over, not approved.* **Lines before the header** (`--skip-rows N`). As described for 0.9.0 below. | A preamble is refused as a missing column. | S | No format change. |
 | P-31 | *Carried over, not approved.* **Unix epoch timestamps** (`--timestamp-unit s|ms`). As described for 0.8.0 below. | Epoch seconds are refused. | S–M | No format change. |
 | P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below. | A long maintenance log makes a long command. | S | No format change. |
@@ -2513,7 +2513,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Status lines: 0.13.0 is the GitHub release, `main` is 0.14.0
       development.
 
-### OSS-202: 0.14.0 proposals — this change
+### OSS-202: 0.14.0 proposals — merged in [#174](https://github.com/PederFalkman/opensource/pull/174)
 
 - [x] P-43 and P-44 written up for the owner to approve one by one, ranked
       with P-12, P-13, P-18, P-20, P-22, P-28, P-31 and P-32 carried over;
@@ -2523,6 +2523,20 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `--flags-csv` and `compare -o` overwrite an input with exit 0;
       `--insert-missing` without a step prints a report before failing).
       Docs only; nothing is authorized.
+- [x] The owner approved P-43 and P-44 on 2026-10-24, to be built one PR
+      each (P-43 first, as proposed). P-12, P-13, P-18, P-20, P-22, P-28,
+      P-31 and P-32 are not approved.
+
+### OSS-203: refuse to overwrite an input or another output (P-43) — this change
+
+- [x] `report` refuses `-o`, `--flags-csv` or `--gaps-csv` naming an input
+      file or the same path as another of them; `compare` refuses `-o`
+      naming either report. Exit 2 before anything is read or written,
+      with a message naming the clash.
+- [x] Paths are compared after resolving them; `-` is not a file.
+      Re-running into an earlier run's output file is still allowed.
+- [x] Behaviour change, as proposed, only for commands that destroyed a
+      file. No format change. Tests, README and changelog.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data
