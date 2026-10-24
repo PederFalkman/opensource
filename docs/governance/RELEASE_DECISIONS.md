@@ -1,5 +1,71 @@
 # Release decisions for energydata-kit
 
+## 0.13.0 (in preparation)
+
+**Status:** open. Engineering for 0.13.0 is complete (OSS-197 and OSS-198)
+and nothing is decided here. `main` stays at `0.13.0.dev0` with the upload
+guard until the owner answers the questions below. The 0.12.0 to 0.1.0
+records follow and are unchanged.
+
+**What 0.13.0 contains** (P-41 and P-42 approved by the owner on
+2026-10-23; proposals in `docs/architecture/ROADMAP.md`, OSS-196):
+
+- `compare --fail-on-changed-metadata` exits with status 1 when the two
+  reports describe the data differently, for example another unit
+  (P-41, OSS-197, #169). Before, a changed unit was listed and the
+  command exited 0 with every `compare` option.
+- When `--timestamp-col`, `--time-col` or `--value-col` is not found but
+  one column matches it once surrounding spaces are removed, the error
+  names that column (P-42, OSS-198, #170). The command still exits 2.
+- No report- or comparison-format change (schema 2), no new or renamed
+  public Python name, nothing removed. Commands that worked with 0.12.0
+  give the same output and exit status; only the text of one error
+  message gains a hint. The changelog's `[Unreleased]` section has the
+  release notes.
+
+**What did not change since 0.12.0** (`git diff 4c7bd98` on
+`pyproject.toml`, 2026-10-24): no runtime dependency, optional extra,
+version range or data file was added or changed. The only `pyproject.toml`
+change is the restored upload guard (OSS-195). `THIRD_PARTY_LICENSES.md` is
+unchanged.
+
+| Gate | State for 0.13.0 | Open question |
+|---|---|---|
+| G1 Ownership | Counsel confirmed ownership for 0.1.0 (D2) and for the code added up to 0.12.0. Commits since the 0.12.0 release commit (`4c7bd98`), on `main` at `d8ae7ca`: 10, of which 6 by the AI coding assistant in the owner's sessions (5 with changes, 1 a merge of `main` into a branch) and 4 by the owner (pull-request merges #167 to #170); no external contributor | Does counsel's confirmation cover the code added since 0.12.0, or should counsel confirm again? |
+| G2 Licence | Passed: Apache-2.0, unchanged | — |
+| G3 IP boundary review | The `IP boundary` CI job passed on every 0.13.0 PR. P-41 lets `compare`'s exit status follow the metadata changes it already lists; P-42 adds a hint to an error message | Will the technical lead review and sign off the diff from 0.12.0? |
+| G4 Third-party licences | Unchanged since 0.12.0 (no dependency change) | Is the 0.12.0 position enough? |
+| G5 CI green | Green on every 0.13.0 PR and on `main`; re-checked on the release commit | — |
+| G6 Documentation honest | README, changelog and help text updated with each step; both changes are covered by tests on the lowest and current pandas | Review on the release commit |
+| G7 Publication (D6) | D6 approved 0.12.0 only; it does not carry over | GitHub release only, like 0.1.0 to 0.12.0, or also a package index? |
+
+**For the G3 reviewer** (the technical lead). The package code to review
+is the diff from the 0.12.0 release commit to the 0.13.0 release commit:
+`git diff 4c7bd98 <release commit> -- packages/energydata-kit/src`
+(2 files, about 30 added lines: `cli.py` and the version in
+`__init__.py`). Points to confirm, each also checked by a tool:
+
+- No new import: besides the standard library, the code still imports only
+  numpy, pandas and Pint (Pandera and pyarrow optional).
+  `python tools/check_ip_boundary.py`, run in CI, refuses forbidden imports
+  and any dependency off the reviewed allowlist.
+- No domain limits ship: P-41 compares two saved reports' metadata; P-42
+  compares column names. No number is introduced.
+- Tests and examples use synthetic data only; no customer data,
+  endpoints or credentials.
+- Nothing forecasts, optimises, or computes grid, capacity or financial
+  quantities: the changes set `compare`'s exit status from differences it
+  already reports and add a hint to an error message.
+
+**After the decisions:** a release PR built from `RELEASE_CHECKLIST.md`
+sets `__version__` to `0.13.0`, moves `[Unreleased]` under a dated
+`## [0.13.0]` heading, records the answers under G1, G3 and G4, and adds
+the owner's D6 line naming `energydata-kit 0.13.0`; only with that line
+does it remove the upload guard. It passes `check_release_readiness.py
+--strict`. The owner then tags the merged commit `energydata-kit-v0.13.0`,
+the *Release build* workflow prepares the draft GitHub release, and the
+owner publishes it. None of this is done before the owner's decisions.
+
 ## 0.12.0 (released 2026-10-23)
 
 **Status:** decided 2026-10-23. The repository owner recorded the answers for G1,

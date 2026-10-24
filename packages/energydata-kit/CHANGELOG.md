@@ -5,6 +5,18 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+One opt-in exit-status option for `compare` and one clearer error message,
+approved as P-41 and P-42: `--fail-on-changed-metadata` fails when two
+reports describe the data differently, and a column name that differs from
+the file's only by surrounding spaces is pointed out. The report and
+comparison formats are unchanged (schema 2) and no public Python name is
+added or changed.
+
+**Upgrading from 0.12.0.** Nothing needs to change: the new option is
+opt-in, and commands that worked with 0.12.0 give the same output and exit
+status. Only the text of the "column not found" error can now end with a
+hint; a script that matches that message exactly should match its start.
+
 ### Added
 
 - `compare --fail-on-changed-metadata` exits with status 1 when the two
