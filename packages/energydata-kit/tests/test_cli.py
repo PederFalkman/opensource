@@ -609,6 +609,29 @@ def test_fail_on_changed_parameters(tmp_path):
     assert run("compare", reports["w1"], reports["w2"], "--fail-on-changed-parameters")[0] == 1
 
 
+def test_column_names_differing_by_spaces(tmp_path):
+    # P-42: a name that matches a column once surrounding spaces are removed is pointed out;
+    # the command still refuses (exit 2) and nothing is renamed.
+    rows = "2026-01-01, 00:00,1\n2026-01-01, 01:00,2\n"
+    path = str(write(tmp_path, "timestamp, kwh\n2026-01-01T00:00Z,1\n2026-01-01T01:00Z,2\n"))
+    joined = str(write(tmp_path, " date, time ,kwh\n" + rows, "joined.csv"))
+    hint = "differs only by surrounding spaces)"
+    for argv, message in [
+        (["report", path, "--value-col", "kwh"],
+         f"value column 'kwh' not found; columns: ['timestamp', ' kwh'] (column ' kwh' {hint}"),
+        (["report", joined, "--timestamp-col", "date"], f"(column ' date' {hint}"),
+        (["report", joined, "--timestamp-col", " date", "--time-col", "time"], f"(column ' time ' {hint}"),
+    ]:  # fmt: skip
+        code, out, err = run(*argv)
+        assert code == 2 and out == "" and message in err, (argv, err)
+    # No hint when nothing is close, or when two columns would match.
+    assert "surrounding spaces" not in run("report", path, "--value-col", "kw")[2]
+    two = str(write(tmp_path, "timestamp,kwh ,  kwh\n2026-01-01T00:00Z,1,1\n", "two.csv"))
+    assert "surrounding spaces" not in run("report", two, "--value-col", "kwh")[2]
+    # The exact name with its space still works.
+    assert run("report", path, "--value-col", " kwh", "--freq", "1h")[0] == 0
+
+
 def test_fail_on_changed_metadata(tmp_path):
     # P-41: reports that describe the data differently can fail compare; P-40 covers parameters only.
     path = str(write(tmp_path, "timestamp,kw\n2026-01-01T00:00Z,1\n2026-01-01T01:00Z,2\n"))

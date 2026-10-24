@@ -213,7 +213,7 @@ comparison format. Each motivating behaviour was checked on 2026-10-23 on
 | ID | Candidate | Why | Effort | Risk and cost |
 |---|---|---|---|---|
 | P-41 | *Approved by the owner on 2026-10-23; done in OSS-197.* **Fail when the reports describe the data differently** (`compare --fail-on-changed-metadata`): the exit status is 1 when the two reports' metadata differ (for example the unit, aggregation or resolution). | Checked: the same data reported with `--unit kW` and then `--unit kWh` gives "metadata changed: unit", "not worse", and exits 0 even with `--fail-if-worse --fail-on-changed-parameters`, because P-40 looks only at parameters. A changed unit makes the numbers mean something else, but the check passes. | S | No format change; the comparison already names changed metadata. Opt-in like P-40, which it mirrors; a deliberate change still compares by default. |
-| P-42 | *Approved by the owner on 2026-10-23; OSS-198.* **Point out column names that differ only by spaces**: when a named column is not found and a column of the file matches it once surrounding spaces are removed, the error says so. | Checked: a header `timestamp, kwh` (a space after the comma, common in hand-edited and some exported files) with `--value-col kwh` gives "value column 'kwh' not found; columns: ['timestamp', ' kwh']" and exits 2. The difference is easy to miss in the list. | S | Message only: the command still refuses (exit 2), and nothing is renamed or guessed. The same hint for `--timestamp-col` and `--time-col`. No format change. |
+| P-42 | *Approved by the owner on 2026-10-23; done in OSS-198.* **Point out column names that differ only by spaces**: when a named column is not found and a column of the file matches it once surrounding spaces are removed, the error says so. | Checked: a header `timestamp, kwh` (a space after the comma, common in hand-edited and some exported files) with `--value-col kwh` gives "value column 'kwh' not found; columns: ['timestamp', ' kwh']" and exits 2. The difference is easy to miss in the list. | S | Message only: the command still refuses (exit 2), and nothing is renamed or guessed. The same hint for `--timestamp-col` and `--time-col`. No format change. |
 | P-32 | *Carried over, not approved.* **Lines before the header** (`--skip-rows N`). As described for 0.9.0 below. | A preamble is refused as a missing column. | S | No format change. |
 | P-31 | *Carried over, not approved.* **Unix epoch timestamps** (`--timestamp-unit s|ms`). As described for 0.8.0 below. | Epoch seconds are refused. | S–M | No format change. |
 | P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below. | A long maintenance log makes a long command. | S | No format change. |
@@ -2409,7 +2409,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       each (P-41 first, as proposed). P-12, P-13, P-18, P-20, P-22, P-28,
       P-31 and P-32 are not approved.
 
-### OSS-197: fail when the reports describe the data differently (P-41) — this change
+### OSS-197: fail when the reports describe the data differently (P-41) — merged in [#169](https://github.com/PederFalkman/opensource/pull/169)
 
 - [x] `compare --fail-on-changed-metadata` exits 1 when the reports'
       metadata differ in any column (for example the unit, aggregation or
@@ -2417,6 +2417,16 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Opt-in, like `--fail-on-changed-parameters`; combines with the other
       `compare` options.
 - [x] No format change. Tests, help text, README and changelog.
+
+### OSS-198: point out column names that differ only by spaces (P-42) — this change
+
+- [x] When `--timestamp-col`, `--time-col` or `--value-col` is not found
+      and exactly one column matches it once surrounding spaces are
+      removed, the error names that column.
+- [x] Message only: the command still exits 2, nothing is renamed or
+      guessed, and the exact name with its spaces still works. No hint
+      when nothing is close or two columns would match.
+- [x] No format change. Tests and changelog.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data

@@ -440,6 +440,15 @@ def _read_table(args: argparse.Namespace, path: str, stdin: TextIO) -> pd.DataFr
         raise CliError(f"could not read CSV{where}: {exc}{hint}") from exc
 
 
+def _space_hint(name: str, columns: Sequence[object]) -> str:
+    """Point at a column that matches ``name`` once surrounding spaces are removed (P-42).
+
+    Only a hint for the error message: nothing is renamed, and the command still fails.
+    """
+    close = [c for c in columns if str(c).strip() == name.strip() and c != name]
+    return f" (column {close[0]!r} differs only by surrounding spaces)" if len(close) == 1 else ""
+
+
 def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
     paths: list[str] = args.csv
     if len(paths) > 1:
@@ -460,7 +469,7 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
     sep = "," if _is_parquet(paths[0]) else _delimiter(args)  # only used for the CSV hints below
 
     if args.timestamp_col not in frame.columns:
-        hint = ""
+        hint = _space_hint(args.timestamp_col, list(frame.columns))
         found = [s for s in ";\t|," if s != sep and s in str(frame.columns[0])]
         if len(frame.columns) == 1 and found:
             name = "tab" if found[0] == "\t" else found[0]
@@ -472,7 +481,10 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
         if args.time_col == args.timestamp_col:
             raise CliError("--time-col must name a column other than --timestamp-col")
         if args.time_col not in frame.columns:
-            raise CliError(f"time column {args.time_col!r} not found; columns: {list(frame.columns)}")
+            raise CliError(
+                f"time column {args.time_col!r} not found; columns: {list(frame.columns)}"
+                + _space_hint(args.time_col, list(frame.columns))
+            )
     value_cols = args.value_col
     if args.all_value_cols:
         # Every other column, in file order (P-38); a column added later is assessed too.
@@ -503,7 +515,10 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
         value_cols = others
     for col in value_cols:
         if col not in frame.columns:
-            raise CliError(f"value column {col!r} not found; columns: {list(frame.columns)}")
+            raise CliError(
+                f"value column {col!r} not found; columns: {list(frame.columns)}"
+                + _space_hint(col, list(frame.columns))
+            )
     if len(set(value_cols)) != len(value_cols):
         raise CliError("each --value-col may be given only once")
 
