@@ -7,15 +7,24 @@ Merged items stay listed here as a record of what was agreed.
 ## Open decisions (owners required)
 
 Questions and evidence for each: `docs/governance/RELEASE_DECISIONS.md`,
-section "0.12.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
-(all 2026-10-21), 0.6.0 and 0.7.0 (both 2026-10-22), and 0.8.0 to 0.11.0
+section "0.13.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
+(all 2026-10-21), 0.6.0 and 0.7.0 (both 2026-10-22), and 0.8.0 to 0.12.0
 (all 2026-10-23) were released as GitHub releases only; their records are
-kept there. Engineering for 0.12.0 is complete (OSS-191 and OSS-192, P-39
-and P-40), and the owner recorded the answers below on 2026-10-23; 0.12.0
-was released the same day (OSS-194, #166). For 0.13.0 the owner approved
-P-41 and P-42 on 2026-10-23 (OSS-197 and OSS-198); P-12, P-13, P-18, P-20,
-P-22, P-28, P-31 and P-32, carried over, are under "Proposed" below
-(OSS-196) and not approved.
+kept there. Engineering for 0.13.0 is complete (OSS-197 and OSS-198, P-41
+and P-42); it waits on the questions below. The other candidates (P-12,
+P-13, P-18, P-20, P-22, P-28, P-31 and P-32, carried over) are under
+"Proposed" below (OSS-196) and not approved.
+
+- [ ] **G1 for 0.13.0.** Does counsel's confirmation cover the code added
+      since 0.12.0 (`4c7bd98`), or should counsel confirm again?
+- [ ] **G3 for 0.13.0.** Technical-lead sign-off of the IP-boundary review
+      of the diff from 0.12.0 (2 source files, about 30 added lines).
+- [ ] **G4 for 0.13.0.** No dependency changed; is the 0.12.0 position
+      enough?
+- [ ] **D6 for 0.13.0 (G7).** GitHub release only, like 0.12.0, or also a
+      package index?
+
+Recorded for 0.12.0:
 
 - [x] **G1 for 0.12.0.** Counsel confirmed that the code added since 0.11.0
       (`29bf8ee`) is covered (recorded 2026-10-23).
@@ -2418,7 +2427,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       `compare` options.
 - [x] No format change. Tests, help text, README and changelog.
 
-### OSS-198: point out column names that differ only by spaces (P-42) — this change
+### OSS-198: point out column names that differ only by spaces (P-42) — merged in [#170](https://github.com/PederFalkman/opensource/pull/170)
 
 - [x] When `--timestamp-col`, `--time-col` or `--value-col` is not found
       and exactly one column matches it once surrounding spaces are
@@ -2427,6 +2436,18 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       guessed, and the exact name with its spaces still works. No hint
       when nothing is close or two columns would match.
 - [x] No format change. Tests and changelog.
+
+### OSS-199: prepare the 0.13.0 release — this change
+
+- [x] `RELEASE_DECISIONS.md` gains a 0.13.0 section: what the release
+      contains (P-41, P-42), what did not change since 0.12.0 (no
+      dependency, extra or data file), the open questions per gate (G1,
+      G3, G4, D6) and a guide for the G3 reviewer. It decides nothing;
+      earlier records are kept.
+- [x] Changelog `[Unreleased]` reads as release notes: a summary and
+      "Upgrading from 0.12.0" (nothing to change; one error message gains
+      a hint). Version stays `0.13.0.dev0`; the upload guard stays.
+- [x] "Open decisions" above lists the 0.13.0 questions.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data
