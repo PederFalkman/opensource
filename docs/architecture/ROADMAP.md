@@ -13,9 +13,9 @@ section "0.14.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 their records are kept there. Engineering for 0.14.0 is complete (OSS-203
 and OSS-204, P-43 and P-44), and the owner recorded the answers below on
 2026-10-24; 0.14.0 was released the same day (OSS-206, #178). No 0.15.0
-work is approved yet; the remaining candidates (P-12, P-13, P-18, P-20,
-P-22, P-28, P-31 and P-32, carried over) are under "Proposed" below
-(OSS-202) and not approved.
+work is approved yet; the candidates (P-45, P-46 and P-47, and P-12, P-13,
+P-18, P-20, P-22, P-28, P-31 and P-32 carried over) are under "Proposed"
+below (OSS-208) and not approved.
 
 - [x] **G1 for 0.14.0.** Counsel confirmed that the code added since 0.13.0
       (`bf1a2ed`) is covered (recorded 2026-10-24).
@@ -219,6 +219,48 @@ and anything that downloads data.
 
 **Suggested order if approved:** P-3 and P-4 first (small, no schema change),
 then P-2 with P-6 as one schema-2 change, then P-5 if users ask for it.
+
+### P-45 to P-47: candidates for 0.15.0 (OSS-208)
+
+*Prepared by the assistant in OSS-208 for the owner to approve or reject one
+by one. Nothing here is authorized; none of it starts without approval.*
+Each item is generic command-line tooling as defined in `IP_BOUNDARY.md`
+("What *is* in scope"), ships no domain thresholds and touches nothing on
+the out-of-scope list. P-32, P-31, P-22, P-13, P-18, P-28, P-12 and P-20
+from earlier rounds were not approved and stay open; they are ranked again
+below. The new items are about a command that fails after writing, a
+common export quirk and a misleading error message; none changes the
+report or comparison format. Each motivating behaviour was checked on
+2026-10-24 on `main` at `59c502e` (0.15.0.dev0).
+
+| ID | Candidate | Why | Effort | Risk and cost |
+|---|---|---|---|---|
+| P-45 | **Check output folders up front**: before reading the data, `report` checks that the folder of each of `-o`, `--flags-csv` and `--gaps-csv` exists (and that the path is not itself a folder), and `compare` does the same for `-o`; otherwise exit 2 with nothing written. | Checked: `report d.csv --freq 1h --gaps-csv nodir/g.csv` prints the whole JSON report and only then fails with pandas' "Cannot save file into a non-existent directory: 'nodir'" and exit 2; with `-o r.json --flags-csv nodir/f.csv`, `r.json` is written although the command failed. A typo in one path leaves a report from a failed run. | S | No format change. **Behaviour change**: such commands already exited 2; they now write and print nothing first, and the message names the option, e.g. "--gaps-csv 'nodir/g.csv': folder 'nodir' does not exist; nothing was written". Folders are not created (no `mkdir -p`); standard output (`-`) is not affected. |
+| P-46 | **Ignore the empty column a trailing delimiter makes**: a column with no header whose values are all empty (what pandas reads as `Unnamed: N` when every line ends with the delimiter) is left out when the value column is chosen by default and by `--all-value-cols`. | Checked: for `timestamp,kwh,` with lines like `2026-01-01T00:00Z,1,`, `report t.csv --freq 1h` fails with "pass --value-col; candidate columns: ['kwh', 'Unnamed: 2']" (also with `--unit kWh`), and `--all-value-cols` reports `Unnamed: 2` as a column whose every row is MISSING_VALUE. Spreadsheet and logger exports often end lines with the delimiter. | S | No format change. **Behaviour change**: only for such files; the default now picks the one real column, and `--all-value-cols` no longer reports the empty column. A column with a header, or with any value, is never skipped; `--value-col 'Unnamed: 2'` still selects it explicitly. `--flags-csv` keeps every column of the file as now. |
+| P-47 | **Say what is wrong with `--freq`**: the command checks `--freq` itself and tells apart a value pandas does not understand ("--freq 'banana' is not a frequency; use one such as 15min, 1h or 1D") from a calendar step given without a zone ("--freq 'MS' is a calendar step; pass --tz"). | Checked: `--freq banana` and `--freq 1M` both fail with "is not a fixed-length step; pass tz= to use it as a local-calendar step", which suggests the wrong fix and names the library's parameter, not `--tz`; `--freq 1x --tz Europe/Stockholm` prints pandas' raw "Invalid frequency: 1x. Failed to parse with error message: ValueError(...KeyError('x'))". | S | No format change, no behaviour change beyond the text of these error messages (still exit 2). Pandas' own hint, such as "'M' is no longer supported… use 'ME'", is kept at the end when there is one. The library's `to_step` message is not changed. |
+| P-32 | *Carried over, not approved.* **Lines before the header** (`--skip-rows N`). As described for 0.9.0 below. | A preamble is refused as a missing column. | S | No format change. |
+| P-31 | *Carried over, not approved.* **Unix epoch timestamps** (`--timestamp-unit s|ms`). As described for 0.8.0 below. | Epoch seconds are refused. | S–M | No format change. |
+| P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below. | A long maintenance log makes a long command. | S | No format change. |
+| P-13 | *Carried over, not approved.* `origin="epoch"`. | A leading off-grid timestamp shifts the grid. | S | Fits schema 2. |
+| P-18 | *Carried over, not approved.* Compare full gap lists from `--gaps-csv`. | Only listed gaps are compared. | S–M | No report change. |
+| P-28, P-12, P-20 | *Carried over, not approved.* Conflicting duplicates; DST policy for calendar grids; single-row spikes. | Known limitations. | M, S–M, M | Report schema 3; only together. |
+
+Considered and not proposed:
+- **Creating missing output folders (P-45):** a typo would then create a
+  stray folder tree; refusing with the path named is safer and simpler.
+- **Skipping every all-empty column (P-46):** a named column that is empty
+  is a real finding (MISSING_VALUE) and stays reported; only headerless
+  empty columns are export artifacts.
+- **Other edge cases checked and already handled:** a header-only file
+  (reported as 0 rows), an empty file, a missing second input file, `-o`
+  naming a folder, a UTF-8 byte-order mark, a non-report JSON in `compare`,
+  reversed `--bounds`, a repeated `--value-col` and a negative
+  `--max-listed` all give a clear message or a correct report.
+
+**Suggested order if approved:** P-45 first (a failed run should leave
+nothing behind), then P-46, then P-47. P-32, P-31 and P-22 as before; P-13
+and P-18 as before; P-28 with P-12 and P-20 only as one schema-3 change.
+Each needs its own approval.
 
 ### P-43 and P-44: candidates for 0.14.0 (OSS-202)
 
@@ -2586,7 +2628,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       *Release build* workflow passed and created the draft release, which
       the owner published on 2026-10-24.
 
-### OSS-207: open 0.15.0 development — this change
+### OSS-207: open 0.15.0 development — merged in [#179](https://github.com/PederFalkman/opensource/pull/179)
 
 - [x] `__version__` is `0.15.0.dev0`; new changelog entries go under
       `[Unreleased]`, and the released sections are not edited.
@@ -2595,6 +2637,18 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       is not release-ready, with the licence checks and `--guard` passing.
 - [x] Status lines: 0.14.0 is the GitHub release, `main` is 0.15.0
       development.
+
+### OSS-208: 0.15.0 proposals — this change
+
+- [x] P-45, P-46 and P-47 written up for the owner to approve one by one,
+      ranked with P-12, P-13, P-18, P-20, P-22, P-28, P-31 and P-32 carried
+      over; none changes the report or comparison format, and the
+      behaviour changes are stated in the table. The motivating behaviours
+      were checked on 2026-10-24 on `59c502e` (`--gaps-csv` or
+      `--flags-csv` into a missing folder fails after the report is
+      printed or `-o` written; a trailing delimiter's empty column blocks
+      the default value column; `--freq banana` is told to pass `tz=`).
+      Docs only; nothing is authorized.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data
