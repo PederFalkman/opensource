@@ -5,6 +5,22 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+Two safety refusals, approved as P-43 and P-44: `report` and `compare`
+refuse to write over one of their input files or over another of their
+outputs, and `--insert-missing` without a step is refused before anything
+is written. The report and comparison formats are unchanged (schema 2) and
+no public Python name is added or changed.
+
+**Upgrading from 0.13.0.** Both changes are on by default, and both affect
+only commands that destroyed a file or already failed: an output path that
+names an input file (or the same path as another output) now exits 2 with
+nothing written, where it used to overwrite the file and exit 0; and
+`--insert-missing` without a step still exits 2 but no longer prints a
+report first, and its message now names the options. Writing over an
+earlier run's output file is still allowed. A script that relied on
+replacing its input in place should write to another path and move the
+file afterwards.
+
 ### Changed
 
 - `report` refuses `-o`, `--flags-csv` or `--gaps-csv` naming one of its
