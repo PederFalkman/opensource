@@ -138,7 +138,11 @@ rows `--insert-missing` adds).
 Repeat `--value-col` for one report covering several columns (check options
 then apply to every column), or pass `--all-value-cols` to assess every
 column except the timestamps, so a column added to an export later is
-assessed too (a text column is then reported as `NON_NUMERIC`). `--unit kWh` describes a single column; for
+assessed too (a text column is then reported as `NON_NUMERIC`). When every
+line ends with the delimiter, the empty, headerless column this leaves
+(`Unnamed: 2` in pandas) is not counted, either for the default value
+column or by `--all-value-cols`; `--value-col 'Unnamed: 2'` still selects
+it. `--unit kWh` describes a single column; for
 several, repeat `--unit kwh=kWh --unit pv=kW` (`--resolution`,
 `--aggregation` and `--interval-label` apply to each named column; without
 `--value-col`, the named columns are the ones assessed). With several

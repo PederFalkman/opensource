@@ -165,13 +165,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--value-col",
         action="append",
         help="value column; repeat for a multi-column report (default: the columns named by --schema "
-        "or --unit COLUMN=UNIT, else the only other column)",
+        "or --unit COLUMN=UNIT, else the only other column; an empty, headerless column left by "
+        "a trailing delimiter is not counted)",
     )
     rep.add_argument(
         "--all-value-cols",
         action="store_true",
         help="assess every column except the timestamp column (and --time-col), as if each were "
-        "passed with --value-col; a text column is reported as NON_NUMERIC",
+        "passed with --value-col; a text column is reported as NON_NUMERIC, and an empty, "
+        "headerless column left by a trailing delimiter is skipped",
     )
 
     ts = rep.add_argument_group("timestamps")
@@ -449,6 +451,15 @@ def _space_hint(name: str, columns: Sequence[object]) -> str:
     return f" (column {close[0]!r} differs only by surrounding spaces)" if len(close) == 1 else ""
 
 
+def _trailing_empty(frame: pd.DataFrame) -> set[object]:
+    """Columns with no header and no value, as a trailing delimiter makes them (P-46).
+
+    pandas names a headerless column ``Unnamed: N``; one whose every value is empty is an
+    export artifact, not data. A column with a header, or with any value, is never included.
+    """
+    return {c for c in frame.columns if re.fullmatch(r"Unnamed: \d+", str(c)) and frame[c].isna().all()}
+
+
 def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
     paths: list[str] = args.csv
     if len(paths) > 1:
@@ -486,9 +497,14 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
                 + _space_hint(args.time_col, list(frame.columns))
             )
     value_cols = args.value_col
+    # A trailing delimiter's empty column is left out of the default choice (P-46); naming it
+    # with --value-col still selects it.
+    skipped = _trailing_empty(frame)
     if args.all_value_cols:
         # Every other column, in file order (P-38); a column added later is assessed too.
-        value_cols = [c for c in frame.columns if c not in (args.timestamp_col, args.time_col)]
+        value_cols = [
+            c for c in frame.columns if c not in (args.timestamp_col, args.time_col) and c not in skipped
+        ]
         if not value_cols:
             raise CliError(
                 f"--all-value-cols: no column besides the timestamps; columns: {list(frame.columns)}"
@@ -509,7 +525,9 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
                 f"--unit names columns that are not in the file: {missing}; columns: {list(frame.columns)}"
             )
     if value_cols is None:
-        others = [c for c in frame.columns if c not in (args.timestamp_col, args.time_col)]
+        others = [
+            c for c in frame.columns if c not in (args.timestamp_col, args.time_col) and c not in skipped
+        ]
         if len(others) != 1:
             raise CliError(f"pass --value-col; candidate columns: {others}")
         value_cols = others

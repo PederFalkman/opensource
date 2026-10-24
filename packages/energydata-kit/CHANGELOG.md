@@ -15,6 +15,15 @@ versioning: [SemVer](https://semver.org/).
   `-o` written) first and the command then failed with pandas' "Cannot
   save file into a non-existent directory". The exit status is 2 either
   way. Folders are not created; standard output (`-`) is not affected.
+- An empty column without a header, as a trailing delimiter at the end of
+  every line leaves it (pandas names it `Unnamed: 2`), is no longer counted
+  when `report` chooses the value column by default and is skipped by
+  `--all-value-cols` (P-46). Before, `report t.csv --freq 1h` on such a
+  file failed with "pass --value-col; candidate columns: ['kwh',
+  'Unnamed: 2']", also with `--unit kWh`, and `--all-value-cols` reported
+  the column with every row MISSING_VALUE. A column with a header, or with
+  any value, is still a candidate, and `--value-col 'Unnamed: 2'` still
+  selects it. This changes only results for such files.
 
 ## [0.14.0] - 2026-10-24
 

@@ -236,7 +236,7 @@ report or comparison format. Each motivating behaviour was checked on
 | ID | Candidate | Why | Effort | Risk and cost |
 |---|---|---|---|---|
 | P-45 | *Approved by the owner on 2026-10-24; done in OSS-209.* **Check output folders up front**: before reading the data, `report` checks that the folder of each of `-o`, `--flags-csv` and `--gaps-csv` exists (and that the path is not itself a folder), and `compare` does the same for `-o`; otherwise exit 2 with nothing written. | Checked: `report d.csv --freq 1h --gaps-csv nodir/g.csv` prints the whole JSON report and only then fails with pandas' "Cannot save file into a non-existent directory: 'nodir'" and exit 2; with `-o r.json --flags-csv nodir/f.csv`, `r.json` is written although the command failed. A typo in one path leaves a report from a failed run. | S | No format change. **Behaviour change**: such commands already exited 2; they now write and print nothing first, and the message names the option, e.g. "--gaps-csv 'nodir/g.csv': folder 'nodir' does not exist; nothing was written". Folders are not created (no `mkdir -p`); standard output (`-`) is not affected. |
-| P-46 | *Approved by the owner on 2026-10-24; to be built in OSS-210.* **Ignore the empty column a trailing delimiter makes**: a column with no header whose values are all empty (what pandas reads as `Unnamed: N` when every line ends with the delimiter) is left out when the value column is chosen by default and by `--all-value-cols`. | Checked: for `timestamp,kwh,` with lines like `2026-01-01T00:00Z,1,`, `report t.csv --freq 1h` fails with "pass --value-col; candidate columns: ['kwh', 'Unnamed: 2']" (also with `--unit kWh`), and `--all-value-cols` reports `Unnamed: 2` as a column whose every row is MISSING_VALUE. Spreadsheet and logger exports often end lines with the delimiter. | S | No format change. **Behaviour change**: only for such files; the default now picks the one real column, and `--all-value-cols` no longer reports the empty column. A column with a header, or with any value, is never skipped; `--value-col 'Unnamed: 2'` still selects it explicitly. `--flags-csv` keeps every column of the file as now. |
+| P-46 | *Approved by the owner on 2026-10-24; done in OSS-210.* **Ignore the empty column a trailing delimiter makes**: a column with no header whose values are all empty (what pandas reads as `Unnamed: N` when every line ends with the delimiter) is left out when the value column is chosen by default and by `--all-value-cols`. | Checked: for `timestamp,kwh,` with lines like `2026-01-01T00:00Z,1,`, `report t.csv --freq 1h` fails with "pass --value-col; candidate columns: ['kwh', 'Unnamed: 2']" (also with `--unit kWh`), and `--all-value-cols` reports `Unnamed: 2` as a column whose every row is MISSING_VALUE. Spreadsheet and logger exports often end lines with the delimiter. | S | No format change. **Behaviour change**: only for such files; the default now picks the one real column, and `--all-value-cols` no longer reports the empty column. A column with a header, or with any value, is never skipped; `--value-col 'Unnamed: 2'` still selects it explicitly. `--flags-csv` keeps every column of the file as now. |
 | P-47 | **Say what is wrong with `--freq`**: the command checks `--freq` itself and tells apart a value pandas does not understand ("--freq 'banana' is not a frequency; use one such as 15min, 1h or 1D") from a calendar step given without a zone ("--freq 'MS' is a calendar step; pass --tz"). | Checked: `--freq banana` and `--freq 1M` both fail with "is not a fixed-length step; pass tz= to use it as a local-calendar step", which suggests the wrong fix and names the library's parameter, not `--tz`; `--freq 1x --tz Europe/Stockholm` prints pandas' raw "Invalid frequency: 1x. Failed to parse with error message: ValueError(...KeyError('x'))". | S | No format change, no behaviour change beyond the text of these error messages (still exit 2). Pandas' own hint, such as "'M' is no longer supported… use 'ME'", is kept at the end when there is one. The library's `to_step` message is not changed. |
 | P-32 | *Carried over, not approved.* **Lines before the header** (`--skip-rows N`). As described for 0.9.0 below. | A preamble is refused as a missing column. | S | No format change. |
 | P-31 | *Carried over, not approved.* **Unix epoch timestamps** (`--timestamp-unit s|ms`). As described for 0.8.0 below. | Epoch seconds are refused. | S–M | No format change. |
@@ -2650,11 +2650,10 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       the default value column; `--freq banana` is told to pass `tz=`).
       Docs only; nothing is authorized.
 
-### OSS-209: check output folders up front (P-45) — this change
+### OSS-209: check output folders up front (P-45) — merged in [#181](https://github.com/PederFalkman/opensource/pull/181)
 
 - [x] The owner approved P-45 and P-46 on 2026-10-24, to be built one PR
       each, P-45 first (recorded here after OSS-208 merged in #180).
-
 - [x] `report` refuses `-o`, `--flags-csv` or `--gaps-csv` in a folder that
       does not exist, or naming a folder, and `compare` does the same for
       `-o`; exit 2 before the data is read, with a message naming the
@@ -2663,6 +2662,17 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       no longer print a report or write `-o` first. Folders are not
       created; `-` is not affected. No format change. Tests, README and
       changelog.
+
+### OSS-210: ignore the empty column a trailing delimiter makes (P-46) — this change
+
+- [x] A column with no header whose values are all empty (`Unnamed: N`, as
+      a delimiter at the end of every line leaves it) is not counted when
+      the value column is chosen by default (also with a single `--unit`),
+      and is skipped by `--all-value-cols`.
+- [x] Behaviour change, as proposed, only for such files. A column with a
+      header, or with any value, is still a candidate; `--value-col
+      'Unnamed: 2'` still selects it. No format change. Tests, help text,
+      README and changelog.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data
