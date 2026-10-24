@@ -5,6 +5,8 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-10-24
+
 Two safety refusals, approved as P-43 and P-44: `report` and `compare`
 refuse to write over one of their input files or over another of their
 outputs, and `--insert-missing` without a step is refused before anything
