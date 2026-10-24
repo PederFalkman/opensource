@@ -663,6 +663,29 @@ def test_refuses_to_overwrite_inputs_and_outputs(tmp_path, monkeypatch):
     assert run("report", "in.csv", "--freq", "1h", "-o", "a.json")[0] == 0
 
 
+def test_refuses_outputs_that_cannot_be_written(tmp_path, monkeypatch):
+    # P-45: a missing output folder, or an output path that is a folder, is refused before the
+    # data is read; before, the report was printed (or -o written) and the command then failed.
+    write(tmp_path, "timestamp,kwh\n2026-01-01T00:00Z,1\n2026-01-01T02:00Z,2\n", "in.csv")
+    (tmp_path / "sub").mkdir()
+    monkeypatch.chdir(tmp_path)
+    for argv, message in [
+        (["--gaps-csv", "nodir/g.csv"], "--gaps-csv 'nodir/g.csv': folder 'nodir' does not exist"),
+        (["-o", "r.json", "--flags-csv", "nodir/f.csv"], "--flags-csv 'nodir/f.csv': folder 'nodir'"),
+        (["-o", "nodir/r.json"], "-o 'nodir/r.json': folder 'nodir' does not exist"),
+        (["-o", "sub"], "-o 'sub' is a folder"),
+    ]:
+        code, out, err = run("report", "in.csv", "--freq", "1h", *argv)
+        assert code == 2 and out == "" and message in err and "nothing was written" in err, (argv, err)
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["in.csv", "sub"]
+    assert run("report", "in.csv", "--freq", "1h", "-o", "a.json")[0] == 0
+    code, out, err = run("compare", "a.json", "a.json", "-o", "nodir/c.json")
+    assert code == 2 and out == "" and "-o 'nodir/c.json': folder 'nodir' does not exist" in err
+    # Folders are not created; an existing one works, and so does standard output.
+    assert run("report", "in.csv", "--freq", "1h", "--gaps-csv", "sub/g.csv", "-o", "-")[0] == 0
+    assert (tmp_path / "sub" / "g.csv").exists() and not (tmp_path / "nodir").exists()
+
+
 def test_insert_missing_needs_a_step(tmp_path):
     # P-44: without a step, --insert-missing is refused before anything is written; before, the
     # report was printed and the command then failed with "insert_missing requires freq".

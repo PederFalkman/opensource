@@ -831,7 +831,8 @@ _INSERT_NEEDS_STEP = "--insert-missing needs a step: pass --freq, or a resolutio
 
 
 def _check_paths(inputs: Sequence[str], outputs: Sequence[tuple[str, str | None]]) -> None:
-    """Refuse an output that would overwrite an input or another output (P-43).
+    """Refuse an output that would overwrite an input or another output (P-43), or that
+    cannot be written because its folder is missing or the path is a folder (P-45).
 
     Runs before anything is read or written. Paths are compared after resolving them, so
     ``./in.csv`` and ``in.csv`` are the same file; ``-`` is not a file.
@@ -840,6 +841,11 @@ def _check_paths(inputs: Sequence[str], outputs: Sequence[tuple[str, str | None]
     for option, path in outputs:
         if path is None or path == "-":
             continue
+        if Path(path).is_dir():
+            raise CliError(f"{option} {path!r} is a folder; nothing was written")
+        folder = Path(path).parent
+        if not folder.is_dir():
+            raise CliError(f"{option} {path!r}: folder {str(folder)!r} does not exist; nothing was written")
         key = Path(path).resolve()
         if key in seen:
             raise CliError(f"{option} {path!r} would overwrite {seen[key]}; nothing was written")

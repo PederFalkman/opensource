@@ -5,6 +5,17 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- `report` refuses `-o`, `--flags-csv` or `--gaps-csv` in a folder that
+  does not exist, or naming a folder, and `compare` does the same for
+  `-o`: the command exits with status 2 before the data is read, with a
+  message such as "--gaps-csv 'nodir/g.csv': folder 'nodir' does not
+  exist; nothing was written" (P-45). Before, the report was printed (or
+  `-o` written) first and the command then failed with pandas' "Cannot
+  save file into a non-existent directory". The exit status is 2 either
+  way. Folders are not created; standard output (`-`) is not affected.
+
 ## [0.14.0] - 2026-10-24
 
 Two safety refusals, approved as P-43 and P-44: `report` and `compare`

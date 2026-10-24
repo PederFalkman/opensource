@@ -2596,6 +2596,17 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Status lines: 0.14.0 is the GitHub release, `main` is 0.15.0
       development.
 
+### OSS-209: check output folders up front (P-45) — this change
+
+- [x] `report` refuses `-o`, `--flags-csv` or `--gaps-csv` in a folder that
+      does not exist, or naming a folder, and `compare` does the same for
+      `-o`; exit 2 before the data is read, with a message naming the
+      option and the folder.
+- [x] Behaviour change, as proposed: such commands already exited 2; they
+      no longer print a report or write `-o` first. Folders are not
+      created; `-` is not affected. No format change. Tests, README and
+      changelog.
+
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data
 download. See `IP_BOUNDARY.md`.
