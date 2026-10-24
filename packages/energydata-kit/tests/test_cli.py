@@ -632,6 +632,37 @@ def test_column_names_differing_by_spaces(tmp_path):
     assert run("report", path, "--value-col", " kwh", "--freq", "1h")[0] == 0
 
 
+def test_refuses_to_overwrite_inputs_and_outputs(tmp_path, monkeypatch):
+    # P-43: an output naming an input file or another output is refused before anything is
+    # written; before, the data file or the report was silently replaced.
+    text = "timestamp,kwh\n2026-01-01T00:00Z,1\n2026-01-01T01:00Z,2\n"
+    data = write(tmp_path, text, "in.csv")
+    monkeypatch.chdir(tmp_path)
+    for argv, message in [
+        (["-o", "in.csv"], "-o 'in.csv' would overwrite the input file 'in.csv'"),
+        (["-o", "./in.csv"], "would overwrite the input file 'in.csv'"),  # same file, other spelling
+        (["--flags-csv", str(data)], "--flags-csv"),
+        (
+            ["-o", "same.json", "--gaps-csv", "same.json"],
+            "--gaps-csv 'same.json' would overwrite the -o file",
+        ),
+    ]:
+        code, out, err = run("report", "in.csv", "--freq", "1h", *argv)
+        assert code == 2 and out == "" and message in err and "nothing was written" in err, (argv, err)
+        assert data.read_text() == text
+    assert not (tmp_path / "same.json").exists()
+    # compare -o naming either report is refused too; a separate output is fine.
+    assert run("report", "in.csv", "--freq", "1h", "-o", "a.json")[0] == 0
+    before = (tmp_path / "a.json").read_text()
+    for target in ("a.json", str(tmp_path / "a.json")):
+        code, _, err = run("compare", "a.json", "a.json", "-o", target)
+        assert code == 2 and "would overwrite the input file" in err
+    assert (tmp_path / "a.json").read_text() == before
+    assert run("compare", "a.json", "a.json", "-o", "c.json")[0] == 0
+    # Re-running into the same output file is still allowed.
+    assert run("report", "in.csv", "--freq", "1h", "-o", "a.json")[0] == 0
+
+
 def test_fail_on_changed_metadata(tmp_path):
     # P-41: reports that describe the data differently can fail compare; P-40 covers parameters only.
     path = str(write(tmp_path, "timestamp,kw\n2026-01-01T00:00Z,1\n2026-01-01T01:00Z,2\n"))

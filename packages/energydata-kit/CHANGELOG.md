@@ -5,6 +5,19 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- `report` refuses `-o`, `--flags-csv` or `--gaps-csv` naming one of its
+  input files or the same path as another of them, and `compare` refuses
+  `-o` naming either report: the command exits with status 2 before
+  anything is written (P-43). Before, `report in.csv -o in.csv` replaced
+  the data file with the report and exited 0, `--flags-csv in.csv` replaced
+  it with the flagged table, `-o x --gaps-csv x` kept only the gap list, and
+  `compare a.json b.json -o a.json` replaced the earlier report. Paths are
+  compared after resolving them, so `./in.csv` and `in.csv` are the same
+  file. Writing over an earlier run's output file is still allowed. This
+  changes only commands that destroyed a file.
+
 ## [0.13.0] - 2026-10-24
 
 One opt-in exit-status option for `compare` and one clearer error message,
