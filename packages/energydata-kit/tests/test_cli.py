@@ -686,6 +686,27 @@ def test_refuses_outputs_that_cannot_be_written(tmp_path, monkeypatch):
     assert (tmp_path / "sub" / "g.csv").exists() and not (tmp_path / "nodir").exists()
 
 
+def test_trailing_delimiter_column_is_ignored(tmp_path):
+    # P-46: lines ending with the delimiter add a headerless, empty column ("Unnamed: 2"); it is
+    # left out of the default choice and of --all-value-cols. Before, the default failed with
+    # "pass --value-col" and --all-value-cols reported it as all MISSING_VALUE.
+    rows = "2026-01-01T00:00Z,1,\n2026-01-01T01:00Z,2,\n"
+    path = str(write(tmp_path, "timestamp,kwh,\n" + rows, "t.csv"))
+    for extra in ([], ["--unit", "kWh"], ["--all-value-cols"]):
+        code, out, err = run("report", path, "--freq", "1h", *extra)
+        assert code == 0, (extra, err)
+        assert "Unnamed" not in out and json.loads(out)["series_name"] == "kwh", extra
+    # Naming it still selects it.
+    code, out, _ = run("report", path, "--freq", "1h", "--value-col", "Unnamed: 2", "--format", "text")
+    assert code == 0 and "Unnamed: 2: 2 rows" in out and "MISSING_VALUE 2" in out
+    # A named empty column, or a headerless column with a value, is still a candidate.
+    named = str(write(tmp_path, "timestamp,kwh,spare\n" + rows, "named.csv"))
+    valued = str(write(tmp_path, "timestamp,kwh,\n2026-01-01T00:00Z,1,5\n2026-01-01T01:00Z,2,\n", "v.csv"))
+    for other, name in ((named, "spare"), (valued, "Unnamed: 2")):
+        code, _, err = run("report", other, "--freq", "1h")
+        assert code == 2 and f"candidate columns: ['kwh', '{name}']" in err
+
+
 def test_insert_missing_needs_a_step(tmp_path):
     # P-44: without a step, --insert-missing is refused before anything is written; before, the
     # report was printed and the command then failed with "insert_missing requires freq".
