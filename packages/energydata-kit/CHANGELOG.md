@@ -17,6 +17,12 @@ versioning: [SemVer](https://semver.org/).
   compared after resolving them, so `./in.csv` and `in.csv` are the same
   file. Writing over an earlier run's output file is still allowed. This
   changes only commands that destroyed a file.
+- `report --flags-csv ... --insert-missing` without a step (no `--freq`
+  and no resolution from `--unit` or `--schema`) is refused before
+  anything is written, with "--insert-missing needs a step: pass --freq,
+  or a resolution with --unit or --schema" (P-44). Before, the whole report
+  was printed first and the command then failed with "insert_missing
+  requires freq". The exit status is 2 either way.
 
 ## [0.13.0] - 2026-10-24
 

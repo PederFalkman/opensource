@@ -224,7 +224,7 @@ behaviour was checked on 2026-10-24 on `main` at `1e8912d` (0.14.0.dev0).
 | ID | Candidate | Why | Effort | Risk and cost |
 |---|---|---|---|---|
 | P-43 | *Approved by the owner on 2026-10-24; done in OSS-203.* **Refuse to overwrite an input or another output**: `report` refuses `-o`, `--flags-csv` or `--gaps-csv` naming one of its input files or the same path as each other, and `compare` refuses `-o` naming either report; exit 2 before anything is written. | Checked: `report in.csv --freq 1h -o in.csv` replaces the data file with the JSON report and exits 0; `--flags-csv in.csv` replaces it with the flagged table; `-o same.json --gaps-csv same.json` leaves only the gap list; `compare a.json b.json -o a.json` replaces the earlier report with the comparison. Each loses data without a word. | S | No format change. **Behaviour change by default**: only for commands that destroyed a file; they now exit 2 with a message naming the clash, and nothing is written. Paths are compared after resolving them, so `./in.csv` and `in.csv` count as the same file. Standard input and output (`-`) are not files and are not affected. |
-| P-44 | *Approved by the owner on 2026-10-24; OSS-204.* **Refuse `--insert-missing` without a step up front**: when no step is known (no `--freq`, and no resolution from `--unit` or `--schema`), the command exits 2 before writing anything, with a message in the command's own words. | Checked: `report data.csv --flags-csv f.csv --insert-missing` (no step) prints the whole JSON report to standard output and only then fails with "insert_missing requires freq", the library's parameter name, and exit 2. A pipeline sees a full report from a failed command. | S | No format change. **Behaviour change**: such a command already exited 2; it now prints no report first, and the message reads "--insert-missing needs a step: pass --freq, or a resolution with --unit or --schema". |
+| P-44 | *Approved by the owner on 2026-10-24; done in OSS-204.* **Refuse `--insert-missing` without a step up front**: when no step is known (no `--freq`, and no resolution from `--unit` or `--schema`), the command exits 2 before writing anything, with a message in the command's own words. | Checked: `report data.csv --flags-csv f.csv --insert-missing` (no step) prints the whole JSON report to standard output and only then fails with "insert_missing requires freq", the library's parameter name, and exit 2. A pipeline sees a full report from a failed command. | S | No format change. **Behaviour change**: such a command already exited 2; it now prints no report first, and the message reads "--insert-missing needs a step: pass --freq, or a resolution with --unit or --schema". |
 | P-32 | *Carried over, not approved.* **Lines before the header** (`--skip-rows N`). As described for 0.9.0 below. | A preamble is refused as a missing column. | S | No format change. |
 | P-31 | *Carried over, not approved.* **Unix epoch timestamps** (`--timestamp-unit s|ms`). As described for 0.8.0 below. | Epoch seconds are refused. | S–M | No format change. |
 | P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below. | A long maintenance log makes a long command. | S | No format change. |
@@ -2527,7 +2527,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       each (P-43 first, as proposed). P-12, P-13, P-18, P-20, P-22, P-28,
       P-31 and P-32 are not approved.
 
-### OSS-203: refuse to overwrite an input or another output (P-43) — this change
+### OSS-203: refuse to overwrite an input or another output (P-43) — merged in [#175](https://github.com/PederFalkman/opensource/pull/175)
 
 - [x] `report` refuses `-o`, `--flags-csv` or `--gaps-csv` naming an input
       file or the same path as another of them; `compare` refuses `-o`
@@ -2537,6 +2537,15 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       Re-running into an earlier run's output file is still allowed.
 - [x] Behaviour change, as proposed, only for commands that destroyed a
       file. No format change. Tests, README and changelog.
+
+### OSS-204: refuse `--insert-missing` without a step up front (P-44) — this change
+
+- [x] Without a step, `--insert-missing` is refused before anything is
+      written, for single- and multi-column reports, with "--insert-missing
+      needs a step: pass --freq, or a resolution with --unit or --schema".
+- [x] Behaviour change, as proposed: such a command already exited 2; it
+      no longer prints a report first. With a step, rows are inserted as
+      before. No format change. Tests and changelog.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data
