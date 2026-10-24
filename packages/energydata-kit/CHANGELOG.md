@@ -5,6 +5,8 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-24
+
 One opt-in exit-status option for `compare` and one clearer error message,
 approved as P-41 and P-42: `--fail-on-changed-metadata` fails when two
 reports describe the data differently, and a column name that differs from

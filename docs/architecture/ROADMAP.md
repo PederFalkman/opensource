@@ -11,18 +11,19 @@ section "0.13.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 (all 2026-10-21), 0.6.0 and 0.7.0 (both 2026-10-22), and 0.8.0 to 0.12.0
 (all 2026-10-23) were released as GitHub releases only; their records are
 kept there. Engineering for 0.13.0 is complete (OSS-197 and OSS-198, P-41
-and P-42); it waits on the questions below. The other candidates (P-12,
+and P-42), and the owner recorded the answers below on 2026-10-24; the
+release PR is OSS-200. The other candidates (P-12,
 P-13, P-18, P-20, P-22, P-28, P-31 and P-32, carried over) are under
 "Proposed" below (OSS-196) and not approved.
 
-- [ ] **G1 for 0.13.0.** Does counsel's confirmation cover the code added
-      since 0.12.0 (`4c7bd98`), or should counsel confirm again?
-- [ ] **G3 for 0.13.0.** Technical-lead sign-off of the IP-boundary review
-      of the diff from 0.12.0 (2 source files, about 30 added lines).
-- [ ] **G4 for 0.13.0.** No dependency changed; is the 0.12.0 position
-      enough?
-- [ ] **D6 for 0.13.0 (G7).** GitHub release only, like 0.12.0, or also a
-      package index?
+- [x] **G1 for 0.13.0.** Counsel confirmed that the code added since 0.12.0
+      (`4c7bd98`) is covered (recorded 2026-10-24).
+- [x] **G3 for 0.13.0.** The technical lead signed off the IP-boundary
+      review of the diff from 0.12.0 (recorded 2026-10-24).
+- [x] **G4 for 0.13.0.** No dependency changed; the 0.12.0 position stands
+      (recorded 2026-10-24).
+- [x] **D6 for 0.13.0 (G7).** GitHub release only, like 0.12.0 (recorded
+      2026-10-24).
 
 Recorded for 0.12.0:
 
@@ -2437,7 +2438,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       when nothing is close or two columns would match.
 - [x] No format change. Tests and changelog.
 
-### OSS-199: prepare the 0.13.0 release — this change
+### OSS-199: prepare the 0.13.0 release — merged in [#171](https://github.com/PederFalkman/opensource/pull/171)
 
 - [x] `RELEASE_DECISIONS.md` gains a 0.13.0 section: what the release
       contains (P-41, P-42), what did not change since 0.12.0 (no
@@ -2448,6 +2449,22 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       "Upgrading from 0.12.0" (nothing to change; one error message gains
       a hint). Version stays `0.13.0.dev0`; the upload guard stays.
 - [x] "Open decisions" above lists the 0.13.0 questions.
+
+### OSS-200: release energydata-kit 0.13.0 — this change
+
+- [x] Decisions recorded by the owner on 2026-10-24: G1 counsel confirmed, G3
+      signed off, G4 the 0.12.0 position stands, D6 GitHub release only,
+      with the `**D6 approved:**` line naming `energydata-kit 0.13.0`.
+- [x] `__version__` is `0.13.0`; the changelog's notes move under
+      `## [0.13.0] - 2026-10-24` with an empty `[Unreleased]` above.
+- [x] Release edits: `Private :: Do Not Upload` removed, the readiness test
+      expects nothing to fail (`--strict` exits 0, `--guard` passes), and the
+      status lines in both READMEs, `SECURITY.md`, `CONTRIBUTING.md` and
+      `RELEASE_GATES.md` name 0.13.0 as a GitHub release.
+- [ ] After merge (owner): tag the merge commit `energydata-kit-v0.13.0`,
+      check the digests and publish the draft GitHub release the *Release
+      build* workflow creates. Then the next development cycle restores the
+      upload guard.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data
