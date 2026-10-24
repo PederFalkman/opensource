@@ -15,6 +15,15 @@ versioning: [SemVer](https://semver.org/).
   --fail-on-changed-parameters`. Opt-in, like
   `--fail-on-changed-parameters`. The comparison format is unchanged.
 
+### Changed
+
+- When `--timestamp-col`, `--time-col` or `--value-col` names a column
+  that is not in the file but one column matches it once surrounding
+  spaces are removed (for example ` kwh` from a header `timestamp, kwh`),
+  the error now says so: "(column ' kwh' differs only by surrounding
+  spaces)" (P-42). The command still exits with status 2 and nothing is
+  renamed; pass the exact name, spaces included, to use that column.
+
 ## [0.12.0] - 2026-10-23
 
 Two opt-in exit-status options for `compare`, approved as P-39 and P-40:
