@@ -13,9 +13,9 @@ section "0.15.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 GitHub releases only; their records are kept there. Engineering for 0.15.0
 is complete (OSS-209 and OSS-210, P-45 and P-46), and the owner recorded
 the answers below on 2026-10-25; 0.15.0 was released the same day
-(OSS-212, #184). No 0.16.0 work is approved yet; the remaining candidates
-(P-47, and P-12, P-13, P-18, P-20, P-22, P-28, P-31 and P-32 carried over)
-are under "Proposed" below (OSS-208) and not approved.
+(OSS-212, #184). No 0.16.0 work is approved yet; the candidates (P-48 and
+P-49, and P-47, P-12, P-13, P-18, P-20, P-22, P-28, P-31 and P-32 carried
+over) are under "Proposed" below (OSS-214) and not approved.
 
 - [x] **G1 for 0.15.0.** Counsel confirmed that the code added since 0.14.0
       (`532fc23`) is covered (recorded 2026-10-25).
@@ -230,6 +230,56 @@ and anything that downloads data.
 
 **Suggested order if approved:** P-3 and P-4 first (small, no schema change),
 then P-2 with P-6 as one schema-2 change, then P-5 if users ask for it.
+
+### P-48 and P-49: candidates for 0.16.0 (OSS-214)
+
+*Prepared by the assistant in OSS-214 for the owner to approve or reject one
+by one. Nothing here is authorized; none of it starts without approval.*
+Each item is generic command-line tooling as defined in `IP_BOUNDARY.md`
+("What *is* in scope"), ships no domain thresholds and touches nothing on
+the out-of-scope list. P-47 from 0.15.0, and P-32, P-31, P-22, P-13, P-18,
+P-28, P-12 and P-20 from earlier rounds, were not approved and stay open;
+they are ranked again below. Neither new item changes the report or
+comparison format. Each motivating behaviour was checked on 2026-10-25 on
+`main` at `a61c199` (0.16.0.dev0).
+
+**P-48 corrects a mistake in released work.** P-43 (0.14.0) and P-45
+(0.15.0) skip the path `-` in their checks, and the 0.15.0 changelog says
+"standard output (`-`) is not affected", but no output option treats `-`
+as standard output: `-o -`, `--flags-csv -` and `--gaps-csv -` all write a
+file named `-` in the current folder. So the P-43 refusal does not cover
+`-`, and the note in the 0.15.0 changelog is wrong. The released changelog
+sections are not edited; the fix, if approved, is described under
+`[Unreleased]`.
+
+| ID | Candidate | Why | Effort | Risk and cost |
+|---|---|---|---|---|
+| P-48 | **`-` as an output means standard output**: for `report -o`, `--flags-csv`, `--gaps-csv` and `compare -o`, the path `-` writes to standard output, as `-` already reads standard input for inputs. At most one output may go to standard output; the report goes there when `-o` is not given, so `report d.csv --flags-csv -` is refused unless `-o FILE` is also given (exit 2, nothing written). | Checked: `report d.csv --freq 1h --flags-csv -` prints the report and writes the flagged table to a file named `-`; `-o - --flags-csv -` prints nothing, writes the report to `-` and then overwrites it with the table, exit 0, which is the data loss P-43 was meant to refuse; `compare a.json b.json -o -` also writes a file named `-`. | S | No format change. **Behaviour change**: a file named `-` is no longer created; such commands now write to standard output, or exit 2 when two outputs would share it. A caller who wants a file literally named `-` writes `./-`. The 0.15.0 changelog's note on `-` becomes true. |
+| P-49 | **Refuse a repeated column name in the header**: when the timestamp, time or a value column that the command uses appears more than once in the header (including through `--all-value-cols`), exit 2 with a message naming the column and its positions, instead of using pandas' renamed copy. | Checked: for the header `timestamp,kwh,kwh`, pandas renames the second column to `kwh.1`; `--value-col kwh` silently assesses only the first, the default fails with "candidate columns: ['kwh', 'kwh.1']" (a name the file does not contain), and `--all-value-cols` reports a column `kwh.1`. An export with a repeated header usually means two different series under one name. | S | No format change. **Behaviour change**: only for files whose header repeats a used column name; they now exit 2 and name the duplicate. A repeated name the command does not use (not selected and no `--all-value-cols`) is left alone. |
+| P-47 | *Carried over, not approved.* **Say what is wrong with `--freq`**. As described for 0.15.0 below. | `--freq banana` is told to "pass tz=". | S | Error text only. |
+| P-32 | *Carried over, not approved.* **Lines before the header** (`--skip-rows N`). As described for 0.9.0 below. | A preamble is refused as a missing column. | S | No format change. |
+| P-31 | *Carried over, not approved.* **Unix epoch timestamps** (`--timestamp-unit s|ms`). As described for 0.8.0 below. | Epoch seconds are refused. | S–M | No format change. |
+| P-22 | *Carried over, not approved.* **Known outages from a file** (`--known-outages-csv`). As described for 0.5.0 below. | A long maintenance log makes a long command. | S | No format change. |
+| P-13 | *Carried over, not approved.* `origin="epoch"`. | A leading off-grid timestamp shifts the grid. | S | Fits schema 2. |
+| P-18 | *Carried over, not approved.* Compare full gap lists from `--gaps-csv`. | Only listed gaps are compared. | S–M | No report change. |
+| P-28, P-12, P-20 | *Carried over, not approved.* Conflicting duplicates; DST policy for calendar grids; single-row spikes. | Known limitations. | M, S–M, M | Report schema 3; only together. |
+
+Considered and not proposed:
+- **P-48 the other way, treating `-` as an ordinary file name in the
+  checks:** smaller, and it would close the P-43 gap, but it keeps a
+  surprising file named `-` and leaves inputs and outputs using `-`
+  differently; standard output matches what the inputs and the 0.15.0
+  changelog already say.
+- **Renaming repeated columns ourselves (P-49):** any name we invent is
+  as misleading as pandas' `kwh.1`; refusing and naming the positions lets
+  the caller fix the export.
+- **Other edge cases checked and already handled:** `-` given twice as an
+  input, and timestamps with mixed UTC offsets across a DST change.
+
+**Suggested order if approved:** P-48 first (it corrects released
+behaviour and documentation), then P-49, then P-47. P-32, P-31 and P-22 as
+before; P-13 and P-18 as before; P-28 with P-12 and P-20 only as one
+schema-3 change. Each needs its own approval.
 
 ### P-45 to P-47: candidates for 0.15.0 (OSS-208)
 
@@ -2713,7 +2763,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       *Release build* workflow passed and created the draft release, which
       the owner published on 2026-10-25.
 
-### OSS-213: open 0.16.0 development — this change
+### OSS-213: open 0.16.0 development — merged in [#185](https://github.com/PederFalkman/opensource/pull/185)
 
 - [x] `__version__` is `0.16.0.dev0`; new changelog entries go under
       `[Unreleased]`, and the released sections are not edited.
@@ -2722,6 +2772,19 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       is not release-ready, with the licence checks and `--guard` passing.
 - [x] Status lines: 0.15.0 is the GitHub release, `main` is 0.16.0
       development.
+
+### OSS-214: 0.16.0 proposals — this change
+
+- [x] P-48 and P-49 written up for the owner to approve one by one, ranked
+      with P-47 and the older candidates carried over; neither changes the
+      report or comparison format, and the behaviour changes are stated in
+      the table. P-48 corrects released behaviour: the motivating checks on
+      2026-10-25 on `a61c199` found that `-o -`, `--flags-csv -` and
+      `--gaps-csv -` write a file named `-` (so `-o - --flags-csv -`
+      overwrites the report, exit 0), although P-43 and P-45 skip `-` and
+      the 0.15.0 changelog calls it standard output. A repeated header
+      name is silently renamed by pandas (P-49). Docs only; nothing is
+      authorized.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data
