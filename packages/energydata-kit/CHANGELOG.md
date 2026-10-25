@@ -5,6 +5,8 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-10-25
+
 One earlier refusal and one export quirk handled, approved as P-45 and
 P-46: an output in a folder that does not exist is refused before anything
 is written, and the empty, headerless column a trailing delimiter leaves
