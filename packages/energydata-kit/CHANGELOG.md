@@ -5,6 +5,22 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+One earlier refusal and one export quirk handled, approved as P-45 and
+P-46: an output in a folder that does not exist is refused before anything
+is written, and the empty, headerless column a trailing delimiter leaves
+no longer gets in the way of choosing the value column. The report and
+comparison formats are unchanged (schema 2) and no public Python name is
+added or changed.
+
+**Upgrading from 0.14.0.** Most commands give the same output and exit
+status. An output (`-o`, `--flags-csv` or `--gaps-csv`) in a missing
+folder, or naming a folder, still exits 2, but now before anything is
+printed or written, and the message names the option and the folder. For
+a file whose lines all end with the delimiter, `report` now picks the one
+real value column instead of failing with "pass --value-col", and
+`--all-value-cols` no longer reports the empty `Unnamed: N` column; pass
+`--value-col 'Unnamed: 2'` to assess it anyway.
+
 ### Changed
 
 - `report` refuses `-o`, `--flags-csv` or `--gaps-csv` in a folder that

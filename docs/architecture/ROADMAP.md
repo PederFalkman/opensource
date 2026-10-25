@@ -7,15 +7,25 @@ Merged items stay listed here as a record of what was agreed.
 ## Open decisions (owners required)
 
 Questions and evidence for each: `docs/governance/RELEASE_DECISIONS.md`,
-section "0.14.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
+section "0.15.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 (all 2026-10-21), 0.6.0 and 0.7.0 (both 2026-10-22), 0.8.0 to 0.12.0 (all
-2026-10-23) and 0.13.0 (2026-10-24) were released as GitHub releases only;
-their records are kept there. Engineering for 0.14.0 is complete (OSS-203
-and OSS-204, P-43 and P-44), and the owner recorded the answers below on
-2026-10-24; 0.14.0 was released the same day (OSS-206, #178). For 0.15.0
-the owner approved P-45 and P-46 on 2026-10-24 (OSS-209 and OSS-210); P-47,
-and P-12, P-13, P-18, P-20, P-22, P-28, P-31 and P-32 carried over, are
-under "Proposed" below (OSS-208) and not approved.
+2026-10-23), and 0.13.0 and 0.14.0 (both 2026-10-24) were released as
+GitHub releases only; their records are kept there. Engineering for 0.15.0
+is complete (OSS-209 and OSS-210, P-45 and P-46); it waits on the questions
+below. The other candidates (P-47, and P-12, P-13, P-18, P-20, P-22, P-28,
+P-31 and P-32 carried over) are under "Proposed" below (OSS-208) and not
+approved.
+
+- [ ] **G1 for 0.15.0.** Does counsel's confirmation cover the code added
+      since 0.14.0 (`532fc23`), or should counsel confirm again?
+- [ ] **G3 for 0.15.0.** Technical-lead sign-off of the IP-boundary review
+      of the diff from 0.14.0 (2 source files, about 30 added lines).
+- [ ] **G4 for 0.15.0.** No dependency changed; is the 0.14.0 position
+      enough?
+- [ ] **D6 for 0.15.0 (G7).** GitHub release only, like 0.14.0, or also a
+      package index?
+
+Recorded for 0.14.0:
 
 - [x] **G1 for 0.14.0.** Counsel confirmed that the code added since 0.13.0
       (`bf1a2ed`) is covered (recorded 2026-10-24).
@@ -2663,7 +2673,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       created; `-` is not affected. No format change. Tests, README and
       changelog.
 
-### OSS-210: ignore the empty column a trailing delimiter makes (P-46) — this change
+### OSS-210: ignore the empty column a trailing delimiter makes (P-46) — merged in [#182](https://github.com/PederFalkman/opensource/pull/182)
 
 - [x] A column with no header whose values are all empty (`Unnamed: N`, as
       a delimiter at the end of every line leaves it) is not counted when
@@ -2673,6 +2683,19 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       header, or with any value, is still a candidate; `--value-col
       'Unnamed: 2'` still selects it. No format change. Tests, help text,
       README and changelog.
+
+### OSS-211: prepare the 0.15.0 release — this change
+
+- [x] `RELEASE_DECISIONS.md` gains a 0.15.0 section: what the release
+      contains (P-45, P-46), what did not change since 0.14.0 (no
+      dependency, extra or data file), the open questions per gate (G1,
+      G3, G4, D6) and a guide for the G3 reviewer. It decides nothing;
+      earlier records are kept.
+- [x] Changelog `[Unreleased]` reads as release notes: a summary and
+      "Upgrading from 0.14.0" (a refusal for commands that already failed,
+      and a column choice that only changes for files with a trailing
+      delimiter). Version stays `0.15.0.dev0`; the upload guard stays.
+- [x] "Open decisions" above lists the 0.15.0 questions.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data

@@ -1,5 +1,75 @@
 # Release decisions for energydata-kit
 
+## 0.15.0 (in preparation)
+
+**Status:** open. Engineering for 0.15.0 is complete (OSS-209 and OSS-210)
+and nothing is decided here. `main` stays at `0.15.0.dev0` with the upload
+guard until the owner answers the questions below. The 0.14.0 to 0.1.0
+records follow and are unchanged.
+
+**What 0.15.0 contains** (P-45 and P-46 approved by the owner on
+2026-10-24; proposals in `docs/architecture/ROADMAP.md`, OSS-208):
+
+- `report` refuses `-o`, `--flags-csv` or `--gaps-csv` in a folder that
+  does not exist, or naming a folder, and `compare` does the same for
+  `-o`; the command exits 2 before the data is read (P-45, OSS-209,
+  #181). Before, the report was printed (or `-o` written) first and the
+  command then failed with pandas' message; it exited 2 either way.
+- An empty column without a header, as a delimiter at the end of every
+  line leaves it (`Unnamed: N`), is not counted when `report` chooses the
+  value column by default and is skipped by `--all-value-cols` (P-46,
+  OSS-210, #182). Before, the default failed with "pass --value-col" and
+  `--all-value-cols` reported the column as all MISSING_VALUE.
+- No report- or comparison-format change (schema 2), no new or renamed
+  public Python name, nothing removed. **Behaviour change by default:**
+  only commands that already failed (P-45) or files with such an empty
+  column (P-46) behave differently; every other command gives the same
+  output and exit status as with 0.14.0. The changelog's `[Unreleased]`
+  section has the release notes.
+
+**What did not change since 0.14.0** (`git diff 532fc23` on
+`pyproject.toml`, 2026-10-25): no runtime dependency, optional extra,
+version range or data file was added or changed. The only `pyproject.toml`
+change is the restored upload guard (OSS-207). `THIRD_PARTY_LICENSES.md` is
+unchanged.
+
+| Gate | State for 0.15.0 | Open question |
+|---|---|---|
+| G1 Ownership | Counsel confirmed ownership for 0.1.0 (D2) and for the code added up to 0.14.0. Commits since the 0.14.0 release commit (`532fc23`), on `main` at `970c958`: 9, of which 5 by the AI coding assistant in the owner's sessions (4 with changes, 1 a merge of `main` into a branch) and 4 by the owner (pull-request merges #179 to #182); no external contributor | Does counsel's confirmation cover the code added since 0.14.0, or should counsel confirm again? |
+| G2 Licence | Passed: Apache-2.0, unchanged | — |
+| G3 IP boundary review | The `IP boundary` CI job passed on every 0.15.0 PR. P-45 checks that the command's output folders exist before writing; P-46 leaves a headerless, empty column out of the default column choice | Will the technical lead review and sign off the diff from 0.14.0? |
+| G4 Third-party licences | Unchanged since 0.14.0 (no dependency change) | Is the 0.14.0 position enough? |
+| G5 CI green | Green on every 0.15.0 PR and on `main`; re-checked on the release commit | — |
+| G6 Documentation honest | README, changelog and help text updated with each step; both changes are covered by tests on the lowest and current pandas | Review on the release commit |
+| G7 Publication (D6) | D6 approved 0.14.0 only; it does not carry over | GitHub release only, like 0.1.0 to 0.14.0, or also a package index? |
+
+**For the G3 reviewer** (the technical lead). The package code to review
+is the diff from the 0.14.0 release commit to the 0.15.0 release commit:
+`git diff 532fc23 <release commit> -- packages/energydata-kit/src`
+(2 files, about 30 added lines: `cli.py` and the version in
+`__init__.py`). Points to confirm, each also checked by a tool:
+
+- No new import: besides the standard library, the code still imports only
+  numpy, pandas and Pint (Pandera and pyarrow optional).
+  `python tools/check_ip_boundary.py`, run in CI, refuses forbidden imports
+  and any dependency off the reviewed allowlist.
+- No domain limits ship: P-45 checks file-system paths; P-46 checks column
+  names and emptiness. No number is introduced.
+- Tests and examples use synthetic data only; no customer data,
+  endpoints or credentials.
+- Nothing forecasts, optimises, or computes grid, capacity or financial
+  quantities: the changes refuse unwritable outputs early and leave an
+  export artifact out of the column choice.
+
+**After the decisions:** a release PR built from `RELEASE_CHECKLIST.md`
+sets `__version__` to `0.15.0`, moves `[Unreleased]` under a dated
+`## [0.15.0]` heading, records the answers under G1, G3 and G4, and adds
+the owner's D6 line naming `energydata-kit 0.15.0`; only with that line
+does it remove the upload guard. It passes `check_release_readiness.py
+--strict`. The owner then tags the merged commit `energydata-kit-v0.15.0`,
+the *Release build* workflow prepares the draft GitHub release, and the
+owner publishes it. None of this is done before the owner's decisions.
+
 ## 0.14.0 (released 2026-10-24)
 
 **Status:** decided 2026-10-24. The repository owner recorded the answers for G1,
