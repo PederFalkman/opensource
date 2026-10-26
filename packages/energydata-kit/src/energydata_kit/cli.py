@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import codecs
+import io
 import json
 import re
 import sys
@@ -425,12 +426,17 @@ def _read_parquet(args: argparse.Namespace, path: str) -> pd.DataFrame:
     return frame
 
 
-def _read_table(args: argparse.Namespace, path: str, stdin: TextIO) -> pd.DataFrame:
+def _read_table(
+    args: argparse.Namespace, path: str, stdin: TextIO
+) -> tuple[pd.DataFrame, dict[str, tuple[str, list[int]]]]:
+    """One input file, and its repeated header names (see :func:`_repeated_columns`)."""
     if _is_parquet(path):
-        return _read_parquet(args, path)
+        return _read_parquet(args, path), {}
+    # Standard input is read once and kept, so its header line can be read again below.
+    source: str | io.StringIO = io.StringIO(stdin.read()) if path == "-" else path
     try:
-        return pd.read_csv(
-            stdin if path == "-" else path,
+        frame = pd.read_csv(
+            source,
             sep=_delimiter(args),
             decimal=args.decimal,
             thousands=_thousands(args),
@@ -438,6 +444,19 @@ def _read_table(args: argparse.Namespace, path: str, stdin: TextIO) -> pd.DataFr
             dtype={args.timestamp_col: str, **({args.time_col: str} if args.time_col else {})},
             keep_default_na=True,
         )
+        if isinstance(source, io.StringIO):
+            source.seek(0)
+        # The header as written: pandas renames a repeated name ("kwh" -> "kwh.1").
+        header = pd.read_csv(
+            source,
+            sep=_delimiter(args),
+            encoding=args.encoding,
+            header=None,
+            nrows=1,
+            dtype=str,
+            keep_default_na=False,
+        )
+        return frame, _repeated_columns(header.iloc[0].tolist(), list(frame.columns))
     except FileNotFoundError as exc:
         raise CliError(f"file not found: {path}") from exc
     except (pd.errors.ParserError, pd.errors.EmptyDataError, UnicodeDecodeError) as exc:
@@ -457,6 +476,29 @@ def _space_hint(name: str, columns: Sequence[object]) -> str:
     return f" (column {close[0]!r} differs only by surrounding spaces)" if len(close) == 1 else ""
 
 
+def _repeated_columns(header: list[str], columns: list[object]) -> dict[str, tuple[str, list[int]]]:
+    """Columns whose header name is written more than once (P-49): pandas' name for each copy,
+    mapped to the name as written and its 1-based positions. Empty names are left out (P-46)."""
+    repeated: dict[str, tuple[str, list[int]]] = {}
+    for name, column in zip(header, columns, strict=False):
+        positions = [i + 1 for i, h in enumerate(header) if h == name]
+        if name and len(positions) > 1:
+            repeated[str(column)] = (name, positions)
+    return repeated
+
+
+def _refuse_repeated(repeated: Mapping[str, tuple[str, list[int]]], used: Sequence[object]) -> None:
+    """Refuse a used column whose name the header repeats, instead of pandas' renamed copy (P-49)."""
+    for column in used:
+        if str(column) in repeated:
+            name, positions = repeated[str(column)]
+            where = ", ".join(map(str, positions))
+            raise CliError(
+                f"column {name!r} appears {len(positions)} times in the header (columns {where}); "
+                "rename the copies in the file; nothing was written"
+            )
+
+
 def _trailing_empty(frame: pd.DataFrame) -> set[object]:
     """Columns with no header and no value, as a trailing delimiter makes them (P-46).
 
@@ -474,7 +516,9 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
             raise CliError("standard input ('-') cannot be combined with other files")
         if len({_is_parquet(p) for p in paths}) > 1:
             raise CliError("several input files must be all CSV or all Parquet")
-    tables = [_read_table(args, path, stdin) for path in paths]
+    read = [_read_table(args, path, stdin) for path in paths]
+    tables = [table for table, _ in read]
+    repeated = read[0][1]
     for path, table in zip(paths[1:], tables[1:], strict=True):
         if list(table.columns) != list(tables[0].columns):
             raise CliError(
@@ -494,7 +538,9 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
         raise CliError(
             f"timestamp column {args.timestamp_col!r} not found; columns: {list(frame.columns)}{hint}"
         )
+    _refuse_repeated(repeated, [args.timestamp_col])
     if args.time_col is not None:
+        _refuse_repeated(repeated, [args.time_col])
         if args.time_col == args.timestamp_col:
             raise CliError("--time-col must name a column other than --timestamp-col")
         if args.time_col not in frame.columns:
@@ -535,6 +581,7 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
             c for c in frame.columns if c not in (args.timestamp_col, args.time_col) and c not in skipped
         ]
         if len(others) != 1:
+            _refuse_repeated(repeated, others)
             raise CliError(f"pass --value-col; candidate columns: {others}")
         value_cols = others
     for col in value_cols:
@@ -545,6 +592,7 @@ def _read_frame(args: argparse.Namespace, stdin: TextIO) -> pd.DataFrame:
             )
     if len(set(value_cols)) != len(value_cols):
         raise CliError("each --value-col may be given only once")
+    _refuse_repeated(repeated, value_cols)
 
     stamps = (
         frame[args.timestamp_col] if args.time_col is None else _joined_timestamps(args, frame, value_cols)

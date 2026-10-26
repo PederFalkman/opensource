@@ -256,7 +256,7 @@ sections are not edited; the fix, if approved, is described under
 | ID | Candidate | Why | Effort | Risk and cost |
 |---|---|---|---|---|
 | P-48 | *Approved by the owner on 2026-10-26; done in OSS-215.* **`-` as an output means standard output**: for `report -o`, `--flags-csv`, `--gaps-csv` and `compare -o`, the path `-` writes to standard output, as `-` already reads standard input for inputs. At most one output may go to standard output; the report goes there when `-o` is not given, so `report d.csv --flags-csv -` is refused unless `-o FILE` is also given (exit 2, nothing written). | Checked: `report d.csv --freq 1h --flags-csv -` prints the report and writes the flagged table to a file named `-`; `-o - --flags-csv -` prints nothing, writes the report to `-` and then overwrites it with the table, exit 0, which is the data loss P-43 was meant to refuse; `compare a.json b.json -o -` also writes a file named `-`. | S | No format change. **Behaviour change**: a file named `-` is no longer created; such commands now write to standard output, or exit 2 when two outputs would share it. A caller who wants a file literally named `-` writes `./-`. The 0.15.0 changelog's note on `-` becomes true. |
-| P-49 | *Approved by the owner on 2026-10-26; to be built in OSS-216.* **Refuse a repeated column name in the header**: when the timestamp, time or a value column that the command uses appears more than once in the header (including through `--all-value-cols`), exit 2 with a message naming the column and its positions, instead of using pandas' renamed copy. | Checked: for the header `timestamp,kwh,kwh`, pandas renames the second column to `kwh.1`; `--value-col kwh` silently assesses only the first, the default fails with "candidate columns: ['kwh', 'kwh.1']" (a name the file does not contain), and `--all-value-cols` reports a column `kwh.1`. An export with a repeated header usually means two different series under one name. | S | No format change. **Behaviour change**: only for files whose header repeats a used column name; they now exit 2 and name the duplicate. A repeated name the command does not use (not selected and no `--all-value-cols`) is left alone. |
+| P-49 | *Approved by the owner on 2026-10-26; done in OSS-216.* **Refuse a repeated column name in the header**: when the timestamp, time or a value column that the command uses appears more than once in the header (including through `--all-value-cols`), exit 2 with a message naming the column and its positions, instead of using pandas' renamed copy. | Checked: for the header `timestamp,kwh,kwh`, pandas renames the second column to `kwh.1`; `--value-col kwh` silently assesses only the first, the default fails with "candidate columns: ['kwh', 'kwh.1']" (a name the file does not contain), and `--all-value-cols` reports a column `kwh.1`. An export with a repeated header usually means two different series under one name. | S | No format change. **Behaviour change**: only for files whose header repeats a used column name; they now exit 2 and name the duplicate. A repeated name the command does not use (not selected and no `--all-value-cols`) is left alone. |
 | P-47 | *Carried over, not approved.* **Say what is wrong with `--freq`**. As described for 0.15.0 below. | `--freq banana` is told to "pass tz=". | S | Error text only. |
 | P-32 | *Carried over, not approved.* **Lines before the header** (`--skip-rows N`). As described for 0.9.0 below. | A preamble is refused as a missing column. | S | No format change. |
 | P-31 | *Carried over, not approved.* **Unix epoch timestamps** (`--timestamp-unit s|ms`). As described for 0.8.0 below. | Epoch seconds are refused. | S–M | No format change. |
@@ -2787,7 +2787,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       name is silently renamed by pandas (P-49). Docs only; nothing is
       authorized.
 
-### OSS-215: `-` as an output means standard output (P-48) — this change
+### OSS-215: `-` as an output means standard output (P-48) — merged in [#187](https://github.com/PederFalkman/opensource/pull/187)
 
 - [x] The owner approved P-48 and P-49 on 2026-10-26, to be built one PR
       each, P-48 first.
@@ -2799,6 +2799,17 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       now covers `-`) and the 0.15.0 changelog note on `-`; the correction
       is stated under `[Unreleased]`, and released sections are not
       edited. No format change. Tests, help text, README and changelog.
+
+### OSS-216: refuse a repeated column name in the header (P-49) — this change
+
+- [x] When the header repeats the name of a column the command uses (the
+      timestamp or time column, a value column, or any with
+      `--all-value-cols`), `report` exits 2 naming the column and its
+      positions, instead of using pandas' renamed copy (`kwh.1`). The
+      header is read as written, also from standard input.
+- [x] Behaviour change, as proposed, only for such files. A repeated name
+      the command does not use is left alone; a header that really says
+      `kwh.1` still works. No format change. Tests, README and changelog.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data

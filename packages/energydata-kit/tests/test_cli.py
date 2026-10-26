@@ -717,6 +717,27 @@ def test_dash_output_is_standard_output(tmp_path, monkeypatch):
     assert run("report", "in.csv", "--freq", "1h", "-o", "./-")[0] == 0 and (tmp_path / "-").exists()
 
 
+def test_repeated_header_name_is_refused(tmp_path):
+    # P-49: a used column whose name the header repeats is refused, naming its positions. Before,
+    # pandas renamed the copy to "kwh.1" and --value-col kwh silently assessed only the first.
+    text = "timestamp,kwh,kwh\n2026-01-01T00:00Z,1,5\n"
+    path = str(write(tmp_path, text, "dup.csv"))
+    message = "column 'kwh' appears 2 times in the header (columns 2, 3)"
+    for extra in ([], ["--value-col", "kwh"], ["--value-col", "kwh.1"], ["--all-value-cols"]):
+        code, out, err = run("report", path, "--freq", "1h", *extra)
+        assert code == 2 and out == "" and message in err and "nothing was written" in err, extra
+    code, _, err = run("report", "-", "--freq", "1h", "--value-col", "kwh", stdin=text)
+    assert code == 2 and message in err
+    stamp = str(write(tmp_path, "timestamp,timestamp,kwh\n2026-01-01T00:00Z,x,1\n", "ts.csv"))
+    assert "column 'timestamp' appears 2 times" in run("report", stamp, "--freq", "1h")[2]
+    # A repeated name the command does not use is left alone, and so is a real "kwh.1" header.
+    unused = str(write(tmp_path, "timestamp,kwh,pv,pv\n2026-01-01T00:00Z,1,5,6\n", "pv.csv"))
+    assert run("report", unused, "--freq", "1h", "--value-col", "kwh")[0] == 0
+    real = str(write(tmp_path, "timestamp,kwh,kwh.1\n2026-01-01T00:00Z,1,5\n", "real.csv"))
+    code, out, _ = run("report", real, "--freq", "1h", "--all-value-cols")
+    assert code == 0 and "kwh.1" in json.loads(out)["columns"]
+
+
 def test_trailing_delimiter_column_is_ignored(tmp_path):
     # P-46: lines ending with the delimiter add a headerless, empty column ("Unnamed: 2"); it is
     # left out of the default choice and of --all-value-cols. Before, the default failed with
