@@ -686,6 +686,37 @@ def test_refuses_outputs_that_cannot_be_written(tmp_path, monkeypatch):
     assert (tmp_path / "sub" / "g.csv").exists() and not (tmp_path / "nodir").exists()
 
 
+def test_dash_output_is_standard_output(tmp_path, monkeypatch):
+    # P-48: "-" as an output is standard output, and only one output may go there. Before, -o -,
+    # --flags-csv - and --gaps-csv - wrote a file named "-", so -o - --flags-csv - overwrote the
+    # report with the flagged table and exited 0.
+    write(tmp_path, "timestamp,kwh\n2026-01-01T00:00Z,1\n2026-01-01T02:00Z,2\n", "in.csv")
+    two = "timestamp,a,b\n2026-01-01T00:00Z,1,1\n2026-01-01T02:00Z,2,2\n"
+    write(tmp_path, two, "two.csv")
+    monkeypatch.chdir(tmp_path)
+    code, out, _ = run("report", "in.csv", "--freq", "1h", "-o", "-")
+    assert code == 0 and json.loads(out)["n_rows"] == 2
+    for data, extra in (("in.csv", []), ("two.csv", ["--all-value-cols"])):
+        code, out, _ = run("report", data, "--freq", "1h", "-o", "r.json", "--flags-csv", "-", *extra)
+        assert code == 0 and out.startswith("timestamp,") and (tmp_path / "r.json").exists()
+        code, out, _ = run("report", data, "--freq", "1h", "-o", "r.json", "--gaps-csv", "-", *extra)
+        assert code == 0 and out.startswith("column,start,end,missing_count\n")
+    for argv, other in [
+        (["--flags-csv", "-"], "the report (no -o)"),
+        (["--gaps-csv", "-"], "the report (no -o)"),
+        (["-o", "-", "--flags-csv", "-"], "-o '-'"),
+        (["-o", "r2.json", "--flags-csv", "-", "--gaps-csv", "-"], "--flags-csv '-'"),
+    ]:
+        code, out, err = run("report", "in.csv", "--freq", "1h", *argv)
+        assert code == 2 and out == "" and "nothing was written" in err, argv
+        assert f"and {other} would both go to standard output" in err, (argv, err)
+    code, out, _ = run("compare", "r.json", "r.json", "-o", "-")
+    assert code == 0 and json.loads(out)
+    # No file named "-" is ever created; "./-" still names one.
+    assert not (tmp_path / "-").exists() and not (tmp_path / "r2.json").exists()
+    assert run("report", "in.csv", "--freq", "1h", "-o", "./-")[0] == 0 and (tmp_path / "-").exists()
+
+
 def test_trailing_delimiter_column_is_ignored(tmp_path):
     # P-46: lines ending with the delimiter add a headerless, empty column ("Unnamed: 2"); it is
     # left out of the default choice and of --all-value-cols. Before, the default failed with

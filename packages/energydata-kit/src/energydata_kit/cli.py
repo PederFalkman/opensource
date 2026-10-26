@@ -264,7 +264,9 @@ def build_parser() -> argparse.ArgumentParser:
         "counted as explained",
     )
     out = rep.add_argument_group("output")
-    out.add_argument("-o", "--output", help="write the report here instead of standard output")
+    out.add_argument(
+        "-o", "--output", help="write the report here instead of standard output ('-' is standard output)"
+    )
     out.add_argument(
         "--format",
         choices=["json", "text", "markdown"],
@@ -275,12 +277,14 @@ def build_parser() -> argparse.ArgumentParser:
     out.add_argument(
         "--flags-csv",
         help="also write values and quality flags to this CSV (quality_flag_<col> per column with several; "
-        "with several input files, a source column names each row's file)",
+        "with several input files, a source column names each row's file); '-' writes it to standard "
+        "output, then with -o FILE for the report",
     )
     out.add_argument(
         "--gaps-csv",
         help="also write every gap (not only the first --max-listed) to this CSV: "
-        "column, start, end, missing_count",
+        "column, start, end, missing_count; '-' writes it to standard output, then with -o FILE for "
+        "the report",
     )
     out.add_argument("--insert-missing", action="store_true", help="add rows for absent grid timestamps")
     out.add_argument("--max-listed", type=_positive_int, default=100, help="cap on listed gaps/duplicates")
@@ -318,7 +322,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     cmp.add_argument("before", help="earlier report (JSON)")
     cmp.add_argument("after", help="later report (JSON)")
-    cmp.add_argument("-o", "--output", help="write the comparison here instead of standard output")
+    cmp.add_argument(
+        "-o", "--output", help="write the comparison here instead of standard output ('-' is standard output)"
+    )
     cmp.add_argument(
         "--format",
         choices=["json", "text", "markdown"],
@@ -773,7 +779,7 @@ def _check_completeness(args: argparse.Namespace, report: QualityReport | FrameQ
         raise CliError(f"--min-completeness: completeness is not checked{where}; {why}")
 
 
-def _write_flags(args: argparse.Namespace, flagged: pd.DataFrame, flag_col: str) -> None:
+def _write_flags(args: argparse.Namespace, flagged: pd.DataFrame, flag_col: str, stdout: TextIO) -> None:
     """Write the flagged table in the input's CSV format (delimiter and decimal mark).
 
     With several input files, a last ``source`` column names each row's file (P-26); rows that
@@ -787,7 +793,7 @@ def _write_flags(args: argparse.Namespace, flagged: pd.DataFrame, flag_col: str)
         source[original] = args.sources
         flagged = flagged.assign(source=source)
     flagged.to_csv(
-        args.flags_csv,
+        stdout if args.flags_csv == "-" else args.flags_csv,
         sep=_delimiter(args),
         decimal=args.decimal,
         encoding=args.encoding,
@@ -820,6 +826,7 @@ def _write_gaps(
     index: pd.Index,
     grids: dict[str, tuple[str | pd.Timedelta, str | None]],
     origin: pd.Timestamp | None,
+    stdout: TextIO,
 ) -> None:
     """Every gap per column, on the column's report grid, in the input's CSV format.
 
@@ -835,7 +842,7 @@ def _write_gaps(
     for name in ("start", "end"):
         table[name] = pd.to_datetime(table[name], utc=True)
     table.to_csv(
-        args.gaps_csv,
+        stdout if args.gaps_csv == "-" else args.gaps_csv,
         sep=_delimiter(args),
         encoding=args.encoding,
         index=False,
@@ -848,16 +855,27 @@ def _write_gaps(
 _INSERT_NEEDS_STEP = "--insert-missing needs a step: pass --freq, or a resolution with --unit or --schema"
 
 
-def _check_paths(inputs: Sequence[str], outputs: Sequence[tuple[str, str | None]]) -> None:
+def _check_paths(
+    inputs: Sequence[str], outputs: Sequence[tuple[str, str | None]], on_stdout: str | None = None
+) -> None:
     """Refuse an output that would overwrite an input or another output (P-43), or that
     cannot be written because its folder is missing or the path is a folder (P-45).
 
     Runs before anything is read or written. Paths are compared after resolving them, so
-    ``./in.csv`` and ``in.csv`` are the same file; ``-`` is not a file.
+    ``./in.csv`` and ``in.csv`` are the same file. ``-`` is standard output, and only one
+    output may go there (P-48); ``on_stdout`` names the one that goes there by default.
     """
     seen = {Path(p).resolve(): f"the input file {p!r}" for p in inputs if p != "-"}
     for option, path in outputs:
-        if path is None or path == "-":
+        if path is None:
+            continue
+        if path == "-":
+            if on_stdout is not None:
+                raise CliError(
+                    f"{option} '-' and {on_stdout} would both go to standard output; write one of them "
+                    "to a file; nothing was written"
+                )
+            on_stdout = f"{option} '-'"
             continue
         if Path(path).is_dir():
             raise CliError(f"{option} {path!r} is a folder; nothing was written")
@@ -872,7 +890,9 @@ def _check_paths(inputs: Sequence[str], outputs: Sequence[tuple[str, str | None]
 
 def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
     _check_paths(
-        args.csv, [("-o", args.output), ("--flags-csv", args.flags_csv), ("--gaps-csv", args.gaps_csv)]
+        args.csv,
+        [("-o", args.output), ("--flags-csv", args.flags_csv), ("--gaps-csv", args.gaps_csv)],
+        on_stdout="the report (no -o)" if args.output is None else None,
     )
     if args.tz and not args.freq:
         raise CliError("--tz needs --freq")
@@ -961,7 +981,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
     gap_grids = _gap_grids(args, {str(series.name): metadata}, [str(series.name)]) if args.gaps_csv else {}
     _write_report(args, report, stdout)
     if args.gaps_csv:
-        _write_gaps(args, series.index, gap_grids, origin)
+        _write_gaps(args, series.index, gap_grids, origin, stdout)
 
     if args.flags_csv:
         flagged = flag_series(
@@ -983,7 +1003,7 @@ def _run_report(args: argparse.Namespace, stdin: TextIO, stdout: TextIO) -> int:
         )
         flagged = flagged.rename(columns={VALUE_COLUMN: series.name})
         flagged.index.name = args.timestamp_col
-        _write_flags(args, flagged, FLAG_COLUMN)
+        _write_flags(args, flagged, FLAG_COLUMN, stdout)
 
     return _exit_status(args, report)
 
@@ -996,7 +1016,7 @@ def _write_report(
     else:
         inferred = args.freq if args.freq_inferred else None
         text = _summary(report.to_dict(), markdown=args.format == "markdown", inferred_step=inferred)
-    if args.output:
+    if args.output and args.output != "-":
         Path(args.output).write_text(text, encoding="utf-8", newline="\n")  # same bytes on Windows
     else:
         stdout.write(text)
@@ -1194,13 +1214,13 @@ def _run_frame_report(
     gap_grids = _gap_grids(args, metadata, [str(c) for c in frame.columns]) if args.gaps_csv else {}
     _write_report(args, report, stdout)
     if args.gaps_csv:
-        _write_gaps(args, frame.index, gap_grids, origin)
+        _write_gaps(args, frame.index, gap_grids, origin, stdout)
     if args.flags_csv:
         flagged = flag_frame(
             frame, freq=freq, insert_missing=args.insert_missing, origin=origin, tz=tz, **checks
         )
         flagged.index.name = args.timestamp_col
-        _write_flags(args, flagged, flag_column(str(frame.columns[0])))
+        _write_flags(args, flagged, flag_column(str(frame.columns[0])), stdout)
     return _exit_status(args, report)
 
 
@@ -1313,7 +1333,7 @@ def _run_compare(args: argparse.Namespace, stdout: TextIO) -> int:
         text = comparison.to_json() + "\n"
     else:
         text = _comparison_summary(comparison.to_dict(), markdown=args.format == "markdown")
-    if args.output:
+    if args.output and args.output != "-":
         Path(args.output).write_text(text, encoding="utf-8", newline="\n")  # same bytes on Windows
     else:
         stdout.write(text)
