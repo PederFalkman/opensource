@@ -145,7 +145,9 @@ assessed too (a text column is then reported as `NON_NUMERIC`). When every
 line ends with the delimiter, the empty, headerless column this leaves
 (`Unnamed: 2` in pandas) is not counted, either for the default value
 column or by `--all-value-cols`; `--value-col 'Unnamed: 2'` still selects
-it. `--unit kWh` describes a single column; for
+it. A column name that the header repeats (two `kwh` columns) is refused
+when the command uses it, with the positions named, rather than read as
+pandas' renamed copy `kwh.1`. `--unit kWh` describes a single column; for
 several, repeat `--unit kwh=kWh --unit pv=kW` (`--resolution`,
 `--aggregation` and `--interval-label` apply to each named column; without
 `--value-col`, the named columns are the ones assessed). With several

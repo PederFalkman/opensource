@@ -17,6 +17,15 @@ versioning: [SemVer](https://semver.org/).
   0.14.0 refusal to overwrite outputs did not cover `-`, and the 0.15.0
   note "standard output (`-`) is not affected" was wrong for these
   options; both are true now. To write a file named `-`, pass `./-`.
+- When the header repeats the name of a column that `report` uses (the
+  timestamp or time column, a value column, or any column with
+  `--all-value-cols`), the command exits with status 2 and names the
+  column and its positions, e.g. "column 'kwh' appears 2 times in the
+  header (columns 2, 3)" (P-49). Before, pandas renamed the copy to
+  `kwh.1`: `--value-col kwh` silently assessed only the first copy, and
+  messages listed `kwh.1`, a name the file does not contain. A repeated
+  name that the command does not use is left alone, and a header that
+  really says `kwh.1` still works.
 
 ## [0.15.0] - 2026-10-25
 
