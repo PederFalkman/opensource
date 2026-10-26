@@ -7,16 +7,25 @@ Merged items stay listed here as a record of what was agreed.
 ## Open decisions (owners required)
 
 Questions and evidence for each: `docs/governance/RELEASE_DECISIONS.md`,
-section "0.15.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
+section "0.16.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 (all 2026-10-21), 0.6.0 and 0.7.0 (both 2026-10-22), 0.8.0 to 0.12.0 (all
-2026-10-23), and 0.13.0 and 0.14.0 (both 2026-10-24) were released as
-GitHub releases only; their records are kept there. Engineering for 0.15.0
-is complete (OSS-209 and OSS-210, P-45 and P-46), and the owner recorded
-the answers below on 2026-10-25; 0.15.0 was released the same day
-(OSS-212, #184). For 0.16.0 the owner approved P-48 and P-49 on
-2026-10-26 (OSS-215 and OSS-216); P-47, and P-12, P-13, P-18, P-20, P-22,
-P-28, P-31 and P-32 carried over, are under "Proposed" below (OSS-214) and
-not approved.
+2026-10-23), 0.13.0 and 0.14.0 (both 2026-10-24), and 0.15.0 (2026-10-25)
+were released as GitHub releases only; their records are kept there.
+Engineering for 0.16.0 is complete (OSS-215 and OSS-216, P-48 and P-49); it
+waits on the questions below. The other candidates (P-47, and P-12, P-13,
+P-18, P-20, P-22, P-28, P-31 and P-32 carried over) are under "Proposed"
+below (OSS-214) and not approved.
+
+- [ ] **G1 for 0.16.0.** Does counsel's confirmation cover the code added
+      since 0.15.0 (`5d4febb`), or should counsel confirm again?
+- [ ] **G3 for 0.16.0.** Technical-lead sign-off of the IP-boundary review
+      of the diff from 0.15.0 (2 source files, about 90 added lines).
+- [ ] **G4 for 0.16.0.** No dependency changed; is the 0.15.0 position
+      enough?
+- [ ] **D6 for 0.16.0 (G7).** GitHub release only, like 0.15.0, or also a
+      package index?
+
+Recorded for 0.15.0:
 
 - [x] **G1 for 0.15.0.** Counsel confirmed that the code added since 0.14.0
       (`532fc23`) is covered (recorded 2026-10-25).
@@ -2800,7 +2809,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       is stated under `[Unreleased]`, and released sections are not
       edited. No format change. Tests, help text, README and changelog.
 
-### OSS-216: refuse a repeated column name in the header (P-49) — this change
+### OSS-216: refuse a repeated column name in the header (P-49) — merged in [#188](https://github.com/PederFalkman/opensource/pull/188)
 
 - [x] When the header repeats the name of a column the command uses (the
       timestamp or time column, a value column, or any with
@@ -2810,6 +2819,20 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Behaviour change, as proposed, only for such files. A repeated name
       the command does not use is left alone; a header that really says
       `kwh.1` still works. No format change. Tests, README and changelog.
+
+### OSS-217: prepare the 0.16.0 release — this change
+
+- [x] `RELEASE_DECISIONS.md` gains a 0.16.0 section: what the release
+      contains (P-48, P-49), the correction of 0.14.0 and 0.15.0 behaviour
+      that P-48 makes, what did not change since 0.15.0 (no dependency,
+      extra or data file), the open questions per gate (G1, G3, G4, D6)
+      and a guide for the G3 reviewer. It decides nothing; earlier records
+      are kept.
+- [x] Changelog `[Unreleased]` reads as release notes: a summary and
+      "Upgrading from 0.15.0" (`-` is now standard output; a repeated
+      header name is refused). Version stays `0.16.0.dev0`; the upload
+      guard stays.
+- [x] "Open decisions" above lists the 0.16.0 questions.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data
