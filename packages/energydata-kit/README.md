@@ -124,6 +124,9 @@ columns, `--timestamp-col date --time-col time` joins them (ISO forms only:
 same delimiter and decimal format as the input, with a `quality_flag` column, plus inserted rows with `--insert-missing`.
 `--gaps-csv gaps.csv` writes every gap, also beyond `--max-listed`, as
 `column,start,end,missing_count`, on the same grid as the report.
+For `-o`, `--flags-csv` and `--gaps-csv`, `-` means standard output; only
+one output can go there, so `--flags-csv -` needs `-o FILE` for the report
+(`./-` names a file called `-`).
 Calendar steps work as in the library: `--freq D --tz Europe/Stockholm`.
 Without a step, gaps and completeness are not checked, and the summary
 names the most common step between timestamps; `--freq inferred` uses it

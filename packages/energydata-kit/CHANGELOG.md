@@ -5,6 +5,19 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- For `report -o`, `--flags-csv`, `--gaps-csv` and `compare -o`, the path
+  `-` now means standard output, and at most one output may go there: the
+  report goes there when `-o` is not given, so `report d.csv --flags-csv -`
+  needs `-o FILE` and otherwise exits with status 2 before anything is
+  written (P-48). Before, each of these options wrote a file named `-` in
+  the current folder, and `-o - --flags-csv -` wrote the report to it and
+  then overwrote it with the flagged table, exit 0. **Correction:** the
+  0.14.0 refusal to overwrite outputs did not cover `-`, and the 0.15.0
+  note "standard output (`-`) is not affected" was wrong for these
+  options; both are true now. To write a file named `-`, pass `./-`.
+
 ## [0.15.0] - 2026-10-25
 
 One earlier refusal and one export quirk handled, approved as P-45 and

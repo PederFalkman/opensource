@@ -13,9 +13,10 @@ section "0.15.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 GitHub releases only; their records are kept there. Engineering for 0.15.0
 is complete (OSS-209 and OSS-210, P-45 and P-46), and the owner recorded
 the answers below on 2026-10-25; 0.15.0 was released the same day
-(OSS-212, #184). No 0.16.0 work is approved yet; the candidates (P-48 and
-P-49, and P-47, P-12, P-13, P-18, P-20, P-22, P-28, P-31 and P-32 carried
-over) are under "Proposed" below (OSS-214) and not approved.
+(OSS-212, #184). For 0.16.0 the owner approved P-48 and P-49 on
+2026-10-26 (OSS-215 and OSS-216); P-47, and P-12, P-13, P-18, P-20, P-22,
+P-28, P-31 and P-32 carried over, are under "Proposed" below (OSS-214) and
+not approved.
 
 - [x] **G1 for 0.15.0.** Counsel confirmed that the code added since 0.14.0
       (`532fc23`) is covered (recorded 2026-10-25).
@@ -254,8 +255,8 @@ sections are not edited; the fix, if approved, is described under
 
 | ID | Candidate | Why | Effort | Risk and cost |
 |---|---|---|---|---|
-| P-48 | **`-` as an output means standard output**: for `report -o`, `--flags-csv`, `--gaps-csv` and `compare -o`, the path `-` writes to standard output, as `-` already reads standard input for inputs. At most one output may go to standard output; the report goes there when `-o` is not given, so `report d.csv --flags-csv -` is refused unless `-o FILE` is also given (exit 2, nothing written). | Checked: `report d.csv --freq 1h --flags-csv -` prints the report and writes the flagged table to a file named `-`; `-o - --flags-csv -` prints nothing, writes the report to `-` and then overwrites it with the table, exit 0, which is the data loss P-43 was meant to refuse; `compare a.json b.json -o -` also writes a file named `-`. | S | No format change. **Behaviour change**: a file named `-` is no longer created; such commands now write to standard output, or exit 2 when two outputs would share it. A caller who wants a file literally named `-` writes `./-`. The 0.15.0 changelog's note on `-` becomes true. |
-| P-49 | **Refuse a repeated column name in the header**: when the timestamp, time or a value column that the command uses appears more than once in the header (including through `--all-value-cols`), exit 2 with a message naming the column and its positions, instead of using pandas' renamed copy. | Checked: for the header `timestamp,kwh,kwh`, pandas renames the second column to `kwh.1`; `--value-col kwh` silently assesses only the first, the default fails with "candidate columns: ['kwh', 'kwh.1']" (a name the file does not contain), and `--all-value-cols` reports a column `kwh.1`. An export with a repeated header usually means two different series under one name. | S | No format change. **Behaviour change**: only for files whose header repeats a used column name; they now exit 2 and name the duplicate. A repeated name the command does not use (not selected and no `--all-value-cols`) is left alone. |
+| P-48 | *Approved by the owner on 2026-10-26; done in OSS-215.* **`-` as an output means standard output**: for `report -o`, `--flags-csv`, `--gaps-csv` and `compare -o`, the path `-` writes to standard output, as `-` already reads standard input for inputs. At most one output may go to standard output; the report goes there when `-o` is not given, so `report d.csv --flags-csv -` is refused unless `-o FILE` is also given (exit 2, nothing written). | Checked: `report d.csv --freq 1h --flags-csv -` prints the report and writes the flagged table to a file named `-`; `-o - --flags-csv -` prints nothing, writes the report to `-` and then overwrites it with the table, exit 0, which is the data loss P-43 was meant to refuse; `compare a.json b.json -o -` also writes a file named `-`. | S | No format change. **Behaviour change**: a file named `-` is no longer created; such commands now write to standard output, or exit 2 when two outputs would share it. A caller who wants a file literally named `-` writes `./-`. The 0.15.0 changelog's note on `-` becomes true. |
+| P-49 | *Approved by the owner on 2026-10-26; to be built in OSS-216.* **Refuse a repeated column name in the header**: when the timestamp, time or a value column that the command uses appears more than once in the header (including through `--all-value-cols`), exit 2 with a message naming the column and its positions, instead of using pandas' renamed copy. | Checked: for the header `timestamp,kwh,kwh`, pandas renames the second column to `kwh.1`; `--value-col kwh` silently assesses only the first, the default fails with "candidate columns: ['kwh', 'kwh.1']" (a name the file does not contain), and `--all-value-cols` reports a column `kwh.1`. An export with a repeated header usually means two different series under one name. | S | No format change. **Behaviour change**: only for files whose header repeats a used column name; they now exit 2 and name the duplicate. A repeated name the command does not use (not selected and no `--all-value-cols`) is left alone. |
 | P-47 | *Carried over, not approved.* **Say what is wrong with `--freq`**. As described for 0.15.0 below. | `--freq banana` is told to "pass tz=". | S | Error text only. |
 | P-32 | *Carried over, not approved.* **Lines before the header** (`--skip-rows N`). As described for 0.9.0 below. | A preamble is refused as a missing column. | S | No format change. |
 | P-31 | *Carried over, not approved.* **Unix epoch timestamps** (`--timestamp-unit s|ms`). As described for 0.8.0 below. | Epoch seconds are refused. | S–M | No format change. |
@@ -2773,7 +2774,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
 - [x] Status lines: 0.15.0 is the GitHub release, `main` is 0.16.0
       development.
 
-### OSS-214: 0.16.0 proposals — this change
+### OSS-214: 0.16.0 proposals — merged in [#186](https://github.com/PederFalkman/opensource/pull/186)
 
 - [x] P-48 and P-49 written up for the owner to approve one by one, ranked
       with P-47 and the older candidates carried over; neither changes the
@@ -2785,6 +2786,19 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       the 0.15.0 changelog calls it standard output. A repeated header
       name is silently renamed by pandas (P-49). Docs only; nothing is
       authorized.
+
+### OSS-215: `-` as an output means standard output (P-48) — this change
+
+- [x] The owner approved P-48 and P-49 on 2026-10-26, to be built one PR
+      each, P-48 first.
+- [x] For `report -o`, `--flags-csv`, `--gaps-csv` and `compare -o`, `-`
+      writes to standard output; a second output there (the report goes
+      there without `-o`) is refused with exit 2 before anything is
+      written. No file named `-` is created; `./-` still names one.
+- [x] Behaviour change, as proposed. Corrects P-43 (the overwrite refusal
+      now covers `-`) and the 0.15.0 changelog note on `-`; the correction
+      is stated under `[Unreleased]`, and released sections are not
+      edited. No format change. Tests, help text, README and changelog.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data
