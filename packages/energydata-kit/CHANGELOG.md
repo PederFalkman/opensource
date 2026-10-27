@@ -5,6 +5,21 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+One correction and one refusal, approved as P-48 and P-49: `-` as an
+output (`-o`, `--flags-csv`, `--gaps-csv`) now means standard output, as
+the 0.14.0 and 0.15.0 notes assumed, and a column name that the header
+repeats is refused instead of being read as pandas' renamed copy. The
+report and comparison formats are unchanged (schema 2) and no public
+Python name is added or changed.
+
+**Upgrading from 0.15.0.** Commands that do not use `-` as an output and
+whose header names each used column once behave as before. Where a
+command passed `-` to `-o`, `--flags-csv` or `--gaps-csv`, the output now
+goes to standard output instead of a file named `-`; pass `./-` to keep
+writing that file, and give the report its own `-o FILE` when a table goes
+to standard output. A file whose header repeats a column the command uses
+now exits 2 and names the positions; rename the copies in the file.
+
 ### Changed
 
 - For `report -o`, `--flags-csv`, `--gaps-csv` and `compare -o`, the path
