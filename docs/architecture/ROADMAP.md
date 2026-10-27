@@ -11,19 +11,20 @@ section "0.16.0". 0.1.0 (2026-10-19), 0.2.0 (2026-10-20), 0.3.0 to 0.5.0
 (all 2026-10-21), 0.6.0 and 0.7.0 (both 2026-10-22), 0.8.0 to 0.12.0 (all
 2026-10-23), 0.13.0 and 0.14.0 (both 2026-10-24), and 0.15.0 (2026-10-25)
 were released as GitHub releases only; their records are kept there.
-Engineering for 0.16.0 is complete (OSS-215 and OSS-216, P-48 and P-49); it
-waits on the questions below. The other candidates (P-47, and P-12, P-13,
+Engineering for 0.16.0 is complete (OSS-215 and OSS-216, P-48 and P-49),
+and the owner recorded the answers below on 2026-10-27; the release PR is OSS-218.
+The other candidates (P-47, and P-12, P-13,
 P-18, P-20, P-22, P-28, P-31 and P-32 carried over) are under "Proposed"
 below (OSS-214) and not approved.
 
-- [ ] **G1 for 0.16.0.** Does counsel's confirmation cover the code added
-      since 0.15.0 (`5d4febb`), or should counsel confirm again?
-- [ ] **G3 for 0.16.0.** Technical-lead sign-off of the IP-boundary review
-      of the diff from 0.15.0 (2 source files, about 90 added lines).
-- [ ] **G4 for 0.16.0.** No dependency changed; is the 0.15.0 position
-      enough?
-- [ ] **D6 for 0.16.0 (G7).** GitHub release only, like 0.15.0, or also a
-      package index?
+- [x] **G1 for 0.16.0.** Counsel confirmed that the code added since 0.15.0
+      (`5d4febb`) is covered (recorded 2026-10-27).
+- [x] **G3 for 0.16.0.** The technical lead signed off the IP-boundary
+      review of the diff from 0.15.0 (recorded 2026-10-27).
+- [x] **G4 for 0.16.0.** No dependency changed; the 0.15.0 position stands
+      (recorded 2026-10-27).
+- [x] **D6 for 0.16.0 (G7).** GitHub release only, like 0.15.0 (recorded
+      2026-10-27).
 
 Recorded for 0.15.0:
 
@@ -2820,7 +2821,7 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       the command does not use is left alone; a header that really says
       `kwh.1` still works. No format change. Tests, README and changelog.
 
-### OSS-217: prepare the 0.16.0 release — this change
+### OSS-217: prepare the 0.16.0 release — merged in [#189](https://github.com/PederFalkman/opensource/pull/189)
 
 - [x] `RELEASE_DECISIONS.md` gains a 0.16.0 section: what the release
       contains (P-48, P-49), the correction of 0.14.0 and 0.15.0 behaviour
@@ -2833,6 +2834,22 @@ G1–G7 in `docs/governance/RELEASE_GATES.md`.
       header name is refused). Version stays `0.16.0.dev0`; the upload
       guard stays.
 - [x] "Open decisions" above lists the 0.16.0 questions.
+
+### OSS-218: release energydata-kit 0.16.0 — this change
+
+- [x] Decisions recorded by the owner on 2026-10-27: G1 counsel confirmed, G3
+      signed off, G4 the 0.15.0 position stands, D6 GitHub release only,
+      with the `**D6 approved:**` line naming `energydata-kit 0.16.0`.
+- [x] `__version__` is `0.16.0`; the changelog's notes move under
+      `## [0.16.0] - 2026-10-27` with an empty `[Unreleased]` above.
+- [x] Release edits: `Private :: Do Not Upload` removed, the readiness test
+      expects nothing to fail (`--strict` exits 0, `--guard` passes), and the
+      status lines in both READMEs, `SECURITY.md`, `CONTRIBUTING.md` and
+      `RELEASE_GATES.md` name 0.16.0 as a GitHub release.
+- [ ] After merge (owner): tag the merge commit `energydata-kit-v0.16.0`,
+      check the digests and publish the draft GitHub release the *Release
+      build* workflow creates. Then the next development cycle restores the
+      upload guard.
 
 Forecasting, grid/power-flow calculations, dynamic ratings, connection
 planning, economic optimization, RODOT-related algorithms, market data

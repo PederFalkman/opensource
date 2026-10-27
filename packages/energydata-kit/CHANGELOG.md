@@ -5,6 +5,8 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-10-27
+
 One correction and one refusal, approved as P-48 and P-49: `-` as an
 output (`-o`, `--flags-csv`, `--gaps-csv`) now means standard output, as
 the 0.14.0 and 0.15.0 notes assumed, and a column name that the header
