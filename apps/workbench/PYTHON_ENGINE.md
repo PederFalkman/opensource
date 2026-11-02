@@ -30,3 +30,14 @@ Tests use the installed library to check duplicate timestamps, gaps, DST offsets
 Determine whether a browser-local Python runtime is feasible on supported devices. If not, any server-backed execution requires an explicit separate privacy/security and deployment decision. The static frontend must **never relabel its JavaScript preview as Python-validated**. The local CLI output can be imported or inspected separately, but no integration is claimed yet.
 
 Tracking: [OSS #91](https://github.com/PederFalkman/opensource/issues/91).
+
+## Open the canonical report in the Workbench
+
+1. Generate a report locally with `--output report.json`.
+2. Open `apps/workbench/index.html` directly in your browser.
+3. Click **Import Python JSON** and select `report.json`.
+4. The second, separate results panel displays the **canonical Python report's** row count, missing interval count, duplicate count, completeness and input fingerprint.
+
+This is a **viewer for externally generated reports**, not in-browser execution of Python or a server connection. Imported JSON can be fabricated or edited: matching the expected format **does not authenticate the source**, and the UI labels it unverified. Independently verify the generating environment before making consequential engineering decisions.
+
+The original browser-side preview remains non-authoritative and is never overwritten with the Python results. A real embedded Python runtime remains a separate WEB-03 feasibility/security decision.
