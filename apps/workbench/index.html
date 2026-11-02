@@ -9,7 +9,7 @@
 <div class="actions"><button class="btn" id="sample">Load example dataset</button><button class="btn secondary" id="upload">Import CSV</button><input id="file" type="file" accept=".csv,text/csv" hidden><label class="field">Timestamp column<select id="timecol" aria-label="Timestamp column"><option>timestamp</option></select></label><label class="field">Value column<select id="valuecol" aria-label="Value column"><option>value</option></select></label><label class="field">Expected interval (min)<input id="interval" type="number" value="15" min="1" max="1440"></label><button id="analyze" class="btn secondary">Analyze</button><button id="export" class="btn secondary">Export JSON</button></div>
 <section class="panel" aria-labelledby="canonical-title" style="margin:18px 0">
 <div class="eyebrow">Authoritative analysis / local Python</div><h3 id="canonical-title">Open a Python quality report</h3>
-<p>Run <code>python_report.py</code> locally, then import its JSON here. No network transfer. This is separate from the browser preview.</p>
+<p>Run <code>python_report.py</code> locally, then import its JSON here. No network transfer. This is separate from the browser preview. Imported JSON is not authenticated; check its source before relying on it.</p>
 <div class="actions" style="margin:14px 0"><button class="btn secondary" id="loadPython">Import Python JSON</button><input id="pythonFile" type="file" accept=".json,application/json" hidden>
 <span id="pythonEngine" class="pill">No Python report loaded</span></div>
 <div class="error" id="pythonError" role="alert"></div>
@@ -66,7 +66,7 @@ $("pythonFile").onchange=async event=>{
     $("pythonMissing").textContent=r.n_missing_intervals.toLocaleString();
     $("pythonDuplicates").textContent=r.n_duplicate_timestamps.toLocaleString();
     $("pythonCompleteness").textContent=r.completeness===null?"n/a":(100*r.completeness).toFixed(1)+"%";
-    $("pythonEngine").textContent="Python validated · "+data.package_version;
+    $("pythonEngine").textContent="Imported Python report (unverified) · "+data.package_version;
     $("pythonProvenance").textContent="Source: "+data.source+" · Series: "+r.series_name+" · SHA-256 fingerprint: "+r.fingerprint+" · Canonical report schema "+r.schema_version;
     $("pythonStats").hidden=false;
     $("pythonError").textContent="";
