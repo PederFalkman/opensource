@@ -7,7 +7,19 @@
 <body><div class="shell"><aside><h1>SOLID SOUP<span style="color:#a9ddc5"> / OPEN</span></h1><small>Engineering tools</small><nav aria-label="Sections"><div class="nav current">01 / Workbench</div><div class="nav">02 / Documentation ↗</div><div class="nav">03 / GitHub ↗</div></nav><div class="foot">ENERGYDATA KIT<br>Browser prototype · No uploads</div></aside>
 <main><div class="top"><div><div class="eyebrow">Open engineering / Energy data</div><h2>Data quality workbench.</h2><p>Inspect energy time series before you model, analyze or share them.</p></div><div><span class="pill">Local processing only</span></div></div>
 <div class="actions"><button class="btn" id="sample">Load example dataset</button><button class="btn secondary" id="upload">Import CSV</button><input id="file" type="file" accept=".csv,text/csv" hidden><label class="field">Timestamp column<select id="timecol" aria-label="Timestamp column"><option>timestamp</option></select></label><label class="field">Value column<select id="valuecol" aria-label="Value column"><option>value</option></select></label><label class="field">Expected interval (min)<input id="interval" type="number" value="15" min="1" max="1440"></label><button id="analyze" class="btn secondary">Analyze</button><button id="export" class="btn secondary">Export JSON</button></div>
-<div class="error" id="error" role="alert"></div><div class="cards"><div class="card"><div class="label">Observations</div><div class="n" id="total">—</div></div><div class="card"><div class="label">Missing intervals</div><div class="n" id="missing">—</div></div><div class="card"><div class="label">Duplicate timestamps</div><div class="n" id="duplicates">—</div></div><div class="card"><div class="label">Invalid values</div><div class="n" id="invalid">—</div></div></div>
+<section class="panel" aria-labelledby="canonical-title" style="margin:18px 0">
+<div class="eyebrow">Authoritative analysis / local Python</div><h3 id="canonical-title">Open a Python quality report</h3>
+<p>Run <code>python_report.py</code> locally, then import its JSON here. No network transfer. This is separate from the browser preview.</p>
+<div class="actions" style="margin:14px 0"><button class="btn secondary" id="loadPython">Import Python JSON</button><input id="pythonFile" type="file" accept=".json,application/json" hidden>
+<span id="pythonEngine" class="pill">No Python report loaded</span></div>
+<div class="error" id="pythonError" role="alert"></div>
+<div class="cards" id="pythonStats" hidden>
+<div class="card"><div class="label">Python observations</div><div class="n" id="pythonRows">—</div></div>
+<div class="card"><div class="label">Python missing intervals</div><div class="n" id="pythonMissing">—</div></div>
+<div class="card"><div class="label">Python duplicate timestamps</div><div class="n" id="pythonDuplicates">—</div></div>
+<div class="card"><div class="label">Python completeness</div><div class="n" id="pythonCompleteness">—</div></div></div>
+<p class="muted" id="pythonProvenance" aria-live="polite"></p>
+</section><div class="error" id="error" role="alert"></div><div class="cards"><div class="card"><div class="label">Observations</div><div class="n" id="total">—</div></div><div class="card"><div class="label">Missing intervals</div><div class="n" id="missing">—</div></div><div class="card"><div class="label">Duplicate timestamps</div><div class="n" id="duplicates">—</div></div><div class="card"><div class="label">Invalid values</div><div class="n" id="invalid">—</div></div></div>
 <div class="grid"><section class="panel"><div class="eyebrow">01 / Measurements</div><h3>Time-series preview</h3><p id="source">Load the example or import a CSV file with ISO-8601 timestamps.</p><div class="chart" id="chart"><span class="muted">No data selected</span></div></section><section class="panel"><div class="eyebrow">02 / Validation</div><h3>Quality diagnostics</h3><div class="row"><span>Timestamp parse errors</span><span id="timestampIssues" class="status">—</span></div><div class="row"><span>Missing intervals</span><span id="missingStatus" class="status">—</span></div><div class="row"><span>Duplicate instants</span><span id="duplicateStatus" class="status">—</span></div><div class="row"><span>Missing / non-finite values</span><span id="invalidStatus" class="status">—</span></div><div class="row"><span>Analysis engine</span><span class="status">Browser preview</span></div></section></div>
 <div class="notice">This is a static demonstration interface. Checks are basic browser-side previews, not the authoritative EnergyData Kit Python assessment. Explicit UTC offsets or Z are required; the browser will not infer daylight-saving ambiguity. Data never leaves your device in this prototype. No proprietary Solid Soup platform functionality is included.</div>
 <p style="margin-top:16px;font-size:13px">For authoritative results, <a href="PYTHON_ENGINE.md">run the local Python report</a>. This browser analysis remains preview-only.</p>
@@ -22,4 +34,47 @@ function analyze(){try{if(!rows.length)throw Error("Load a dataset first");const
 function plot(series){const root=$("chart");root.replaceChildren();if(series.length<2){root.textContent="At least two valid readings are needed for the chart";return}const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");svg.setAttribute("viewBox","0 0 760 260");svg.setAttribute("role","img");svg.setAttribute("aria-label","Measurement line chart");const values=series.map(p=>p.value),lo=Math.min(...values),hi=Math.max(...values),range=hi-lo||1;for(let j=0;j<5;j++){const line=document.createElementNS(svg.namespaceURI,"line");const y=20+j*52;for(const [k,v] of Object.entries({x1:30,x2:742,y1:y,y2:y,stroke:"#e4ebe7"}))line.setAttribute(k,v);svg.append(line)}const path=document.createElementNS(svg.namespaceURI,"polyline");path.setAttribute("fill","none");path.setAttribute("stroke","#1b6e56");path.setAttribute("stroke-width","2.5");path.setAttribute("stroke-linejoin","round");path.setAttribute("points",series.map((p,i)=>[30+i/(series.length-1)*712,230-(p.value-lo)/range*198].join(",")).join(" "));svg.append(path);root.append(svg)}
 $("sample").onclick=()=>{const base=Date.UTC(2026,9,19,0,0);const arr=[["timestamp","power_kw"]];for(let i=0;i<96;i++){if(i===28||i===29)continue;const v=i===62?"":(440+75*Math.sin(i/8)+20*Math.cos(i/3)).toFixed(2);arr.push([new Date(base+i*900000).toISOString(),v]);if(i===54)arr.push([new Date(base+i*900000).toISOString(),v])}setData(arr,"synthetic-example.csv")};
 $("upload").onclick=()=>$("file").click();$("file").onchange=async e=>{try{const f=e.target.files[0];if(!f)return;if(f.size>5*1024*1024)throw Error("CSV must be 5 MB or smaller");setData(csvParse(await f.text()),f.name);$("error").textContent=""}catch(err){$("error").textContent=err.message}e.target.value=""};$("analyze").onclick=analyze;$("export").onclick=()=>{if(!report){$("error").textContent="Analyze a dataset before exporting";return}const blob=new Blob([JSON.stringify(report,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="energydata-preview-report.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
+
+// Only reports explicitly created by the local Python adapter may enter this panel.
+// No JavaScript validation results are ever presented as authoritative.
+function readCanonicalReport(input){
+  if(!input || input.adapter_version!=="energydata.workbench.python.v1" || input.engine!=="python-validated" ||
+    input.privacy!=="local-file-only" || typeof input.package_version!=="string" || !input.package_version ||
+    !input.report || input.report.schema_version!=="2" || input.report.package_version!==input.package_version){
+    throw Error("Not a recognized EnergyData Kit Python report");
+  }
+  const r=input.report;
+  const validCount=x=>Number.isSafeInteger(x)&&x>=0;
+  if(!validCount(r.n_rows)||!validCount(r.n_missing_intervals)||!validCount(r.n_duplicate_timestamps)||
+    (r.completeness!==null&&(typeof r.completeness!=="number"||!Number.isFinite(r.completeness)||r.completeness<0||r.completeness>1))){
+    throw Error("Malformed Python quality counters");
+  }
+  if(typeof r.fingerprint!=="string" || !/^[a-f0-9]{64}$/.test(r.fingerprint)){
+    throw Error("Missing canonical input fingerprint");
+  }
+  return input;
+}
+$("loadPython").onclick=()=> $("pythonFile").click();
+$("pythonFile").onchange=async event=>{
+  try{
+    const file=event.target.files[0];
+    if(!file)return;
+    if(file.size>2*1024*1024)throw Error("Python JSON must be 2 MiB or smaller");
+    const data=readCanonicalReport(JSON.parse(await file.text()));
+    const r=data.report;
+    $("pythonRows").textContent=r.n_rows.toLocaleString();
+    $("pythonMissing").textContent=r.n_missing_intervals.toLocaleString();
+    $("pythonDuplicates").textContent=r.n_duplicate_timestamps.toLocaleString();
+    $("pythonCompleteness").textContent=r.completeness===null?"n/a":(100*r.completeness).toFixed(1)+"%";
+    $("pythonEngine").textContent="Python validated · "+data.package_version;
+    $("pythonProvenance").textContent="Source: "+data.source+" · Series: "+r.series_name+" · SHA-256 fingerprint: "+r.fingerprint+" · Canonical report schema "+r.schema_version;
+    $("pythonStats").hidden=false;
+    $("pythonError").textContent="";
+  }catch(err){
+    $("pythonStats").hidden=true;
+    $("pythonEngine").textContent="No Python report loaded";
+    $("pythonProvenance").textContent="";
+    $("pythonError").textContent=err.message;
+  }finally{event.target.value=""}
+};
 </script></body></html>
