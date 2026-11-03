@@ -42,6 +42,19 @@ const $=id=>document.getElementById(id);
 const RUNTIME="https://cdn.jsdelivr.net/pyodide/v0.29.5/full/";
 let output=null,engine=null;
 function setStatus(message){$("status").textContent=message}
+async function validateWheelDigest(wheelBytes, expectedHash) {
+  const expected = expectedHash.trim().toLowerCase();
+  if (!/^[a-f0-9]{64}$/.test(expected)) {
+    throw Error("Enter a 64-character SHA-256 copied from a trusted local build.");
+  }
+  if (!globalThis.crypto?.subtle) {
+    throw Error("Browser crypto.subtle is unavailable; use localhost or HTTPS.");
+  }
+  const digest = new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", wheelBytes));
+  const actual = Array.from(digest, byte => byte.toString(16).padStart(2, "0")).join("");
+  if (actual !== expected) throw Error("Wheel SHA-256 mismatch; nothing was executed.");
+  return actual;
+}
 $("run").onclick=async()=>{
   $("run").disabled=true;$("download").disabled=true;output=null;$("result").textContent="No report";
   try{
@@ -50,15 +63,9 @@ $("run").onclick=async()=>{
     if(!/^energydata_kit-[\w.]+-py3-none-any\.whl$/i.test(wheel.name))
       throw Error("Expected a pure-Python energydata_kit wheel built from this repository.");
     if(wheel.size>10*1024*1024 || csv.size>5*1024*1024)throw Error("Wheel or CSV exceeds size limit.");
-    const expectedHash=$("wheelHash").value.trim().toLowerCase();
-    if(!/^[a-f0-9]{64}$/.test(expectedHash))
-      throw Error("Enter a 64-character SHA-256 copied from a trusted local build.");
-    if(!globalThis.crypto?.subtle)throw Error("Browser crypto.subtle is unavailable; use localhost or HTTPS.");
-    // Refuse unknown wheels before downloading or executing a Python runtime.
+    // Refuse mismatched wheels before downloading or executing a Python runtime.
     const wheelBytes=await wheel.arrayBuffer();
-    const hashBytes=new Uint8Array(await crypto.subtle.digest("SHA-256",wheelBytes));
-    const actualHash=Array.from(hashBytes, b=>b.toString(16).padStart(2,"0")).join("");
-    if(actualHash!==expectedHash)throw Error("Wheel SHA-256 mismatch; nothing was executed.");
+    await validateWheelDigest(wheelBytes, $("wheelHash").value);
     const interval=Number($("interval").value);
     if(!Number.isInteger(interval)||interval<1||interval>1440)throw Error("Interval must be 1–1440 minutes.");
     const timestamp=$("timestamp").value.trim(), value=$("value").value.trim();
