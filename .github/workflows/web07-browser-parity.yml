@@ -1,9 +1,13 @@
 name: WEB-07 manual Chromium/Pyodide parity
 
-# Deliberately manual: full browser + Pyodide downloads are expensive.
-# No pull_request, push or schedule trigger. Synthetic data only.
+# Run on the first review of this workflow itself, then manually thereafter.
+# No general PR/push/schedule trigger; this test downloads Chromium/Pyodide.
+# Synthetic-only input; never customer data.
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/web07-browser-parity.yml"
 
 permissions:
   contents: read
