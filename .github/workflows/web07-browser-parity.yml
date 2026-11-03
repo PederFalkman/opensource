@@ -1,13 +1,10 @@
 name: WEB-07 manual Chromium/Pyodide parity
 
-# Run on the first review of this workflow itself, then manually thereafter.
-# No general PR/push/schedule trigger; this test downloads Chromium/Pyodide.
+# Manual-only after the initial Chromium parity gates have been proven.
+# Never run this expensive browser/Pyodide download on PR, push or schedule.
 # Synthetic-only input; never customer data.
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - ".github/workflows/web07-browser-parity.yml"
 
 permissions:
   contents: read
