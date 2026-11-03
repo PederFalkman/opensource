@@ -21,9 +21,29 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # The hosted GitLeaks Action requires an organization license.
+      # Use the OSS CLI directly; verify its published checksum before executing.
+      - name: Install verified Gitleaks CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=8.30.1
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${version}"
+          curl --fail --location --silent --show-error --retry 3 \
+            "${base}/gitleaks_${version}_linux_x64.tar.gz" -o /tmp/gitleaks.tar.gz
+          curl --fail --location --silent --show-error --retry 3 \
+            "${base}/gitleaks_${version}_checksums.txt" -o /tmp/gitleaks-checksums.txt
+          grep -E "^[a-fA-F0-9]{64}  gitleaks_${version}_linux_x64.tar.gz$" \
+            /tmp/gitleaks-checksums.txt | sed "s|gitleaks_${version}_linux_x64.tar.gz|/tmp/gitleaks.tar.gz|" \
+            > /tmp/gitleaks-check.txt
+          test -s /tmp/gitleaks-check.txt
+          sha256sum --check /tmp/gitleaks-check.txt
+          mkdir -p /tmp/gitleaks-bin
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp/gitleaks-bin gitleaks
+          chmod +x /tmp/gitleaks-bin/gitleaks
+          /tmp/gitleaks-bin/gitleaks version
+      - name: Secret scan (complete Git history)
+        run: /tmp/gitleaks-bin/gitleaks git --redact --exit-code 1 --log-opts="--all" .
 
   dependency-audit:
     name: Dependency audit (pip-audit)
