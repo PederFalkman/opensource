@@ -12,6 +12,24 @@ This is a **technical spike** in `experimental_pyodide.html`, not a working prod
 5. Choose the local `energydata_kit-*.whl`, paste the independently calculated SHA-256 into the hash field, and select synthetic CSV. Leave the default columns and 15-minute interval, then press **Load Python and analyze**. A mismatched or missing wheel checksum must be rejected **before loading any Pyodide runtime**.
 6. Inspect error/status output. If a canonical v2 report appears, download it and compare it with the local Python result from `python_report.py` using the offline exact-field comparator:\n\n   `python apps/workbench/compare_parity.py local-report.json synthetic-pyodide-report.json`\n\n   Exit code 0 means canonical field equality; 1 indicates differences and 2 means invalid input. Any difference blocks adoption. This is not source authentication.
 
+## Optional real-Chromium smoke gate (synthetic only)
+
+From the repository root, in an environment where `energydata-kit` is installed from the local source:
+
+```bash
+python -m pip install -e packages/energydata-kit playwright
+python -m playwright install chromium
+python -m pip install build
+cd packages/energydata-kit
+python -m build --wheel
+cd ../..
+python apps/workbench/browser_parity_smoke.py --wheel packages/energydata-kit/dist/energydata_kit-*.whl
+```
+
+The harness automatically launches a loopback-only static server, obtains the exact browser synthetic fixture, creates a local authoritative Python report, and launches Chromium against the experimental Pyodide page. It selects the trusted local wheel, checks its SHA-256 before runtime import and compares **every canonical report field** after the browser run. Results include runtime duration, page errors, observed external hostnames, and suspicious outbound request bodies. A return code of zero requires no canonical diffs, page errors or detected payload requests.
+
+**Limitations:** This is a manual experiment, not a scheduled or PR-triggered CI job. Network access is required for CDN packages. Request-body inspection is a narrow heuristic, **not a complete network/privacy audit**. It does not measure peak browser memory, byte-accurate transfer cost, browser matrix compatibility, or prove wheel authenticity. Document those separately before publication. The script does not accept customer CSV input.
+
 ## Runtime and dependencies
 
 - Candidate Pyodide `0.29.5`, fixed CDN version path; binary assets load from jsDelivr, Python packages may load from PyPI or the Pyodide distribution.
