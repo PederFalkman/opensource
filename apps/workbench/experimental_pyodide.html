@@ -74,16 +74,28 @@ import re
 import pandas as pd
 import energydata_kit as ek
 
+import csv
+try:
+    header = next(csv.reader(io.StringIO(csv_text), strict=True))
+except (StopIteration, csv.Error) as exc:
+    raise ValueError("CSV must have a valid non-empty header") from exc
+headers = [col.strip() for col in header]
+if not headers or any(not col for col in headers) or len(headers) != len(set(headers)):
+    raise ValueError("CSV must have non-empty, unique column headers")
 frame = pd.read_csv(io.StringIO(csv_text), dtype=str, keep_default_na=False)
-if frame.empty or not frame.columns.is_unique:
-    raise ValueError("CSV must contain rows and unique column names")
+if frame.empty or not frame.columns.is_unique or list(frame.columns) != header:
+    raise ValueError("CSV must contain rows and unmodified unique columns")
 if time_column not in frame or value_column not in frame:
     raise ValueError("Selected columns are missing")
 raw = frame[time_column].astype(str).str.strip()
 if not raw.map(lambda v: bool(re.search(r"(?:Z|[+-]\\d{2}:[0-9]{2})$", v, re.I))).all():
     raise ValueError("Timestamps require explicit Z or UTC offset")
-times = pd.to_datetime(raw, utc=True, errors="raise")
-values = pd.to_numeric(frame[value_column].replace("", float("nan")), errors="coerce")
+times = pd.to_datetime(raw, utc=True, format="ISO8601", errors="raise")
+raw_values = frame[value_column].astype(str).str.strip()
+values = pd.to_numeric(raw_values.replace("", float("nan")), errors="coerce")
+invalid_values = raw_values.ne("") & values.isna()
+if invalid_values.any():
+    raise ValueError("Non-numeric measurement; use a blank cell for missing readings")
 series = pd.Series(values.to_numpy(), index=pd.DatetimeIndex(times), name=value_column)
 report = ek.assess_quality(series, freq=f"{interval_minutes}min")
 json.dumps({

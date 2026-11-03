@@ -15,7 +15,7 @@ python apps/workbench/python_report.py my_meter.csv --timestamp timestamp --valu
 
 The resulting JSON contains `engine: python-validated`, exact package version and the canonical library `report` object, with schema version 2. All processing stays local. There is **no server, network call, upload, or data retention**.
 
-The adapter requires ISO 8601 timestamps with explicit UTC offsets or Z and a CSV of at most 5 MiB. It does not infer ambiguous DST times; use the full library API for advanced DST policies, metadata, multi-series reporting, calendar grids, local-day completeness and flagged series.
+The adapter requires ISO 8601 timestamps with explicit UTC offsets or Z and a CSV of at most 5 MiB. Mixed explicit UTC offsets and Z are supported, including repeated local clock hours across DST transitions. The raw CSV header must contain unique, non-empty column names; pandas cannot silently rename duplicates. Text such as `invalid` in a measurement column is rejected instead of silently converted to a missing value. Use an empty cell for a deliberately missing measurement. It does not infer ambiguous DST times; use the full library API for advanced DST policies, metadata, multi-series reporting, calendar grids, local-day completeness and flagged series.
 
 ### Verification
 
@@ -29,7 +29,7 @@ Tests use the installed library to check duplicate timestamps, gaps, DST offsets
 
 Determine whether a browser-local Python runtime is feasible on supported devices. If not, any server-backed execution requires an explicit separate privacy/security and deployment decision. The static frontend must **never relabel its JavaScript preview as Python-validated**. The local CLI output can be imported or inspected separately, but no integration is claimed yet.
 
-Tracking: [OSS #91](https://github.com/PederFalkman/opensource/issues/91).
+Tracking: [OSS #91](https://github.com/Solid-soup/opensource/issues/91).
 
 ## Open the canonical report in the Workbench
 
