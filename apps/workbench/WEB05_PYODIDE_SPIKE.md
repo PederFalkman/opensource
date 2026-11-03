@@ -30,6 +30,12 @@ The harness automatically launches a loopback-only static server, obtains the ex
 
 **Limitations:** This is a manual experiment, not a scheduled or PR-triggered CI job. Network access is required for CDN packages. Request-body inspection is a narrow heuristic, **not a complete network/privacy audit**. It does not measure peak browser memory, byte-accurate transfer cost, browser matrix compatibility, or prove wheel authenticity. Document those separately before publication. Neither the script nor the experimental page accepts customer CSV input.
 
+## Expanded synthetic scenario parity gate
+
+The experimental page now exposes four **hard-coded, synthetic-only** cases in a selector: `baseline`, `dst_fall`, `dst_spring`, and `mixed_offsets`. The browser smoke harness runs all four cases sequentially in the same Chromium session, using the actual EnergyData Kit wheel and comparing every canonical report field to the local Python adapter. This exercises reuse of a warm runtime as well as mixed ISO 8601 offsets and repeated local wall-clock times. Each case reports its own measured elapsed time.
+
+The fixture selector cannot import CSV files. The baseline scenario remains byte-for-byte equivalent in value content to the main Workbench example. **The browser experiment is still not ready for release**: multiple supported browsers, offline package integrity, network transfer size and memory limits are unverified.
+
 ## Runtime and dependencies
 
 - Candidate Pyodide `0.29.5`, fixed CDN version path; binary assets load from jsDelivr, Python packages may load from PyPI or the Pyodide distribution.
