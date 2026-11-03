@@ -97,42 +97,63 @@ def run(wheel: Path, *, timeout_ms: int = 180_000, headless: bool = True) -> int
                     start = time.perf_counter()
                     page.goto(f"http://127.0.0.1:{port}/experimental_pyodide.html")
                     if page.evaluate("globalThis.__edkSyntheticFixtureForTest?.() ?? null") != grid:
-                        raise RuntimeError(
-                            "Browser experiment fixture unavailable or differs from Workbench; "
-                            f"page errors: {errors}"
-                        )
+                        raise RuntimeError("Browser baseline fixture diverges from Workbench")
                     if page.locator('input[type="file"]').count() != 1:
-                        raise RuntimeError("Experiment must not allow customer CSV upload")
+                        raise RuntimeError("Experiment must not accept customer CSV uploads")
                     page.locator("#wheel").set_input_files(str(wheel))
                     page.locator("#wheelHash").fill(digest)
-                    page.locator("#run").click()
-                    try:
-                        page.wait_for_function(
-                            "() => document.querySelector('#status').textContent.includes('Python returned') || "
-                            "document.querySelector('#status').textContent.includes('Experiment failed')",
-                            timeout=timeout_ms,
+                    scenarios = ("baseline", "dst_fall", "dst_spring", "mixed_offsets")
+                    checks: list[dict[str, Any]] = []
+                    for scenario in scenarios:
+                        page.locator("#scenario").select_option(scenario)
+                        fixture = page.evaluate(
+                            "(name) => globalThis.__edkSyntheticScenarioForTest(name)", scenario
                         )
-                    except Exception as exc:
-                        raise RuntimeError(f"Runtime did not finish within {timeout_ms} ms") from exc
-                    seconds = round(time.perf_counter() - start, 2)
-                    status = page.locator("#status").inner_text()
-                    if not status.startswith("Python returned"):
-                        raise RuntimeError(status)
-                    browser_report = json.loads(page.locator("#result").inner_text())
-                    differences = parity.changes(
-                        parity.canonical(local), parity.canonical(browser_report)
-                    )
+                        if not fixture or fixture[0] != ["timestamp", "power_kw"]:
+                            raise RuntimeError(f"Invalid hard-coded synthetic fixture: {scenario}")
+                        with csv_file.open("w", encoding="utf-8", newline="") as stream:
+                            csv.writer(stream).writerows(fixture)
+                        local = adapter.analyze_csv(
+                            csv_file, timestamp="timestamp", value="power_kw"
+                        )
+                        start_case = time.perf_counter()
+                        page.locator("#run").click()
+                        try:
+                            page.wait_for_function(
+                                "() => document.querySelector('#status').textContent.includes('Python returned') || "
+                                "document.querySelector('#status').textContent.includes('Experiment failed')",
+                                timeout=timeout_ms,
+                            )
+                        except Exception as exc:
+                            raise RuntimeError(
+                                f"Pyodide did not finish scenario {scenario} within {timeout_ms} ms"
+                            ) from exc
+                        seconds = round(time.perf_counter() - start_case, 2)
+                        status = page.locator("#status").inner_text()
+                        if not status.startswith("Python returned"):
+                            raise RuntimeError(f"{scenario}: {status}")
+                        browser_report = json.loads(page.locator("#result").inner_text())
+                        differences = parity.changes(
+                            parity.canonical(local), parity.canonical(browser_report)
+                        )
+                        checks.append({
+                            "scenario": scenario,
+                            "rows": len(fixture) - 1,
+                            "elapsed_seconds": seconds,
+                            "canonical_parity": "PASS" if not differences else "FAIL",
+                            "field_differences": differences[:50],
+                        })
                     print(json.dumps({
-                        "runtime_status": status,
+                        "runtime_status": "Python executed in Chromium/Pyodide",
                         "wheel_sha256": digest,
-                        "elapsed_seconds": seconds,
+                        "scenario_results": checks,
                         "external_hosts": sorted(external_hosts),
                         "page_errors": errors,
                         "suspected_outbound_dataset_payload_requests": network_payload_alerts,
-                        "canonical_parity": "PASS" if not differences else "FAIL",
-                        "field_differences": differences[:50],
                     }, indent=2, sort_keys=True))
-                    if errors or network_payload_alerts or differences:
+                    if errors or network_payload_alerts or any(
+                        case["canonical_parity"] != "PASS" for case in checks
+                    ):
                         return 1
                     return 0
                 finally:
