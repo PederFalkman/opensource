@@ -6,7 +6,7 @@ A short, honest entry point to Solid Soup Open Engineering. **No account, cloud 
 
 ### Route A: Try the browser prototype (no installation)
 
-1. Open [the workbench source](../../apps/workbench/index.html) in this repository.
+1. Open [the workbench source](../apps/workbench/index.html) in this repository.
 2. Download `index.html` and open it locally in a modern browser.
 3. Click **Load example dataset**. The dataset is synthetic and includes gaps, a duplicate timestamp and a missing value.
 4. Inspect the four quality metrics and line chart; export the JSON preview if useful.
@@ -40,7 +40,7 @@ print(report.to_json())
 
 Run `python example.py`. The report is created locally and does not alter the measurements.
 
-**For real data:** Use the documented `energydata-kit report` CLI, including explicit timestamp column, time zone and measurement semantics. Read the [package documentation](../../packages/energydata-kit/README.md) for CSV/Parquet, DST ambiguity, quality flags, units and reproducible reports.
+**For real data:** Use the documented `energydata-kit report` CLI, including explicit timestamp column, time zone and measurement semantics. Read the [package documentation](../packages/energydata-kit/README.md) for CSV/Parquet, DST ambiguity, quality flags, units and reproducible reports.
 
 ## What this project is — and is not
 
@@ -50,4 +50,4 @@ The open-source package is Apache-2.0 licensed; the released artifacts are avail
 
 ## For contributors
 
-Start with the [existing-tools audit](../architecture/EXISTING_TOOLS_AUDIT.md), [IP boundary](../governance/IP_BOUNDARY.md) and [contribution guide](../../CONTRIBUTING.md). Improvements to documentation, interoperability and clearly justified data-quality gaps are welcome; MICA's proprietary algorithms, customer data and operating policies are not.
+Start with the [existing-tools audit](architecture/EXISTING_TOOLS_AUDIT.md), [IP boundary](governance/IP_BOUNDARY.md) and [contribution guide](../CONTRIBUTING.md). Improvements to documentation, interoperability and clearly justified data-quality gaps are welcome; Solid Soup's proprietary algorithms, customer data and operating policies are not.
