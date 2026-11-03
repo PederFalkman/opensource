@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EnergyData Kit · Experimental browser-local Python</title>
+<style>
+:root{color-scheme:light}body{margin:0;background:#f4f7f4;color:#17372f;font:16px/1.55 system-ui,sans-serif}
+main{max-width:800px;margin:auto;padding:30px 18px}h1{font-size:32px;line-height:1.1}h2{font-size:19px}
+article{background:white;border:1px solid #d7e2d9;border-radius:8px;padding:20px;margin:18px 0}
+label{display:block;font-weight:600;margin:15px 0}input{display:block;margin-top:6px;max-width:100%}
+button{background:#164a3d;border:0;border-radius:5px;color:white;padding:10px 16px;font:inherit;cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}.warning{border-left:4px solid #a46f2d;padding:12px;background:#fff3df}
+pre{overflow:auto;max-height:340px;background:#eaf0e9;padding:16px;border-radius:6px;font-size:12px}
+small{color:#52645e}a{color:#14563c}
+</style></head>
+<body><main>
+<p><a href="index.html">Back to Workbench</a></p>
+<p><strong>SOLID SOUP / OPEN</strong> · local research spike</p>
+<h1>Experimental Python in your browser</h1>
+<p>This isolated prototype evaluates the real <code>energydata_kit.assess_quality()</code> library under Pyodide. It is <strong>not a released, tested or offline-ready feature</strong>.</p>
+<p class="warning">Use synthetic, non-sensitive CSV files only. Loading Python downloads Pyodide and dependencies from third-party hosts. Your selected CSV and wheel are processed inside the browser; this page does not intentionally upload their contents. A Python wheel executes code: select only a trusted locally built EnergyData Kit wheel. Never use this prototype for operational decisions.</p>
+<article><h2>1. Select files</h2>
+<label>Locally built EnergyData Kit wheel (.whl)
+<input type="file" id="wheel" accept=".whl"></label>
+<label>Synthetic CSV (max 5 MiB)
+<input type="file" id="csv" accept=".csv,text/csv"></label>
+<label>Timestamp column<input id="timestamp" value="timestamp"></label>
+<label>Value column<input id="value" value="power_kw"></label>
+<label>Expected interval (minutes)<input id="interval" type="number" value="15" min="1" max="1440"></label>
+<p><small>First build a wheel from <code>packages/energydata-kit</code> using <code>python -m build --wheel</code>. The wheel is never published or uploaded by this page.</small></p></article>
+<article><h2>2. Execute locally</h2>
+<button id="run">Load Python and analyze</button>
+<p role="status" aria-live="polite" id="status">Not started. No external runtime loaded.</p>
+<pre id="result">No report</pre>
+<button id="download" disabled>Download canonical JSON</button></article>
+<p><small>Candidate runtime: Pyodide 0.29.5 (fixed-version CDN path). Runtime compatibility, dependency integrity, cold-start, memory, cross-browser behavior and offline reuse must be validated before integration with the main Workbench.</small></p>
+</main>
+<script type="module">
+"use strict";
+const $=id=>document.getElementById(id);
+const RUNTIME="https://cdn.jsdelivr.net/pyodide/v0.29.5/full/";
+let output=null,engine=null;
+function setStatus(message){$("status").textContent=message}
+$("run").onclick=async()=>{
+  $("run").disabled=true;$("download").disabled=true;output=null;$("result").textContent="No report";
+  try{
+    const wheel=$("wheel").files[0],csv=$("csv").files[0];
+    if(!wheel||!csv)throw Error("Select both a trusted wheel and a synthetic CSV.");
+    if(!/^energydata_kit-[\w.]+-py3-none-any\.whl$/i.test(wheel.name))
+      throw Error("Expected a pure-Python energydata_kit wheel built from this repository.");
+    if(wheel.size>10*1024*1024 || csv.size>5*1024*1024)throw Error("Wheel or CSV exceeds size limit.");
+    const interval=Number($("interval").value);
+    if(!Number.isInteger(interval)||interval<1||interval>1440)throw Error("Interval must be 1–1440 minutes.");
+    const timestamp=$("timestamp").value.trim(), value=$("value").value.trim();
+    if(!timestamp||!value||timestamp===value)throw Error("Select distinct timestamp and value columns.");
+    setStatus("Loading Python runtime and dependencies; requires network access...");
+    if(!engine){
+      const {loadPyodide}=await import(RUNTIME+"pyodide.mjs");
+      engine=await loadPyodide({indexURL:RUNTIME});
+      await engine.loadPackage(["numpy","pandas","micropip"]);
+      await engine.runPythonAsync("import micropip\nawait micropip.install('pint==0.24.4')");
+    }
+    setStatus("Installing selected local pure-Python wheel in memory...");
+    const sitePackages=engine.runPython("import site\nsite.getsitepackages()[0]");
+    engine.unpackArchive(await wheel.arrayBuffer(),"wheel",{extractDir:sitePackages});
+    engine.globals.set("csv_text",await csv.text());
+    engine.globals.set("time_column",timestamp);
+    engine.globals.set("value_column",value);
+    engine.globals.set("interval_minutes",interval);
+    setStatus("Running canonical EnergyData Kit Python assessment...");
+    const text=await engine.runPythonAsync(`
+import io
+import json
+import re
+import pandas as pd
+import energydata_kit as ek
+
+frame = pd.read_csv(io.StringIO(csv_text), dtype=str, keep_default_na=False)
+if frame.empty or not frame.columns.is_unique:
+    raise ValueError("CSV must contain rows and unique column names")
+if time_column not in frame or value_column not in frame:
+    raise ValueError("Selected columns are missing")
+raw = frame[time_column].astype(str).str.strip()
+if not raw.map(lambda v: bool(re.search(r"(?:Z|[+-]\\d{2}:[0-9]{2})$", v, re.I))).all():
+    raise ValueError("Timestamps require explicit Z or UTC offset")
+times = pd.to_datetime(raw, utc=True, errors="raise")
+values = pd.to_numeric(frame[value_column].replace("", float("nan")), errors="coerce")
+series = pd.Series(values.to_numpy(), index=pd.DatetimeIndex(times), name=value_column)
+report = ek.assess_quality(series, freq=f"{interval_minutes}min")
+json.dumps({
+    "adapter_version": "energydata.workbench.python.v1",
+    "engine": "python-validated",
+    "package_version": ek.__version__,
+    "source": "browser-local-synthetic-input",
+    "columns": {"timestamp": time_column, "value": value_column},
+    "interval_minutes": interval_minutes,
+    "report": report.to_dict(),
+    "privacy": "browser-local-experiment",
+}, sort_keys=True, allow_nan=False)
+`);
+    output=JSON.parse(text);
+    if(output.report?.schema_version!=="2")throw Error("Unexpected canonical report version");
+    $("result").textContent=JSON.stringify(output,null,2);
+    $("download").disabled=false;
+    setStatus("Python returned a canonical v2 report. This browser runtime has not passed parity validation.");
+  }catch(error){
+    setStatus("Experiment failed: "+String(error?.message||error));
+  }finally{$("run").disabled=false}
+};
+$("download").onclick=()=>{
+  if(!output)return;
+  const url=URL.createObjectURL(new Blob([JSON.stringify(output,null,2)],{type:"application/json"}));
+  const a=document.createElement("a");a.href=url;a.download="synthetic-pyodide-report.json";a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+</script></body></html>
