@@ -88,7 +88,7 @@ jobs:
         run: python -m pytest -q ../../apps/workbench/tests/test_python_report.py
       - name: WEB-03 canonical report reader tests (offline Node)
         if: matrix.python == '3.12' && !matrix.lowest
-        run: node --test ../../apps/workbench/tests/report_reader.test.cjs
+        run: node --test ../../apps/workbench/tests/*.test.cjs
 
   energydata-kit-os:
     # Lint and types do not depend on the OS, so only the tests run here.
