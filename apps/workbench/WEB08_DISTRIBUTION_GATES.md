@@ -4,7 +4,7 @@
 
 ## What WEB-07 demonstrated
 
-Chromium/Pyodide 0.29.5 executed a locally built EnergyData Kit 0.17.0.dev0 wheel. Four hard-coded, synthetic-only scenarios returned identical canonical quality-report fields to local Python (see \`WEB07_BROWSER_VALIDATION_2026-11-03.md\`). Current experiment still requires a developer-selected wheel and initially downloads third-party runtime/dependencies. Therefore it is **not** an installation-free customer product.
+Chromium/Pyodide 0.29.5 executed a locally built EnergyData Kit 0.17.0.dev0 wheel. Four hard-coded, synthetic-only scenarios returned identical canonical quality-report fields to local Python (see `WEB07_BROWSER_VALIDATION_2026-11-03.md`). Current experiment still requires a developer-selected wheel and initially downloads third-party runtime/dependencies. Therefore it is **not** an installation-free customer product.
 
 ## Proposed no-install distribution architecture (not implemented)
 
@@ -12,14 +12,14 @@ Chromium/Pyodide 0.29.5 executed a locally built EnergyData Kit 0.17.0.dev0 whee
 2. Build a deterministic, CI-attested wheel with source commit, version, file size, SHA-256 and licence/SBOM evidence. No unreviewed local wheel selection for end users.
 3. Produce a versioned **static** asset manifest including pinned Pyodide runtime, NumPy, pandas, Pint and EnergyData Kit wheel file hashes, license list, cumulative compressed sizes, allowed origins and cache policy. Review content security policy and integrity enforcement for all assets.
 4. Serve static assets from an approved origin (or a reviewed self-hosted distribution). The browser computes and validates expected wheel hashes before execution; dependency artefacts need their own reviewed provenance and integrity strategy. Do not blindly load packages from dynamic PyPI without review.
-5. Run the Python engine in a dedicated Web Worker with explicit progress, cancellation, failure recovery and memory limits. The main Workbench's \`browser-preview\` results remain distinctly marked; the Python path becomes selectable only after release gates.
+5. Run the Python engine in a dedicated Web Worker with explicit progress, cancellation, failure recovery and memory limits. The main Workbench's `browser-preview` results remain distinctly marked; the Python path becomes selectable only after release gates.
 6. Allow user-provided CSV only **after** browser isolation, limits, accessibility, privacy/security review and transparent network behavior have passed. WEB-07 remains synthetic-only.
 
 ## Quantitative gate measurements
 
-A new optional Chromium CDP measurement in \`browser_parity_smoke.py\` reports encoded transferred bytes for completed requests, including external versus loopback traffic; V8 heap used/total after each scenario; per-scenario elapsed seconds; and trusted wheel file size. A missing metric must be marked absent, never assumed zero.
+A new optional Chromium CDP measurement in `browser_parity_smoke.py` reports encoded transferred bytes for completed requests, including external versus loopback traffic; V8 heap used/total after each scenario; per-scenario elapsed seconds; and trusted wheel file size. A missing metric must be marked absent, never assumed zero.
 
-**Limitations:** CDP \`Network.loadingFinished.encodedDataLength\` does not measure memory/disk/uncompressed assets and may miss cached/incomplete requests. Chromium \`Performance.getMetrics\` V8 heap **excludes Python/WebAssembly linear memory and native browser memory**. Browser process RSS/peak memory requires a separately specified OS-level measurement and runner profile. The first scenario includes runtime cold-load; later scenarios reuse a warm engine. Repeat runs with cache disabled/enabled and report distribution (median, p95), not single samples.
+**Limitations:** CDP `Network.loadingFinished.encodedDataLength` does not measure memory/disk/uncompressed assets and may miss cached/incomplete requests. Chromium `Performance.getMetrics` V8 heap **excludes Python/WebAssembly linear memory and native browser memory**. Browser process RSS/peak memory requires a separately specified OS-level measurement and runner profile. The first scenario includes runtime cold-load; later scenarios reuse a warm engine. Repeat runs with cache disabled/enabled and report distribution (median, p95), not single samples.
 
 ## Required gates before main Workbench integration
 
