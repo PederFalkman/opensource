@@ -21,6 +21,20 @@ A new optional Chromium CDP measurement in `browser_parity_smoke.py` reports enc
 
 **Limitations:** CDP `Network.loadingFinished.encodedDataLength` does not measure memory/disk/uncompressed assets and may miss cached/incomplete requests. Chromium `Performance.getMetrics` V8 heap **excludes Python/WebAssembly linear memory and native browser memory**. Browser process RSS/peak memory requires a separately specified OS-level measurement and runner profile. The first scenario includes runtime cold-load; later scenarios reuse a warm engine. Repeat runs with cache disabled/enabled and report distribution (median, p95), not single samples.
 
+## Candidate local asset manifest (implemented)
+
+`apps/workbench/build_asset_manifest.py` generates deterministic SHA-256 and byte-size metadata from a **manually selected local directory of candidate assets**. It deliberately does not download, install, sign, approve or deploy any package. The output is marked `candidate-not-approved`.
+
+Example for an explicitly reviewed asset directory:
+
+```bash
+python apps/workbench/build_asset_manifest.py \
+  --assets-dir /tmp/reviewed-web08-assets \
+  --output /tmp/edk-asset-manifest.json
+```
+
+Files in the asset directory must be regular local files (no symlinks); the utility has a 1,000-file and 512 MiB aggregate limit. Output must be outside the asset directory. Automated tests verify reproducibility and rejection of unsafe inputs. The manifest records **observed bytes and checksums**, not independent software provenance or approval.
+
 ## Required gates before main Workbench integration
 
 | Gate | Status and evidence required |
