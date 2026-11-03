@@ -18,7 +18,7 @@ A short, honest entry point to Solid Soup Open Engineering. **No account, cloud 
 Requires Python 3.11+ and a terminal.
 
 ```bash
-git clone https://github.com/PederFalkman/opensource.git
+git clone https://github.com/Solid-soup/opensource.git
 cd opensource/packages/energydata-kit
 python -m venv .venv
 source .venv/bin/activate  # Windows PowerShell: .venv\Scripts\Activate.ps1
@@ -46,7 +46,7 @@ Run `python example.py`. The report is created locally and does not alter the me
 
 EnergyData Kit validates time-series measurements. It is **not** a forecasting engine, electrical network solver, connection strategy product or automatic data-repair service. It intentionally keeps missing values and suspicious measurements visible instead of silently changing data.
 
-The open-source package is Apache-2.0 licensed; the released artifacts are available on [GitHub releases](https://github.com/PederFalkman/opensource/releases), but not on PyPI. Do not use `pip install energydata-kit` assuming it comes from this repository.
+The open-source package is Apache-2.0 licensed; the released artifacts are available on [GitHub releases](https://github.com/Solid-soup/opensource/releases), but not on PyPI. Do not use `pip install energydata-kit` assuming it comes from this repository.
 
 ## For contributors
 
