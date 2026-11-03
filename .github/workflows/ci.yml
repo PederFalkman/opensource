@@ -83,6 +83,9 @@ jobs:
         run: python -m mypy
       - name: Pytest
         run: python -m pytest
+      - name: WEB-02 Python Workbench adapter tests
+        if: matrix.python == '3.12' && !matrix.lowest
+        run: python -m pytest -q ../../apps/workbench/tests/test_python_report.py
 
   energydata-kit-os:
     # Lint and types do not depend on the OS, so only the tests run here.
