@@ -9,7 +9,7 @@ This is a **technical spike** in `experimental_pyodide.html`, not a working prod
 2. Open `apps/workbench/index.html`, press **Download example CSV**; use only this synthetic fixture.
 3. Open `apps/workbench/experimental_pyodide.html` in a modern browser (a local HTTP server may be required by the runtime's fetch/CORS rules).
 4. Choose the local `energydata_kit-*.whl` and synthetic CSV, leave the default columns and 15-minute interval, and press **Load Python and analyze**. Nothing loads until pressed.
-5. Inspect error/status output. If a canonical v2 report appears, download it and compare it with the local Python result from `python_report.py`. Any mismatch blocks adoption.
+5. Inspect error/status output. If a canonical v2 report appears, download it and compare it with the local Python result from `python_report.py` using the offline exact-field comparator:\n\n   `python apps/workbench/compare_parity.py local-report.json synthetic-pyodide-report.json`\n\n   Exit code 0 means canonical field equality; 1 indicates differences and 2 means invalid input. Any difference blocks adoption. This is not source authentication.
 
 ## Runtime and dependencies
 
