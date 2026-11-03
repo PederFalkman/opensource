@@ -96,9 +96,12 @@ def run(wheel: Path, *, timeout_ms: int = 180_000, headless: bool = True) -> int
                     local = adapter.analyze_csv(csv_file, timestamp="timestamp", value="power_kw")
                     start = time.perf_counter()
                     page.goto(f"http://127.0.0.1:{port}/experimental_pyodide.html")
+                    if page.evaluate("experimentSyntheticGrid()") != grid:
+                        raise RuntimeError("Browser experiment fixture diverges from Workbench")
+                    if page.locator('input[type="file"]').count() != 1:
+                        raise RuntimeError("Experiment must not allow customer CSV upload")
                     page.locator("#wheel").set_input_files(str(wheel))
                     page.locator("#wheelHash").fill(digest)
-                    page.locator("#csv").set_input_files(str(csv_file))
                     page.locator("#run").click()
                     try:
                         page.wait_for_function(
