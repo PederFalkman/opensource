@@ -32,7 +32,7 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Build local trusted wheel
         run: python -m build --wheel packages/energydata-kit --outdir /tmp/edk-wheel
-      # One explicit test of four synthetic fixtures (baseline, DST fall/spring, mixed UTC offsets).
+      # Targeted four-scenario run; wait for the current asynchronous browser assessment before reading JSON.
       - name: Execute synthetic-only Chromium/Pyodide parity
         run: |
           set -euo pipefail
