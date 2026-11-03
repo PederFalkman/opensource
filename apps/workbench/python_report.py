@@ -8,6 +8,7 @@ This is a CLI, not an HTTP server. Data stays on the user's computer.
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import re
 import sys
@@ -31,16 +32,36 @@ def analyze_csv(
         raise ValueError("interval_minutes must be between 1 and 1440")
     if not path.is_file() or path.stat().st_size > MAX_BYTES:
         raise ValueError("CSV must exist and be at most 5 MiB")
+    # Pandas auto-renames duplicate headers (e.g., "power" -> "power.1").
+    # Validate the original header before parsing to prevent ambiguous column selection.
+    with path.open("r", encoding="utf-8-sig", newline="") as stream:
+        try:
+            raw_header = next(csv.reader(stream, strict=True))
+        except (StopIteration, csv.Error) as exc:
+            raise ValueError("CSV must have a valid non-empty header") from exc
+    headers = [name.strip() for name in raw_header]
+    if not headers or any(not name for name in headers) or len(set(headers)) != len(headers):
+        raise ValueError("CSV must have non-empty, unique column headers")
     frame = pd.read_csv(path, dtype=str, keep_default_na=False)
     if frame.empty or not frame.columns.is_unique:
         raise ValueError("CSV must have rows and unique column names")
+    if list(frame.columns) != raw_header:
+        raise ValueError("CSV column headers must not be silently renamed")
     if timestamp == value or timestamp not in frame or value not in frame:
         raise ValueError("choose two distinct, existing timestamp and value columns")
     raw_times = frame[timestamp].astype(str).str.strip()
     if not raw_times.map(lambda x: bool(OFFSET.search(x))).all():
         raise ValueError("every timestamp must include UTC offset or Z; no implicit DST assumptions")
-    parsed = pd.to_datetime(raw_times, utc=True, errors="raise")
-    numeric = pd.to_numeric(frame[value].replace("", float("nan")), errors="coerce")
+    # Explicit ISO-8601 parsing permits mixed Z and UTC offsets, including
+    # the two distinct instants of an autumn DST transition.
+    parsed = pd.to_datetime(raw_times, utc=True, format="ISO8601", errors="raise")
+    raw_values = frame[value].astype(str).str.strip()
+    numeric = pd.to_numeric(raw_values.replace("", float("nan")), errors="coerce")
+    invalid_values = raw_values.ne("") & numeric.isna()
+    if invalid_values.any():
+        raise ValueError(
+            f"{int(invalid_values.sum())} non-numeric value(s); use blank cells for missing readings"
+        )
     series = pd.Series(numeric.to_numpy(), index=pd.DatetimeIndex(parsed), name=value)
     canonical = ek.assess_quality(series, freq=f"{interval_minutes}min")
     return {
