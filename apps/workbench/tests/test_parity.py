@@ -66,3 +66,16 @@ def test_real_files_parity(tmp_path: Path) -> None:
     altered["flag_counts"]["MISSING"] = 0
     b.write_text(json.dumps(altered), encoding="utf-8")
     assert module.compare_file_paths(a, b)
+
+
+def test_rejects_nonstandard_nan_json_values(tmp_path: Path) -> None:
+    """Never report parity success for NaN/Infinity parsed by permissive JSON."""
+    a, b = tmp_path / "local.json", tmp_path / "browser.json"
+    a.write_text(json.dumps(base()), encoding="utf-8")
+    b.write_text('{"schema_version":"2","completeness":NaN}', encoding="utf-8")
+    try:
+        module.compare_file_paths(a, b)
+    except module.ReportError:
+        pass
+    else:
+        raise AssertionError("NaN constant must be rejected as invalid JSON")
