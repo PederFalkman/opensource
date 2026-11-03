@@ -104,7 +104,25 @@ $("downloadSample").onclick = () => {
   downloadText(csv, "synthetic-example.csv", "text/csv;charset=utf-8");
 };
 
-$("upload").onclick=()=>$("file").click();$("file").onchange=async e=>{try{const f=e.target.files[0];if(!f)return;if(f.size>5*1024*1024)throw Error("CSV must be 5 MB or smaller");setData(csvParse(await f.text()),f.name);$("error").textContent=""}catch(err){$("error").textContent=err.message}e.target.value=""};$("analyze").onclick=analyze;$("export").onclick=()=>{if(!report){$("error").textContent="Analyze a dataset before exporting";return}const blob=new Blob([JSON.stringify(report,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="energydata-preview-report.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
+function clearPreviewAfterImportFailure(message){
+  rows=[];report=null;filename="";
+  for(const id of ["total","missing","duplicates","invalid","timestampIssues","missingStatus","duplicateStatus","invalidStatus"]){
+    $(id).textContent="—";
+  }
+  $("source").textContent="No dataset loaded. Correct the CSV and import it again.";
+  $("chart").textContent="No data selected";
+  $("error").textContent=message;
+}
+$("upload").onclick=()=>$("file").click();$("file").onchange=async e=>{
+  try{
+    const f=e.target.files[0];
+    if(!f)return;
+    if(f.size>5*1024*1024)throw Error("CSV must be 5 MB or smaller");
+    setData(csvParse(await f.text()),f.name);
+    $("error").textContent="";
+  }catch(err){clearPreviewAfterImportFailure(err.message)}
+  finally{e.target.value=""}
+};$("analyze").onclick=analyze;$("export").onclick=()=>{if(!report){$("error").textContent="Analyze a dataset before exporting";return}const blob=new Blob([JSON.stringify(report,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="energydata-preview-report.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
 
 // Accept canonical schema-v2 quality reports directly or inside the local adapter.
 // Extra adapter metadata is optional; imported JSON is never authenticated.
