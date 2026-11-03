@@ -16,6 +16,9 @@ const mainSrc=extract(main,"function syntheticGrid() {","\nfunction downloadText
 const experimentSrc=extract(experimental,"function experimentSyntheticGrid() {","\nfunction syntheticCsvText()");
 const ctx=vm.createContext({});
 vm.runInContext(mainSrc+"\n"+experimentSrc,ctx);
+const scenarioSrc=extract(experimental,"function syntheticScenarioGrid(scenario) {","\n// Synthetic-only inspection hook");
+vm.runInContext(scenarioSrc,ctx);
+vm.runInContext('const $ = () => ({value:"baseline"});',ctx);
 test("experimental Pyodide fixture matches default Workbench row by row",()=>{
   const a=JSON.parse(JSON.stringify(ctx.syntheticGrid()));
   const b=JSON.parse(JSON.stringify(ctx.experimentSyntheticGrid()));
