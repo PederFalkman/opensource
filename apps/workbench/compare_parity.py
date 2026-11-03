@@ -65,7 +65,13 @@ def compare_file_paths(local: Path, browser: Path) -> list[str]:
     """Compare actual JSON files and return all canonical report differences."""
     if any(not p.is_file() or p.stat().st_size > 2 * 1024 * 1024 for p in (local, browser)):
         raise ReportError("Both reports must exist and be at most 2 MiB each")
-    a, b = (canonical(json.loads(p.read_text(encoding="utf-8"))) for p in (local, browser))
+    def reject_non_json_number(value: str) -> None:
+        raise ReportError(f"Invalid JSON number: {value}")
+
+    a, b = (
+        canonical(json.loads(p.read_text(encoding="utf-8"), parse_constant=reject_non_json_number))
+        for p in (local, browser)
+    )
     return changes(a, b)
 
 
