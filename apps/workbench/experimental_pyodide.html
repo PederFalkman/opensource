@@ -6,7 +6,7 @@
 :root{color-scheme:light}body{margin:0;background:#f4f7f4;color:#17372f;font:16px/1.55 system-ui,sans-serif}
 main{max-width:800px;margin:auto;padding:30px 18px}h1{font-size:32px;line-height:1.1}h2{font-size:19px}
 article{background:white;border:1px solid #d7e2d9;border-radius:8px;padding:20px;margin:18px 0}
-label{display:block;font-weight:600;margin:15px 0}input{display:block;margin-top:6px;max-width:100%}
+label{display:block;font-weight:600;margin:15px 0}input,select{display:block;margin-top:6px;max-width:100%;padding:5px}
 button{background:#164a3d;border:0;border-radius:5px;color:white;padding:10px 16px;font:inherit;cursor:pointer}
 button:disabled{opacity:.5;cursor:not-allowed}.warning{border-left:4px solid #a46f2d;padding:12px;background:#fff3df}
 pre{overflow:auto;max-height:340px;background:#eaf0e9;padding:16px;border-radius:6px;font-size:12px}
@@ -23,7 +23,7 @@ small{color:#52645e}a{color:#14563c}
 <input type="file" id="wheel" accept=".whl"></label>
 <label>Expected SHA-256 of the trusted local wheel (64 lowercase or uppercase hex characters)
 <input id="wheelHash" spellcheck="false" autocomplete="off" maxlength="64" placeholder="Compute locally with shasum -a 256"></label>
-<p><strong>Input: fixed synthetic example</strong> · 15-minute intervals · two missing slots · one duplicate · one blank value. Customer CSV files cannot be selected in this experiment.</p>
+<label>Synthetic test scenario<select id="scenario"><option value="baseline">Baseline: gaps, duplicate, blank value</option><option value="dst_fall">Autumn DST: repeated local hour, distinct UTC instants</option><option value="dst_spring">Spring DST: explicit offset transition</option><option value="mixed_offsets">Mixed Z and offset timestamps</option></select></label><p>All scenarios are generated locally from hard-coded values. No customer CSV files can be selected.</p>
 <p><small>Build the wheel locally with <code>python -m build --wheel</code>. On macOS/Linux, calculate the wheel hash using <code>shasum -a 256 dist/energydata_kit-*.whl</code> (or <code>sha256sum</code> on Linux) and independently copy its checksum above. A digest verifies file equality against the value you supplied; it does not establish who built the wheel.</small></p></article>
 <article><h2>2. Execute locally</h2>
 <button id="run">Load Python and analyze</button>
@@ -52,11 +52,41 @@ function experimentSyntheticGrid() {
   }
   return grid;
 }
+function syntheticScenarioGrid(scenario) {
+  if (scenario === "baseline") return experimentSyntheticGrid();
+  const cases = {
+    // Repeated wall-clock hour in Europe/Stockholm; all instants are unique.
+    dst_fall: [
+      ["2026-10-25T01:30:00+02:00", "1"],
+      ["2026-10-25T02:00:00+02:00", "2"],
+      ["2026-10-25T02:30:00+02:00", "3"],
+      ["2026-10-25T02:00:00+01:00", "4"],
+      ["2026-10-25T02:30:00+01:00", "5"]
+    ],
+    dst_spring: [
+      ["2026-03-29T01:30:00+01:00", "1"],
+      ["2026-03-29T01:45:00+01:00", "2"],
+      ["2026-03-29T03:00:00+02:00", "3"],
+      ["2026-03-29T03:15:00+02:00", "4"]
+    ],
+    mixed_offsets: [
+      ["2026-01-01T00:00:00Z", "1"],
+      ["2026-01-01T01:15:00+01:00", "2"],
+      ["2026-01-01T00:30:00Z", ""],
+      ["2026-01-01T01:45:00+01:00", "4"]
+    ]
+  };
+  if (!Object.prototype.hasOwnProperty.call(cases, scenario)) {
+    throw Error("Unknown synthetic test scenario");
+  }
+  return [["timestamp", "power_kw"], ...cases[scenario].map(row => [...row])];
+}
 // Synthetic-only inspection hook for the optional real-browser parity harness.
 // Does not expose private data, a wheel, or a Python runtime.
 globalThis.__edkSyntheticFixtureForTest = experimentSyntheticGrid;
+globalThis.__edkSyntheticScenarioForTest = syntheticScenarioGrid;
 function syntheticCsvText() {
-  return experimentSyntheticGrid().map(row => row.map(value => {
+  return syntheticScenarioGrid($("scenario").value).map(row => row.map(value => {
     const cell = String(value);
     return /[",\r\n]/.test(cell) ? '"' + cell.replaceAll('"', '""') + '"' : cell;
   }).join(",")).join("\r\n") + "\r\n";
@@ -86,6 +116,8 @@ $("run").onclick=async()=>{
     const wheelBytes=await wheel.arrayBuffer();
     await validateWheelDigest(wheelBytes, $("wheelHash").value);
     const interval=15, timestamp="timestamp", value="power_kw";
+    const chosenScenario=$("scenario").value;
+    syntheticScenarioGrid(chosenScenario);
     setStatus("Loading Python runtime and dependencies; requires network access...");
     if(!engine){
       const {loadPyodide}=await import(RUNTIME+"pyodide.mjs");
