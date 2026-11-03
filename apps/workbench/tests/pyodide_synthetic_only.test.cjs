@@ -35,3 +35,22 @@ test("synthetic CSV conversion is deterministic",()=>{
   assert(csv.startsWith("timestamp,power_kw\r\n"));
   assert.equal(csv.trim().split("\r\n").length,96);
 });
+
+test("DST and mixed-offset fixture instants are explicit and distinct",()=>{
+  const begin=experimental.indexOf("function syntheticScenarioGrid(scenario) {");
+  const end=experimental.indexOf("\n// Synthetic-only inspection hook",begin);
+  assert(begin>=0&&end>begin,"expected scenario fixture function");
+  vm.runInContext(experimental.slice(begin,end),ctx);
+  for(const name of ["dst_fall","dst_spring","mixed_offsets"]){
+    const grid=JSON.parse(JSON.stringify(ctx.syntheticScenarioGrid(name)));
+    assert.equal(grid[0][0],"timestamp");
+    assert(grid.length>=5);
+    const timestamps=grid.slice(1).map(row=>Date.parse(row[0]));
+    assert(timestamps.every(Number.isFinite));
+    assert.equal(new Set(timestamps).size,timestamps.length);
+  }
+  const fall=JSON.parse(JSON.stringify(ctx.syntheticScenarioGrid("dst_fall")));
+  assert(fall.some(row=>row[0].includes("+02:00")));
+  assert(fall.some(row=>row[0].includes("+01:00")));
+  assert.throws(()=>ctx.syntheticScenarioGrid("customer"),/Unknown synthetic/);
+});
