@@ -106,6 +106,7 @@ async function validateWheelDigest(wheelBytes, expectedHash) {
 }
 $("run").onclick=async()=>{
   $("run").disabled=true;$("download").disabled=true;output=null;$("result").textContent="No report";
+  setStatus("Preparing selected synthetic scenario and validating wheel checksum...");
   try{
     const wheel=$("wheel").files[0];
     if(!wheel)throw Error("Select a trusted locally built wheel.");
