@@ -59,3 +59,42 @@ def test_rejects_missing_columns(tmp_path):
     file = make_csv(tmp_path, ["2026-01-01T00:00:00Z"], [1])
     with pytest.raises(ValueError):
         module.analyze_csv(file, value="unknown")
+
+
+def test_rejects_duplicate_csv_headers_before_pandas_renames(tmp_path):
+    file = tmp_path / "duplicate_headers.csv"
+    file.write_text("timestamp,kwh,kwh\n2026-01-01T00:00:00Z,1,2\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="unique column headers"):
+        module.analyze_csv(file, value="kwh")
+
+
+def test_rejects_blank_headers(tmp_path):
+    file = tmp_path / "blank_headers.csv"
+    file.write_text("timestamp,,kwh\n2026-01-01T00:00:00Z,1,2\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="non-empty"):
+        module.analyze_csv(file, value="kwh")
+
+
+def test_rejects_non_numeric_without_silent_coercion(tmp_path):
+    file = make_csv(tmp_path, [
+        "2026-01-01T00:00:00Z", "2026-01-01T00:15:00Z",
+    ], [1, "invalid"])
+    with pytest.raises(ValueError, match="non-numeric"):
+        module.analyze_csv(file, value="kwh")
+
+
+def test_accepts_mixed_explicit_iso_offsets_and_z(tmp_path):
+    file = make_csv(tmp_path, [
+        "2026-10-25T02:00:00+02:00", "2026-10-25T01:15:00Z",
+        "2026-10-25T02:30:00+01:00",
+    ], [1, 2, 3])
+    result = module.analyze_csv(file, value="kwh", interval_minutes=15)
+    assert result["report"]["schema_version"] == "2"
+    assert result["report"]["n_duplicate_timestamps"] == 0
+
+
+def test_accepts_csv_bom(tmp_path):
+    file = tmp_path / "bom.csv"
+    file.write_text("\ufefftimestamp,kwh\n2026-01-01T00:00:00Z,2\n", encoding="utf-8")
+    result = module.analyze_csv(file, value="kwh")
+    assert result["report"]["n_rows"] == 1
