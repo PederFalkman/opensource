@@ -14,7 +14,7 @@ const dataset = JSON.parse(JSON.stringify(context.syntheticGrid()));
 test("example data can be reused for Python and browser", () => {
   assert.deepEqual(dataset[0], ["timestamp","power_kw"]);
   assert.equal(dataset.length, 96); // header + 95 measurements, including duplicate
-  assert.equal(dataset.filter(r => r[0] === dataset[55][0]).length >= 1, true);
+  assert.equal(dataset.length - 1 - new Set(dataset.slice(1).map(r => r[0])).size, 1);
   assert.equal(dataset.filter(r => r[1] === "").length, 1);
   assert.equal(new Set(dataset.slice(1).map(r=>r[0])).size, 94);
   assert.equal(dataset[1][0], "2026-10-19T00:00:00.000Z");
