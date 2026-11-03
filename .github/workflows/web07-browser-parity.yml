@@ -37,9 +37,15 @@ jobs:
           set -euo pipefail
           wheel=(/tmp/edk-wheel/energydata_kit-*.whl)
           test "${#wheel[@]}" -eq 1
+          set +e
           python apps/workbench/browser_parity_smoke.py \
             --wheel "${wheel[0]}" --timeout-ms 300000 \
-            | tee /tmp/edk-browser-parity.log
-          echo "## WEB-07 Chromium parity" >> "$GITHUB_STEP_SUMMARY"
-          echo 'The full synthetic-only browser parity command completed successfully.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Inspect this job log for canonical field comparison and observed network hosts.' >> "$GITHUB_STEP_SUMMARY"
+            2>&1 | tee /tmp/edk-browser-parity.log
+          code="${PIPESTATUS[0]}"
+          set -e
+          {
+            echo "## WEB-07 Chromium parity"
+            echo "Synthetic-only browser test exit code: ${code}"
+            echo "Inspect this job's log for the report comparison, diagnostics and observed network hosts."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$code"
