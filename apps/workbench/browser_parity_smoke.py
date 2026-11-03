@@ -120,8 +120,9 @@ def run(wheel: Path, *, timeout_ms: int = 180_000, headless: bool = True) -> int
                         page.locator("#run").click()
                         try:
                             page.wait_for_function(
-                                "() => document.querySelector('#status').textContent.includes('Python returned') || "
-                                "document.querySelector('#status').textContent.includes('Experiment failed')",
+                                "() => !document.querySelector('#run').disabled && "
+                                "(document.querySelector('#status').textContent.includes('Python returned') || "
+                                "document.querySelector('#status').textContent.includes('Experiment failed'))",
                                 timeout=timeout_ms,
                             )
                         except Exception as exc:
@@ -132,7 +133,14 @@ def run(wheel: Path, *, timeout_ms: int = 180_000, headless: bool = True) -> int
                         status = page.locator("#status").inner_text()
                         if not status.startswith("Python returned"):
                             raise RuntimeError(f"{scenario}: {status}")
-                        browser_report = json.loads(page.locator("#result").inner_text())
+                        raw_report = page.locator("#result").inner_text()
+                        try:
+                            browser_report = json.loads(raw_report)
+                        except json.JSONDecodeError as exc:
+                            raise RuntimeError(
+                                f"{scenario}: browser returned invalid JSON; status={status!r}; "
+                                f"first_chars={raw_report[:120]!r}"
+                            ) from exc
                         differences = parity.changes(
                             parity.canonical(local), parity.canonical(browser_report)
                         )
