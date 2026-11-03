@@ -32,6 +32,28 @@ APP = Path(__file__).resolve().parent
 MAX_WHEEL_BYTES = 10 * 1024 * 1024
 
 
+def transfer_snapshot(events: list[dict[str, Any]]) -> dict[str, int]:
+    """CDP encoded transfer bytes (not unpacked dependency, memory or disk sizes)."""
+    remote = [event for event in events if event["host"] not in {"localhost", "127.0.0.1"}]
+    local = [event for event in events if event["host"] in {"localhost", "127.0.0.1"}]
+    return {
+        "external_encoded_bytes": sum(int(item["encoded_bytes"]) for item in remote),
+        "local_encoded_bytes": sum(int(item["encoded_bytes"]) for item in local),
+        "completed_requests": len(events),
+        "external_completed_requests": len(remote),
+    }
+
+
+def v8_heap_snapshot(session: Any) -> dict[str, int | None]:
+    """V8 heap only; does not cover WebAssembly linear or native browser memory."""
+    values = {m["name"]: m["value"] for m in session.send("Performance.getMetrics")["metrics"]}
+    return {
+        "js_heap_used_bytes": int(values["JSHeapUsedSize"]) if "JSHeapUsedSize" in values else None,
+        "js_heap_total_bytes": int(values["JSHeapTotalSize"]) if "JSHeapTotalSize" in values else None,
+    }
+
+
+
 class QuietHandler(SimpleHTTPRequestHandler):
     """Serve static files only, bound to loopback."""
 
@@ -78,6 +100,26 @@ def run(wheel: Path, *, timeout_ms: int = 180_000, headless: bool = True) -> int
                 browser = playwright.chromium.launch(headless=headless)
                 try:
                     page = browser.new_page(accept_downloads=False)
+                    # Chromium-specific diagnostics, not full process/network accounting.
+                    session = page.context.new_cdp_session(page)
+                    session.send("Network.enable")
+                    session.send("Performance.enable")
+                    request_hosts: dict[str, str] = {}
+                    completed_transfers: list[dict[str, Any]] = []
+
+                    def on_request(event: dict[str, Any]) -> None:
+                        request_hosts[event["requestId"]] = (
+                            urlsplit(event["request"]["url"]).hostname or "<unknown>"
+                        )
+
+                    def on_finished(event: dict[str, Any]) -> None:
+                        completed_transfers.append({
+                            "host": request_hosts.get(event["requestId"], "<unknown>"),
+                            "encoded_bytes": max(0, int(event.get("encodedDataLength", 0))),
+                        })
+
+                    session.on("Network.requestWillBeSent", on_request)
+                    session.on("Network.loadingFinished", on_finished)
                     page.on("pageerror", lambda error: errors.append(str(error)))
                     def monitor_request(req: Any) -> None:
                         parsed = urlsplit(req.url)
@@ -104,6 +146,7 @@ def run(wheel: Path, *, timeout_ms: int = 180_000, headless: bool = True) -> int
                     page.locator("#wheelHash").fill(digest)
                     scenarios = ("baseline", "dst_fall", "dst_spring", "mixed_offsets")
                     checks: list[dict[str, Any]] = []
+                    transfer_before = len(completed_transfers)
                     for scenario in scenarios:
                         page.locator("#scenario").select_option(scenario)
                         fixture = page.evaluate(
@@ -144,7 +187,11 @@ def run(wheel: Path, *, timeout_ms: int = 180_000, headless: bool = True) -> int
                         differences = parity.changes(
                             parity.canonical(local), parity.canonical(browser_report)
                         )
+                        case_transfers = transfer_snapshot(completed_transfers[transfer_before:])
+                        transfer_before = len(completed_transfers)
                         checks.append({
+                            "network": case_transfers,
+                            "v8_heap_after_run": v8_heap_snapshot(session),
                             "scenario": scenario,
                             "rows": len(fixture) - 1,
                             "elapsed_seconds": seconds,
@@ -154,6 +201,8 @@ def run(wheel: Path, *, timeout_ms: int = 180_000, headless: bool = True) -> int
                     print(json.dumps({
                         "runtime_status": "Python executed in Chromium/Pyodide",
                         "wheel_sha256": digest,
+                        "wheel_file_bytes": wheel.stat().st_size,
+                        "measurement_limits": "CDP bytes exclude incomplete/cached transfers; V8 heap excludes WASM and native memory.",
                         "scenario_results": checks,
                         "external_hosts": sorted(external_hosts),
                         "page_errors": errors,
