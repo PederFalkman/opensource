@@ -6,15 +6,16 @@ No backend or user data leaves the machine.
 from __future__ import annotations
 
 import csv
+import importlib.util
 import json
 import subprocess
 from pathlib import Path
 
-import pytest
-
-from test_python_report import module as python_adapter
-
 APP = Path(__file__).resolve().parents[1]
+SPEC = importlib.util.spec_from_file_location("workbench_python_report", APP / "python_report.py")
+assert SPEC and SPEC.loader
+python_adapter = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(python_adapter)
 HTML = APP / "index.html"
 
 EXTRACT_FIXTURE = r"""
