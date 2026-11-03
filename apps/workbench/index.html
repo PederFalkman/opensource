@@ -41,36 +41,74 @@ function readCanonicalReport(input) {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     throw Error("No valid JSON report loaded");
   }
-  const report = Object.prototype.hasOwnProperty.call(input, "report")
-    ? input.report : input;
+  const wrapped = Object.prototype.hasOwnProperty.call(input, "report");
+  const report = wrapped ? input.report : input;
   if (!report || typeof report !== "object" || Array.isArray(report) ||
       report.schema_version !== "2") {
-    throw Error("Not a recognized EnergyData Kit Python report (schema v2 required)");
+    throw Error("Not a recognized EnergyData Kit quality report (schema v2 required)");
   }
-
+  // Validate only canonical fields; do not demand private/custom adapter metadata.
   for (const field of ["n_rows", "n_missing_intervals", "n_duplicate_timestamps"]) {
     if (!Number.isSafeInteger(report[field]) || report[field] < 0) {
-      throw Error("Malformed Python quality counter: " + field);
+      throw Error("Malformed quality counter: " + field);
     }
   }
-  if (report.completeness !== null &&
+  const count = name => {
+    const v = report[name];
+    if (v !== null && v !== undefined && (!Number.isSafeInteger(v) || v < 0)) {
+      throw Error("Malformed quality counter: " + name);
+    }
+    return v;
+  };
+  const expected = count("n_expected_intervals");
+  const explained = count("n_missing_explained");
+  const gaps = count("n_gaps");
+  if (report.n_duplicate_timestamps > report.n_rows ||
+      (expected !== null && expected !== undefined && report.n_missing_intervals > expected) ||
+      (explained !== null && explained !== undefined && explained > report.n_missing_intervals)) {
+    throw Error("Inconsistent quality counters");
+  }
+  if (report.completeness != null &&
       (typeof report.completeness !== "number" ||
        !Number.isFinite(report.completeness) ||
        report.completeness < 0 || report.completeness > 1)) {
     throw Error("Malformed completeness value");
   }
+  if (report.completeness_excluding_outages != null &&
+      (typeof report.completeness_excluding_outages !== "number" ||
+       !Number.isFinite(report.completeness_excluding_outages) ||
+       report.completeness_excluding_outages < 0 ||
+       report.completeness_excluding_outages > 1)) {
+    throw Error("Malformed outage-adjusted completeness");
+  }
   if (report.fingerprint != null &&
       (typeof report.fingerprint !== "string" || !/^[a-f0-9]{64}$/.test(report.fingerprint))) {
-    throw Error("Malformed canonical input fingerprint");
+    throw Error("Malformed input fingerprint");
   }
-
+  if (report.flag_counts != null &&
+      (typeof report.flag_counts !== "object" || Array.isArray(report.flag_counts) ||
+       Object.values(report.flag_counts).some(v => !Number.isSafeInteger(v) || v < 0))) {
+    throw Error("Malformed flag counts");
+  }
+  if (report.gaps != null && !Array.isArray(report.gaps)) {
+    throw Error("Malformed gap records");
+  }
+  if (gaps !== null && gaps !== undefined && Array.isArray(report.gaps) &&
+      gaps < report.gaps.length) {
+    throw Error("Inconsistent gap count");
+  }
+  if (wrapped && (input.engine !== "python-validated" ||
+      input.adapter_version !== "energydata.workbench.python.v1" ||
+      report.package_version !== input.package_version)) {
+    throw Error("Unrecognized or inconsistent Python adapter wrapper");
+  }
+  // The file is untrusted, even when schema and counts are internally consistent.
+  // Never treat imported bytes as authenticated or the browser-preview as Python output.
   return {
-    source: typeof input.source === "string" && input.source.trim()
+    source: wrapped && typeof input.source === "string" && input.source.trim()
       ? input.source : "imported report",
-    package_version: typeof input.package_version === "string" && input.package_version
-      ? input.package_version
-      : (typeof report.package_version === "string" && report.package_version
-        ? report.package_version : "unknown"),
+    package_version: typeof report.package_version === "string" && report.package_version
+      ? report.package_version : "unknown",
     report
   };
 }
