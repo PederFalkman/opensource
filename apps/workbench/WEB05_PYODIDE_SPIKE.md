@@ -7,9 +7,9 @@ This is a **technical spike** in `experimental_pyodide.html`, not a working prod
 1. Install development tools locally and build a **pure-Python wheel** of this repository's EnergyData Kit:
    `cd packages/energydata-kit && python -m pip install build && python -m build --wheel`.
 2. Independently hash the locally built wheel and retain the digest alongside the build metadata. On macOS: `shasum -a 256 packages/energydata-kit/dist/energydata_kit-*.whl`; on Linux: `sha256sum packages/energydata-kit/dist/energydata_kit-*.whl`. Confirm the file was built from the intended source revision. A digest by itself **does not** authenticate source or authorship.
-3. Open `apps/workbench/index.html`, press **Download example CSV**; use only this synthetic fixture.
+3. From the repository root, generate the identical synthetic CSV for the local Python baseline using the standard Workbench **Download example CSV** action. The experimental page uses its own fixed copy of that fixture, checked row-by-row in tests; there is no CSV file input.
 4. Open `apps/workbench/experimental_pyodide.html` in a modern browser (a local HTTP server may be required by the runtime's fetch/CORS rules).
-5. Choose the local `energydata_kit-*.whl`, paste the independently calculated SHA-256 into the hash field, and select synthetic CSV. Leave the default columns and 15-minute interval, then press **Load Python and analyze**. A mismatched or missing wheel checksum must be rejected **before loading any Pyodide runtime**.
+5. Choose the local `energydata_kit-*.whl`, paste the independently calculated SHA-256 into the hash field, and press **Load Python and analyze**. The experiment generates its own fixed synthetic readings; it cannot accept customer CSV uploads. A mismatched or missing wheel checksum must be rejected **before loading any Pyodide runtime**.
 6. Inspect error/status output. If a canonical v2 report appears, download it and compare it with the local Python result from `python_report.py` using the offline exact-field comparator:\n\n   `python apps/workbench/compare_parity.py local-report.json synthetic-pyodide-report.json`\n\n   Exit code 0 means canonical field equality; 1 indicates differences and 2 means invalid input. Any difference blocks adoption. This is not source authentication.
 
 ## Optional real-Chromium smoke gate (synthetic only)
@@ -26,9 +26,9 @@ cd ../..
 python apps/workbench/browser_parity_smoke.py --wheel packages/energydata-kit/dist/energydata_kit-*.whl
 ```
 
-The harness automatically launches a loopback-only static server, obtains the exact browser synthetic fixture, creates a local authoritative Python report, and launches Chromium against the experimental Pyodide page. It selects the trusted local wheel, checks its SHA-256 before runtime import and compares **every canonical report field** after the browser run. Results include runtime duration, page errors, observed external hostnames, and suspicious outbound request bodies. A return code of zero requires no canonical diffs, page errors or detected payload requests.
+The harness automatically launches a loopback-only static server, obtains the exact browser synthetic fixture, creates a local authoritative Python report, and launches Chromium against the experimental Pyodide page. It verifies that the two in-browser fixture generators agree on every row and that only a wheel file picker exists. It selects the trusted local wheel, checks its SHA-256 before runtime import and compares **every canonical report field** after the browser run. Results include runtime duration, page errors, observed external hostnames, and suspicious outbound request bodies. A return code of zero requires no canonical diffs, page errors or detected payload requests.
 
-**Limitations:** This is a manual experiment, not a scheduled or PR-triggered CI job. Network access is required for CDN packages. Request-body inspection is a narrow heuristic, **not a complete network/privacy audit**. It does not measure peak browser memory, byte-accurate transfer cost, browser matrix compatibility, or prove wheel authenticity. Document those separately before publication. The script does not accept customer CSV input.
+**Limitations:** This is a manual experiment, not a scheduled or PR-triggered CI job. Network access is required for CDN packages. Request-body inspection is a narrow heuristic, **not a complete network/privacy audit**. It does not measure peak browser memory, byte-accurate transfer cost, browser matrix compatibility, or prove wheel authenticity. Document those separately before publication. Neither the script nor the experimental page accepts customer CSV input.
 
 ## Runtime and dependencies
 
