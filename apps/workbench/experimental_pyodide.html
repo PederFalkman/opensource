@@ -52,6 +52,9 @@ function experimentSyntheticGrid() {
   }
   return grid;
 }
+// Synthetic-only inspection hook for the optional real-browser parity harness.
+// Does not expose private data, a wheel, or a Python runtime.
+globalThis.__edkSyntheticFixtureForTest = experimentSyntheticGrid;
 function syntheticCsvText() {
   return experimentSyntheticGrid().map(row => row.map(value => {
     const cell = String(value);
