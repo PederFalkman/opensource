@@ -23,6 +23,27 @@
 
 The browser loaded Pyodide/dependencies, verified the local wheel digest, executed `energydata_kit.assess_quality`, returned a schema-v2 report, and compared all canonical report fields against the local Python adapter using the same synthetic fixture. The first run (ID `41674871563`) failed before Pyodide execution because the browser smoke harness referenced a module-scoped function as a global; the corrected run above passed.
 
+## Expanded multi-scenario validation (same date)
+
+- Passing Chromium/Pyodide workflow run: [41686036602](https://github.com/Solid-soup/opensource/actions/runs/41686036602)
+- Head commit tested: `e70ffdf10a67cfe9515ebc7f073838a82dd4143b`
+- Four hard-coded **synthetic-only** test cases; exact canonical schema-v2 field comparisons against the local Python adapter
+- Case results:
+
+| Scenario | Rows | Canonical parity | Differences | Measured seconds |
+|---|---:|---|---:|---:|
+| Baseline (gaps, duplicate, blank) | 95 | PASS | 0 | 6.61 |
+| Autumn DST / two explicit offsets | 5 | PASS | 0 | 0.10 |
+| Spring DST / explicit offset transition | 4 | PASS | 0 | 0.08 |
+| Mixed UTC offsets and Z | 4 | PASS | 0 | 0.08 |
+
+- Browser page errors: **0**
+- Detected outbound synthetic dataset payload requests under the existing narrow heuristic: **0**
+- Dependency/network domains observed: `cdn.jsdelivr.net`, `pypi.org`, `files.pythonhosted.org`
+- The first multi-scenario attempt failed because the harness could read stale completion state while the next asynchronous assessment was starting. The page now clears completion status synchronously before its first await; the harness requires the run button to be re-enabled before reading each result. The next run passed all four cases.
+
+**Interpretation:** This establishes parity for four carefully controlled synthetic scenarios, not every possible time-series input. The `6.61 s` includes initial browser runtime/dependency loading in this one run, while later cases reused the same engine and finished in `0.08–0.10 s`. These are single observations, not repeated benchmarks. Full network-byte, memory, Safari/Firefox, accessibility, signing and offline distribution checks remain outstanding.
+
 ## Interpretation and limitations
 
 **Proven:** the selected package build can run successfully in the tested Chromium/Pyodide combination and produce identical canonical v2 report fields for this one synthetic fixture.
