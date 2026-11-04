@@ -32,3 +32,27 @@ The pilot exports `energydata-synthetic-review-evidence.json` with fixed scenari
 
 ### Traceable change history
 - 2026-11-04: WEB-14 synthetic evidence export and stricter canonical validation added to experimental WEB-13 branch. No customer file input, new dependencies or automatic paid browser workflow.
+
+## WEB-15 follow-up — bounded execution and review-only browser E2E
+
+The review page now has a five-minute run deadline. Failure or user cancellation aborts an in-flight candidate request, terminates the Worker and clears the timeout. Late messages remain tied to run IDs and cannot revive cancelled output. This is an availability guard, not guaranteed enforcement of memory limits or a sandbox security guarantee.
+
+WEB-14 export now rejects unknown top-level Python wrapper fields, non-synthetic privacy/source/column/interval metadata and more than 256 KiB of serialized Python output. These checks constrain the synthetic evidence contract and do not authenticate its contents or permit customer CSV.
+
+A dedicated **manual-only** `web13_browser_smoke.py` stages a locally built wheel under an ephemeral loopback server, exercises cancelled package loading, runs four fixed synthetic scenarios, and checks canonical schema, package hash, evidence classification and exported JSON equality. It requires an installed local Python package and Playwright; it has **not** yet been executed as part of this change. It is not scheduled in CI or automatically invoked on pushes. The local wheel must never be committed or published as part of this workflow.
+
+Run locally only in an approved synthetic environment:
+
+```bash
+python -m pip install -e packages/energydata-kit build playwright
+python -m playwright install chromium
+python -m build --wheel packages/energydata-kit --outdir /tmp/edk-web13-wheel
+python apps/workbench/web13_browser_smoke.py \
+  --wheel /tmp/edk-web13-wheel/energydata_kit-0.17.0.dev0-py3-none-any.whl \
+  --browser chromium
+```
+
+Select the actual generated wheel filename if the package version differs. Fast offline checks include `python -m pytest apps/workbench/tests/test_web13_browser_smoke.py -q` and `node --test apps/workbench/tests/web13_pilot_state.test.mjs apps/workbench/tests/web13_pilot_contract.test.mjs apps/workbench/tests/web14_evidence.test.mjs`.
+
+### Traceable changes
+- 2026-11-04: Added five-minute timeout with termination/abort cleanup; synthetic evidence metadata and size guards; dedicated opt-in E2E/browser export harness; offline harness contract tests. Review-only, not customer-authorized.
