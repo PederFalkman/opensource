@@ -61,6 +61,12 @@ The heavy workflow remains manual-only to control GitHub Actions minutes.
 
 **Limitations:** This is a single browser test of an immediate cancellation and recovery path; it does not guarantee cancellation during every possible Pyodide initialization, package download or Python computation stage. It does not measure cancellation latency distributions, worker/process memory, Safari/Firefox behavior, or dependency integrity beyond the candidate wheel. The pilot remains synthetic-only and not release-approved.
 
+## Pending-request cancellation test (new, not yet browser-verified)
+
+The Chromium smoke harness now intercepts the **manifest fetch** and **wheel fetch** separately, holds each request pending, then presses Cancel and checks that no report is retained, the Run control is enabled, and no delayed error overwrites the cancellation state. A subsequent normal run must still reproduce all four canonical Python reports. The harness emits the list of tested pending-fetch phases.
+
+This is a deterministic test design, **not a passing result until the targeted real-browser run succeeds**. Worker startup and active Python execution cancellations are separate remaining gates.
+
 ## Next gates
 
 1. Ensure real Chromium worker parity and ordinary CI/security are green; record run ID and failures.
