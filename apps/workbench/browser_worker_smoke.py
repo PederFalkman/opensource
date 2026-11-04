@@ -86,6 +86,42 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
                     page.goto(
                         f"http://127.0.0.1:{server.server_address[1]}/web09_worker_pilot.html"
                     )
+                    # Deterministically pause manifest and wheel requests, then
+                    # cancel while each fetch is outstanding. The route handler
+                    # intentionally does not fulfill the request; cancellation
+                    # must abort it. No external runtime should be loaded yet.
+                    cancelled_phases = []
+                    for phase, pattern in (
+                        ("manifest", "**/candidate-assets/manifest.json"),
+                        ("wheel", "**/candidate-assets/energydata_kit-*.whl"),
+                    ):
+                        held_routes = []
+                        def hold(route):
+                            held_routes.append(route)
+                            # Deliberately leave the request pending until abort.
+                        page.route(pattern, hold)
+                        with page.expect_request(
+                            lambda req, target=phase: (
+                                req.url.endswith("/manifest.json")
+                                if target == "manifest"
+                                else req.url.endswith(".whl")
+                            ), timeout=10000
+                        ):
+                            page.locator("#run").click()
+                        if not held_routes:
+                            raise RuntimeError(f"{phase} request was not intercepted")
+                        page.locator("#cancel").click()
+                        if "Cancelled" not in page.locator("#status").inner_text():
+                            raise RuntimeError(f"{phase} cancel did not enter cancelled state")
+                        if page.locator("#result").inner_text() != "No report.":
+                            raise RuntimeError(f"{phase} cancel retained an old report")
+                        if page.locator("#run").is_disabled():
+                            raise RuntimeError(f"{phase} cancel left Run disabled")
+                        page.unroute(pattern, hold)
+                        page.wait_for_timeout(150)
+                        if "Cancelled" not in page.locator("#status").inner_text():
+                            raise RuntimeError(f"{phase} late response overwrote Cancelled state")
+                        cancelled_phases.append(phase)
                     # Verify real-browser cancel and immediate retry before parity.
                     # The first request is intentionally cancelled; it must leave
                     # no report and must not allow late worker messages to win.
@@ -168,6 +204,7 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
                         })
                     print(json.dumps({
                         "worker_status":"Python executed in isolated worker",
+                        "cancelled_pending_fetch_phases":cancelled_phases,
                         "scenarios":comparisons,
                         "page_errors":exceptions,
                         "observed_hosts":sorted(hosts),
