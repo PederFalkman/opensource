@@ -25,7 +25,7 @@ small{color:#596b63}
 <p id="status" role="status" aria-live="polite">Not started. No external runtime loaded.</p>
 <pre id="result">No report.</pre>
 </article>
-<p><small>To test, stage a locally built wheel plus candidate manifest under <code>candidate-assets/</code>, then serve the directory over localhost HTTP. Do not deploy the staged assets, use operational data, or treat report parity as independently validated on this path until an actual browser smoke test passes.</small></p>
+<p><small>To test, stage a locally built wheel plus candidate manifest under <code>candidate-assets/</code>, then serve the directory over localhost HTTP. Do not deploy the staged assets, use operational data, or treat any individual result as independently validated without comparing it against local Python.</small></p>
 </main><script type="module">
 "use strict";
 import {fetchCandidateWheel} from "./web09_candidate_loader.mjs";
@@ -88,7 +88,7 @@ $("run").onclick=async()=>{
           terminate();return;
         }
         $("result").textContent=JSON.stringify(data.result,null,2);
-        $("status").textContent="Candidate Python produced canonical v2 report. Parity on WEB-09 remains unverified.";
+        $("status").textContent="Candidate Python returned canonical v2 report. Separate Chromium tests verified four synthetic scenarios; this individual run has not been independently compared.";
         reset();
       }else if(data.stage==="error"){
         $("status").textContent="Worker failed: "+String(data.error);
