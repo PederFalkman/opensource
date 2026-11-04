@@ -169,6 +169,35 @@ def run(wheel: Path, browser_name: str, timeout_ms: int) -> int:
                     if page.locator("#export").is_enabled():
                         raise RuntimeError("Export must be disabled after cancel")
                     page.unroute("**/candidate-assets/manifest.json")
+                    # WEB-20: Hold the wheel response independently of the
+                    # manifest. A cancelled download must never enable export,
+                    # retain a report, or prevent the next synthetic run.
+                    held_wheels = []
+                    def hold_wheel(route):
+                        held_wheels.append(route)
+                        # Deliberately leave pending until AbortController fires.
+                    page.route("**/candidate-assets/*.whl", hold_wheel)
+                    with page.expect_request(
+                        lambda request: request.url.endswith(".whl"),
+                        timeout=10000,
+                    ):
+                        page.locator("#run").click()
+                    page.wait_for_timeout(100)
+                    if not held_wheels:
+                        raise RuntimeError("Wheel request was not intercepted")
+                    page.locator("#cancel").click()
+                    if "Cancelled" not in page.locator("#status").inner_text():
+                        raise RuntimeError("Pending wheel cancellation not reflected")
+                    if page.locator("#result").inner_text() != "No report.":
+                        raise RuntimeError("Pending wheel cancellation retained report")
+                    if page.locator("#export").is_enabled():
+                        raise RuntimeError("Export enabled after wheel cancellation")
+                    if page.locator("#run").is_disabled():
+                        raise RuntimeError("Run disabled after wheel cancellation")
+                    page.unroute("**/candidate-assets/*.whl", hold_wheel)
+                    page.wait_for_timeout(150)
+                    if "Cancelled" not in page.locator("#status").inner_text():
+                        raise RuntimeError("Late wheel response resurrected cancelled run")
 
                     for scenario in SCENARIOS:
                         page.locator("#scenario").select_option(scenario)
