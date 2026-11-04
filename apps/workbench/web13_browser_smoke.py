@@ -7,6 +7,9 @@ No customer files or remote deployment. Validates the *new* review UI, not WEB-0
 from __future__ import annotations
 
 import argparse
+import csv
+import math
+from datetime import datetime, timedelta, timezone
 import hashlib
 import importlib.util
 import json
@@ -26,6 +29,56 @@ ASSETS = (
     "web09_engine_worker.mjs",
 )
 SCENARIOS = ("baseline", "dst_fall", "dst_spring", "mixed_offsets")
+
+
+def reference_rows(scenario: str) -> list[list[str]]:
+    """Independent local reference input for the fixed Worker fixtures."""
+    if scenario not in SCENARIOS:
+        raise ValueError("Unsupported synthetic scenario")
+    if scenario == "baseline":
+        start = datetime(2026, 10, 19, tzinfo=timezone.utc)
+        rows = [["timestamp", "power_kw"]]
+        for i in range(96):
+            if i in (28, 29):
+                continue
+            value = "" if i == 62 else f"{440 + 75*math.sin(i/8) + 20*math.cos(i/3):.2f}"
+            instant = (start + timedelta(minutes=15*i)).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+            row = [instant, value]
+            rows.append(row)
+            if i == 54:
+                rows.append(list(row))
+        return rows
+    fixtures = {
+        "dst_fall": [
+            ["2026-10-25T01:30:00+02:00", "1"],
+            ["2026-10-25T02:00:00+02:00", "2"],
+            ["2026-10-25T02:30:00+02:00", "3"],
+            ["2026-10-25T02:00:00+01:00", "4"],
+            ["2026-10-25T02:30:00+01:00", "5"],
+        ],
+        "dst_spring": [
+            ["2026-03-29T01:30:00+01:00", "1"],
+            ["2026-03-29T01:45:00+01:00", "2"],
+            ["2026-03-29T03:00:00+02:00", "3"],
+            ["2026-03-29T03:15:00+02:00", "4"],
+        ],
+        "mixed_offsets": [
+            ["2026-01-01T00:00:00Z", "1"],
+            ["2026-01-01T01:15:00+01:00", "2"],
+            ["2026-01-01T00:30:00Z", ""],
+            ["2026-01-01T01:45:00+01:00", "4"],
+        ],
+    }
+    return [["timestamp", "power_kw"], *fixtures[scenario]]
+
+
+def load_local_module(filename: str, name: str):
+    spec = importlib.util.spec_from_file_location(name, APP / filename)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Cannot load local reference helper: {filename}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 class QuietHandler(SimpleHTTPRequestHandler):
@@ -50,6 +103,8 @@ def run(wheel: Path, browser_name: str, timeout_ms: int) -> int:
     if not 0 < wheel.stat().st_size <= 10 * 1024 * 1024:
         raise ValueError("Wheel must be within 10 MiB")
     from playwright.sync_api import sync_playwright
+    adapter = load_local_module("python_report.py", "web13_local_adapter")
+    parity = load_local_module("compare_parity.py", "web13_parity")
 
     with tempfile.TemporaryDirectory(prefix="web13-review-") as temporary:
         root = Path(temporary)
@@ -108,6 +163,23 @@ def run(wheel: Path, browser_name: str, timeout_ms: int) -> int:
                             raise RuntimeError("Canonical report schema mismatch")
                         if result.get("wheel_sha256") != hashlib.sha256(wheel.read_bytes()).hexdigest():
                             raise RuntimeError("Wheel fingerprint mismatch in evidence")
+                        # Compare every canonical field to an independent local Python
+                        # assessment, not just success/schema/selected headline metrics.
+                        csv_path = root / f"{scenario}-reference.csv"
+                        with csv_path.open("w", newline="", encoding="utf-8") as stream:
+                            csv.writer(stream).writerows(reference_rows(scenario))
+                        reference = adapter.analyze_csv(
+                            csv_path, timestamp="timestamp", value="power_kw"
+                        )
+                        differences = parity.changes(
+                            parity.canonical(reference),
+                            parity.canonical(result["result"]),
+                        )
+                        if differences:
+                            raise RuntimeError(
+                                f"{scenario}: canonical parity failed with {len(differences)} differences: "
+                                + "; ".join(differences[:8])
+                            )
                         with page.expect_download() as downloaded:
                             page.locator("#export").click()
                         export = downloaded.value
@@ -118,7 +190,7 @@ def run(wheel: Path, browser_name: str, timeout_ms: int) -> int:
                         if json.loads(export_path.read_text(encoding="utf-8")) != result:
                             raise RuntimeError("Export does not match displayed evidence")
                         outcomes.append({"scenario": scenario, "status": "PASS",
-                                         "canonical_schema": "2", "export": "PASS"})
+                                         "canonical_schema": "2", "parity": "PASS", "field_differences": 0, "export": "PASS"})
                     context.close()
                 finally:
                     browser.close()
