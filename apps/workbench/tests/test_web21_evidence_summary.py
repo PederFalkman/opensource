@@ -69,7 +69,7 @@ def test_refuse_unsupported_evidence_and_browser() -> None:
 
 
 def test_manual_workflow_only_and_evidence_file_are_wired() -> None:
-    root = MODULE_PATH.parents[2]
+    root = MODULE_PATH.parents[3]
     workflow = (root / ".github/workflows/web09-worker-smoke.yml").read_text(encoding="utf-8")
     smoke = (root / "apps/workbench/web13_browser_smoke.py").read_text(encoding="utf-8")
     assert "workflow_dispatch:" in workflow
