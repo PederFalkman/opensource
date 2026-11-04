@@ -96,7 +96,11 @@ class MemorySampler:
                     self._peak = rss if self._peak is None else max(self._peak, rss)
                     self._final = rss
                     self._count = count
-            except (self.psutil.NoSuchProcess, self.psutil.AccessDenied) as exc:
+            except self.psutil.NoSuchProcess:
+                # The monitored child harness exited normally; this is not a
+                # measurement failure and prior samples remain valid.
+                break
+            except self.psutil.AccessDenied as exc:
                 self._failure = type(exc).__name__
                 break
             self._stop.wait(self.interval_ms / 1000)
