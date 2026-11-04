@@ -57,7 +57,7 @@ jobs:
           test -n "$wheel"
           case "$TEST_TARGET" in
             web13)
-              python apps/workbench/web13_browser_smoke.py --wheel "$wheel" --browser "$TEST_BROWSER" --timeout-ms 240000
+              python apps/workbench/web13_browser_smoke.py --wheel "$wheel" --browser "$TEST_BROWSER" --timeout-ms 240000 --evidence-file "$RUNNER_TEMP/web13-synthetic-evidence.json"
               ;;
             web09)
               python apps/workbench/browser_worker_smoke.py --wheel "$wheel" --browser "$TEST_BROWSER" --timeout-ms 240000
@@ -67,3 +67,21 @@ jobs:
               exit 2
               ;;
           esac
+      - name: Summarize review-only browser evidence
+        if: always()
+        env:
+          TEST_TARGET: ${{ inputs.target }}
+        run: |
+          set -euo pipefail
+          if [ "$TEST_TARGET" != "web13" ]; then
+            exit 0
+          fi
+          if [ -s "$RUNNER_TEMP/web13-synthetic-evidence.json" ]; then
+            python apps/workbench/render_web13_evidence_summary.py "$RUNNER_TEMP/web13-synthetic-evidence.json" >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "## WEB-13 synthetic browser smoke"
+              echo "No complete evidence receipt was produced. This run is **not verified**."
+              echo "Inspect the test job logs for the failure."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi

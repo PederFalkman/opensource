@@ -13,6 +13,7 @@ from datetime import datetime, timedelta, timezone
 import hashlib
 import importlib.util
 import json
+import os
 import shutil
 import tempfile
 import threading
@@ -96,7 +97,7 @@ def manifest_for(wheel: Path) -> dict[str, object]:
             "total_bytes": len(data), "assets": [asset]}
 
 
-def run(wheel: Path, browser_name: str, timeout_ms: int) -> int:
+def run(wheel: Path, browser_name: str, timeout_ms: int, evidence_file: Path | None = None) -> int:
     if browser_name not in ("chromium", "firefox", "webkit"):
         raise ValueError("Unsupported browser")
     if not wheel.is_file() or not wheel.name.startswith("energydata_kit-") or wheel.suffix != ".whl":
@@ -302,7 +303,9 @@ def run(wheel: Path, browser_name: str, timeout_ms: int) -> int:
             and tuple(negative_checks) == required_negative_checks
             and not errors
         )
-        print(json.dumps({
+        payload = {
+            "source_commit": os.environ.get("GITHUB_SHA") or None,
+            "wheel_sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
             "evidence_schema": "energydata.workbench.manual-browser-smoke.v1",
             "classification": "internal-synthetic-unattested",
             "browser": browser_name,
@@ -312,7 +315,13 @@ def run(wheel: Path, browser_name: str, timeout_ms: int) -> int:
             "page_errors": errors,
             "synthetic_only": True,
             "result": "PASS" if complete else "FAIL",
-        }, indent=2, sort_keys=True))
+        }
+        document = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+        print(document, end="")
+        if evidence_file is not None:
+            # Explicit opt-in, local-only output. The caller owns this path.
+            # Never publish the local wheel, user data or temporary fixture CSV.
+            evidence_file.write_text(document, encoding="utf-8")
         return 0 if complete else 1
 
 
@@ -321,11 +330,12 @@ def main() -> int:
     parser.add_argument("--wheel", type=Path, required=True)
     parser.add_argument("--browser", choices=("chromium", "firefox", "webkit"), default="chromium")
     parser.add_argument("--timeout-ms", type=int, default=300000)
+    parser.add_argument("--evidence-file", type=Path, help="optional local synthetic-only JSON receipt")
     args = parser.parse_args()
     if not 1000 <= args.timeout_ms <= 300000:
         parser.error("Timeout must be within 1000–300000 ms")
     try:
-        return run(args.wheel, args.browser, args.timeout_ms)
+        return run(args.wheel, args.browser, args.timeout_ms, args.evidence_file)
     except (ValueError, RuntimeError, OSError) as exc:
         parser.exit(2, f"WEB-13 SMOKE FAILED: {exc}\n")
 
