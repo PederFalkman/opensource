@@ -38,6 +38,7 @@ This is an **architectural pilot**, not an automatically installable or secure e
 - The Worker now constructs all four fixed test fixtures internally; calls carrying a `csvText` field are rejected. The browser sends only an approved scenario ID and the already SHA-256-checked wheel.
 - The Pyodide interpreter was reused across the four scenarios. External dependencies were requested from jsDelivr and Python package hosts; this does not prove offline usability or supply-chain authenticity.
 - The expensive targeted browser workflow was immediately returned to manual-only triggering after PASS.
+- The pilot's **Cancel** operation now aborts pending manifest/wheel fetches through an AbortSignal before terminating the worker; offline tests check that both requests receive the signal. Real browser cancellation/retry behavior remains a release gate.
 
 **Sign-off boundary:** exact numerical parity for these four synthetic fixtures in tested Chromium. This does not authorize real CSV input, release, hosting or use in operational decisions.
 
