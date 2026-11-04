@@ -69,7 +69,8 @@ def test_hostile_link_and_duplicate_inputs_refused(tmp_path: Path) -> None:
     path = tmp_path / "receipt.json"
     make_receipt(path, "chromium")
     result = MODULE.browser_matrix(
-        SHA, {"chromium": path},
+        SHA,
+        {"chromium": path},
         {"chromium": "https://github.com.evil.test/Solid-soup/opensource/actions/runs/1"},
         validator,
     )
