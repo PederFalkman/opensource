@@ -113,8 +113,10 @@ def run(wheel: Path, browser_name: str, timeout_ms: int) -> int:
         candidate = root / "candidate-assets"
         candidate.mkdir()
         shutil.copyfile(wheel, candidate / wheel.name)
-        (candidate / "manifest.json").write_text(
-            json.dumps(manifest_for(wheel), sort_keys=True), encoding="utf-8")
+        manifest_bytes = json.dumps(manifest_for(wheel), sort_keys=True).encode("utf-8")
+        (candidate / "manifest.json").write_bytes(manifest_bytes)
+        # This is a synthetic test receipt only, not independently authorized provenance.
+        reviewed_pin = hashlib.sha256(manifest_bytes).hexdigest()
         server = ThreadingHTTPServer(
             ("127.0.0.1", 0), partial(QuietHandler, directory=str(root)))
         thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -132,6 +134,31 @@ def run(wheel: Path, browser_name: str, timeout_ms: int) -> int:
                         f"http://127.0.0.1:{server.server_address[1]}/web13_synthetic_review.html")
                     if page.locator("input[type=file]").count() != 0:
                         raise RuntimeError("Review pilot unexpectedly accepts local files")
+                    # No candidate fetch may occur without a separately supplied pin.
+                    manifest_requests = []
+                    wheel_requests = []
+                    def observe_request(request):
+                        if request.url.endswith("/candidate-assets/manifest.json"):
+                            manifest_requests.append(request.url)
+                        if request.url.endswith(".whl"):
+                            wheel_requests.append(request.url)
+                    page.on("request", observe_request)
+                    page.locator("#run").click()
+                    if "reviewed manifest SHA-256 is required" not in page.locator("#status").inner_text():
+                        raise RuntimeError("Missing manifest pin did not fail closed")
+                    if manifest_requests or wheel_requests:
+                        raise RuntimeError("Candidate asset requested before review pin supplied")
+                    page.locator("#reviewPin").fill("0" * 64)
+                    page.locator("#run").click()
+                    page.wait_for_function(
+                        "() => !document.querySelector('#run').disabled", timeout=10000)
+                    if "SHA-256 mismatch" not in page.locator("#status").inner_text():
+                        raise RuntimeError("Incorrect review pin was not rejected")
+                    if wheel_requests:
+                        raise RuntimeError("Wheel fetched after manifest pin mismatch")
+                    if page.locator("#export").is_enabled():
+                        raise RuntimeError("Export must remain disabled after invalid review pin")
+                    page.locator("#reviewPin").fill(reviewed_pin)
                     # Cancel a pending package request and ensure stale responses do not win.
                     page.route("**/candidate-assets/manifest.json", lambda route: None)
                     with page.expect_request("**/candidate-assets/manifest.json", timeout=10000):

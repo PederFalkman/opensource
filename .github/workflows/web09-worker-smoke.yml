@@ -5,6 +5,14 @@ name: WEB-09 browser worker pilot (targeted)
 on:
   workflow_dispatch:
     inputs:
+      target:
+        description: "Synthetic-only browser test target"
+        type: choice
+        options:
+          - web13
+          - web09
+        default: web13
+        required: true
       browser:
         description: 'Browser engine for synthetic-only Worker smoke'
         type: choice
@@ -37,8 +45,25 @@ jobs:
           python -m playwright install --with-deps "${{ inputs.browser || 'chromium' }}"
       - name: Build local, review-only EnergyData Kit wheel
         run: python -m build --wheel packages/energydata-kit --outdir /tmp/edk-worker-wheel
-      # Includes deterministic pending manifest/wheel cancellation regression.
-      - name: Test synthetic candidate verification, Web Worker and Python parity
+      # WEB-13 adds missing/incorrect manifest pin, cancel, all four Python reference
+      # comparisons and synthetic JSON export. No automatic PR/push/schedule trigger.
+      - name: Test selected synthetic review target
+        env:
+          TEST_TARGET: ${{ inputs.target }}
+          TEST_BROWSER: ${{ inputs.browser }}
         run: |
           set -euo pipefail
-          python apps/workbench/browser_worker_smoke.py --wheel "$(ls /tmp/edk-worker-wheel/energydata_kit-*.whl)" --browser "${{ inputs.browser || 'chromium' }}" --timeout-ms 240000
+          wheel="$(find /tmp/edk-worker-wheel -maxdepth 1 -name 'energydata_kit-*.whl' -type f -print -quit)"
+          test -n "$wheel"
+          case "$TEST_TARGET" in
+            web13)
+              python apps/workbench/web13_browser_smoke.py --wheel "$wheel" --browser "$TEST_BROWSER" --timeout-ms 240000
+              ;;
+            web09)
+              python apps/workbench/browser_worker_smoke.py --wheel "$wheel" --browser "$TEST_BROWSER" --timeout-ms 240000
+              ;;
+            *)
+              echo "Unsupported target" >&2
+              exit 2
+              ;;
+          esac
