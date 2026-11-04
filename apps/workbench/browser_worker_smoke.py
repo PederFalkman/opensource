@@ -45,9 +45,17 @@ def load_helper(filename: str, name: str) -> Any:
     return module
 
 
+SUPPORTED_BROWSERS = ("chromium", "firefox", "webkit")
+
+
+def validate_browser(browser: str) -> str:
+    if browser not in SUPPORTED_BROWSERS:
+        raise ValueError(f"Unsupported browser: {browser}")
+    return browser
+
+
 def run(wheel: Path, *, timeout_ms: int = 180_000, browser_name: str = "chromium") -> int:
-    if browser_name not in {"chromium", "firefox", "webkit"}:
-        raise ValueError("Browser must be chromium, firefox or webkit")
+    browser_name = validate_browser(browser_name)
     if not wheel.is_file() or not wheel.name.startswith("energydata_kit-") or wheel.suffix != ".whl":
         raise ValueError("A locally built EnergyData Kit wheel is required")
     if wheel.stat().st_size > 10*1024*1024:
@@ -226,8 +234,10 @@ def run(wheel: Path, *, timeout_ms: int = 180_000, browser_name: str = "chromium
                             ["2026-01-01T01:45:00+01:00","4"]]
                     }
                     comparisons=[]
+                    from time import perf_counter
                     for scenario, rows in fixtures.items():
                         page.locator("#scenario").select_option(scenario)
+                        began=perf_counter()
                         page.locator("#run").click()
                         page.wait_for_function(
                             "() => !document.querySelector('#run').disabled && "
@@ -253,15 +263,17 @@ def run(wheel: Path, *, timeout_ms: int = 180_000, browser_name: str = "chromium
                         )
                         comparisons.append({
                             "scenario":scenario,"rows":len(rows)-1,
+                            "elapsed_seconds":round(perf_counter()-began,3),
                             "canonical_parity":"PASS" if not differences else "FAIL",
                             "differences":differences[:30],
                         })
                     rss_checkpoints["after_four_scenarios"] = sampler.snapshot()
                     print(json.dumps({
                         "worker_status":"Python executed in isolated worker",
+                        "browser":browser_name,
+                        "tested_scenarios":len(comparisons),
                         "rss_checkpoints":rss_checkpoints,
                         "process_rss_sampling":sampler.summary(),
-                        "browser":browser_name,
                         "cancelled_pending_fetch_phases":cancelled_phases,
                         "scenarios":comparisons,
                         "page_errors":exceptions,
@@ -283,8 +295,8 @@ def run(wheel: Path, *, timeout_ms: int = 180_000, browser_name: str = "chromium
 def main(argv: list[str] | None = None) -> int:
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--wheel",type=Path,required=True)
-    parser.add_argument("--browser",choices=("chromium","firefox","webkit"),default="chromium")
     parser.add_argument("--timeout-ms",type=int,default=180000)
+    parser.add_argument("--browser",choices=SUPPORTED_BROWSERS,default="chromium")
     args=parser.parse_args(argv)
     if not 1000 <= args.timeout_ms <= 300000:
         parser.error("Timeout must be within 1000–300000 ms")

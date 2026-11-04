@@ -1,6 +1,6 @@
 name: WEB-09 browser worker pilot (targeted)
 
-# Manual-only after the first actual Chromium worker parity PASS.
+# Manual-only after verified Chromium, Firefox and WebKit parity.
 # No automatic PR/push/schedule to conserve browser download costs.
 on:
   workflow_dispatch:
@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   worker-smoke:
-    name: Real Chromium synthetic worker parity
+    name: Real browser synthetic worker parity
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

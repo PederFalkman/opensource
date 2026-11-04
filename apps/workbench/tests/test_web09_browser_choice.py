@@ -26,7 +26,7 @@ def test_browser_engine_selection_reaches_wheel_validation(
 def test_unsupported_browser_fails_before_optional_browser_import(
     tmp_path: Path,
 ) -> None:
-    with pytest.raises(ValueError, match="Browser must be"):
+    with pytest.raises(ValueError, match="Unsupported browser"):
         module.run(tmp_path / "missing.whl", browser_name="chrome-beta")
 
 
