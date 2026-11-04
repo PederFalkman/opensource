@@ -22,7 +22,11 @@ NEGATIVE = frozenset(
 BROWSERS = frozenset({"chromium", "firefox", "webkit"})
 
 
-def validated(data: dict[str, object]) -> tuple[bool, str]:
+def validated(
+    data: dict[str, object],
+    expected_commit: str | None = None,
+    expected_browser: str | None = None,
+) -> tuple[bool, str]:
     if data.get("evidence_schema") != "energydata.workbench.manual-browser-smoke.v1":
         return False, "Unknown evidence schema"
     if data.get("classification") != "internal-synthetic-unattested":
@@ -37,6 +41,13 @@ def validated(data: dict[str, object]) -> tuple[bool, str]:
         not isinstance(commit, str) or re.fullmatch(r"[0-9a-f]{40}", commit) is None
     ):
         return False, "Invalid source commit"
+    if expected_commit is not None:
+        if re.fullmatch(r"[0-9a-f]{40}", expected_commit) is None:
+            return False, "Invalid expected source commit"
+        if commit != expected_commit:
+            return False, "Evidence does not match workflow source commit"
+    if expected_browser is not None and browser != expected_browser:
+        return False, "Evidence does not match selected browser"
     digest = data.get("wheel_sha256")
     if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
         return False, "Wheel digest absent"
@@ -72,8 +83,12 @@ def validated(data: dict[str, object]) -> tuple[bool, str]:
     return True, "PASS"
 
 
-def summary(data: dict[str, object]) -> str:
-    ok, reason = validated(data)
+def summary(
+    data: dict[str, object],
+    expected_commit: str | None = None,
+    expected_browser: str | None = None,
+) -> str:
+    ok, reason = validated(data, expected_commit, expected_browser)
     # No raw URL, host, path, customer or free-text browser error is rendered.
     lines = [
         "## WEB-13 synthetic-only real-browser smoke",
@@ -101,6 +116,8 @@ def summary(data: dict[str, object]) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("file", type=Path)
+    parser.add_argument("--expected-commit", help="require receipt commit to match this SHA")
+    parser.add_argument("--expected-browser", choices=sorted(BROWSERS))
     args = parser.parse_args(argv)
     try:
         if args.file.stat().st_size > 256 * 1024:
@@ -111,8 +128,8 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError, UnicodeError) as exc:
         print(f"WEB-13 evidence invalid: {exc}", file=sys.stderr)
         return 2
-    print(summary(document), end="")
-    return 0 if validated(document)[0] else 1
+    print(summary(document, args.expected_commit, args.expected_browser), end="")
+    return 0 if validated(document, args.expected_commit, args.expected_browser)[0] else 1
 
 
 if __name__ == "__main__":
