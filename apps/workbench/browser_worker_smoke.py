@@ -86,6 +86,23 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
                     page.goto(
                         f"http://127.0.0.1:{server.server_address[1]}/web09_worker_pilot.html"
                     )
+                    # Verify real-browser cancel and immediate retry before parity.
+                    # The first request is intentionally cancelled; it must leave
+                    # no report and must not allow late worker messages to win.
+                    page.locator("#scenario").select_option("baseline")
+                    page.locator("#run").click()
+                    page.locator("#cancel").click()
+                    if "Cancelled" not in page.locator("#status").inner_text():
+                        raise RuntimeError("Cancel did not enter cancelled state")
+                    if page.locator("#result").inner_text() != "No report.":
+                        raise RuntimeError("Cancelled run left a stale report")
+                    if page.locator("#run").is_disabled():
+                        raise RuntimeError("Run did not recover after cancellation")
+                    page.wait_for_timeout(150)
+                    if "Cancelled" not in page.locator("#status").inner_text():
+                        raise RuntimeError("Late message overwrote cancelled state")
+                    # The normal scenario matrix below verifies that a fresh
+                    # worker and a new asset fetch can recover after cancellation.
                     # Build independent Python reference fixtures; none are user-provided.
                     grid=[["timestamp","power_kw"]]
                     import math
