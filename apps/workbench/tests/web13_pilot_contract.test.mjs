@@ -32,3 +32,9 @@ test("WEB-14 exports an explicitly unattested evidence envelope",()=>{
   assert.match(page,/elapsedMs:performance.now\(\)-startMs/);
   assert.match(page,/internal and not independently attested/);
 });
+
+test("WEB-13 bounded run expires and clears timer on cancellation",()=>{
+  assert.match(page,/const MAX_RUN_MS=300000/);
+  assert.match(page,/setTimeout\(\(\)=>fail\(id,"Run exceeded five-minute time limit"\),MAX_RUN_MS\)/);
+  assert.match(page,/clearTimeout\(deadline\)/);
+});
