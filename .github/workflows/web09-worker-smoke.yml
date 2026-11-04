@@ -6,9 +6,6 @@ on:
   workflow_dispatch:
     inputs:
       browser:
-        description: "Playwright engine (manual only)"
-        required: true
-        default: chromium
         description: 'Browser engine for synthetic-only Worker smoke'
         type: choice
         options:
@@ -44,5 +41,4 @@ jobs:
       - name: Test synthetic candidate verification, Web Worker and Python parity
         run: |
           set -euo pipefail
-          python apps/workbench/browser_worker_smoke.py --wheel "$(ls /tmp/edk-worker-wheel/energydata_kit-*.whl)" --timeout-ms 240000 --browser "${{ inputs.browser || 'chromium' }}"
           python apps/workbench/browser_worker_smoke.py --wheel "$(ls /tmp/edk-worker-wheel/energydata_kit-*.whl)" --browser "${{ inputs.browser || 'chromium' }}" --timeout-ms 240000
