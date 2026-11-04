@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EnergyData Kit — WEB-09 Worker Pilot</title>
+<style>
+body{margin:0;background:#f6f8f5;color:#17392f;font:16px/1.55 system-ui,sans-serif}
+main{max-width:800px;margin:auto;padding:28px 18px}
+article{background:white;border:1px solid #d6e0d8;padding:20px;border-radius:8px;margin:18px 0}
+button{background:#164c3f;color:white;border:0;border-radius:5px;padding:10px 16px;font:inherit;cursor:pointer;margin-right:8px}
+button:disabled{opacity:.5;cursor:not-allowed}
+pre{background:#edf2ed;padding:14px;overflow:auto;max-height:380px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}
+small{color:#596b63}
+</style></head><body><main>
+<p><a href="index.html">Back to Workbench</a></p>
+<p><strong>SOLID SOUP / OPEN</strong> · research-only experiment</p>
+<h1>Python in a Web Worker</h1>
+<p>This WEB-09 proof of concept fetches one locally staged, SHA-256-verified candidate wheel, then executes the actual EnergyData Kit Python engine in a dedicated browser worker. <strong>It is not a public product or approved package distribution.</strong></p>
+<article>
+<p>Data: four hard-coded synthetic 15-minute scenarios, including gaps, duplicates and daylight-saving transitions. No customer CSV input is available. The staged candidate manifest is review-only and <strong>does not authenticate the publisher</strong>.</p>
+<p>Python and its dependencies still download from third-party hosts on first run. Execution happens only after you click Run.</p>
+<label for="scenario">Synthetic scenario</label>
+<select id="scenario"><option value="baseline">Baseline: gaps, duplicate, blank</option><option value="dst_fall">Autumn DST</option><option value="dst_spring">Spring DST</option><option value="mixed_offsets">Mixed explicit UTC offsets</option></select>
+<button id="run">Verify candidate and run synthetic Python</button>
+<button id="cancel" disabled>Cancel / terminate worker</button>
+<p id="status" role="status" aria-live="polite">Not started. No external runtime loaded.</p>
+<pre id="result">No report.</pre>
+</article>
+<p><small>To test, stage a locally built wheel plus candidate manifest under <code>candidate-assets/</code>, then serve the directory over localhost HTTP. Do not deploy the staged assets, use operational data, or treat any individual result as independently validated without comparing it against local Python.</small></p>
+</main><script type="module">
+"use strict";
+import {fetchCandidateWheel} from "./web09_candidate_loader.mjs";
+const $=id=>document.getElementById(id);
+let worker=null,runId=0,active=null,downloadController=null;
+function syntheticGrid() {
+  const base=Date.UTC(2026,9,19,0,0);
+  const grid=[["timestamp","power_kw"]];
+  for(let i=0;i<96;i++){
+    if(i===28||i===29)continue;
+    const value=i===62?"":(440+75*Math.sin(i/8)+20*Math.cos(i/3)).toFixed(2);
+    const row=[new Date(base+i*900000).toISOString(),value];
+    grid.push(row);
+    if(i===54)grid.push([...row]);
+  }
+  return grid;
+}
+function syntheticCsv() {
+  return syntheticGrid().map(row=>row.join(",")).join("\r\n")+"\r\n";
+}
+function reset(){
+  $("run").disabled=false;
+  $("cancel").disabled=true;
+  active=null;
+  downloadController=null;
+}
+function terminate(){
+  if(worker){worker.terminate();worker=null}
+  active=null;
+  reset();
+}
+$("cancel").onclick=()=>{
+  runId++;
+  downloadController?.abort();
+  terminate();
+  $("status").textContent="Cancelled. Worker terminated; no Python report retained.";
+  $("result").textContent="No report.";
+};
+$("run").onclick=async()=>{
+  if(active!==null)return;
+  const id=String(++runId);
+  active=id;
+  $("run").disabled=true;
+  $("cancel").disabled=false;
+  $("result").textContent="No report.";
+  $("status").textContent="Verifying same-origin candidate package...";
+  try {
+    downloadController=new AbortController();
+    const candidate=await fetchCandidateWheel({baseUrl:location.href,signal:downloadController.signal});
+    if(active!==id)return;
+    if(!worker)worker=new Worker("./web09_engine_worker.mjs",{type:"module"});
+    const current=worker;
+    current.onmessage=({data})=>{
+      if(active!==id || !data || data.id!==id)return;
+      if(data.stage==="loading" || data.stage==="analyzing"){
+        $("status").textContent=data.detail||data.stage;
+      }else if(data.stage==="complete"){
+        if(data.result?.report?.schema_version!=="2"){
+          $("status").textContent="Unexpected report schema";
+          terminate();return;
+        }
+        $("result").textContent=JSON.stringify(data.result,null,2);
+        $("status").textContent="Candidate Python returned canonical v2 report. Separate Chromium tests verified four synthetic scenarios; this individual run has not been independently compared.";
+        reset();
+      }else if(data.stage==="error"){
+        $("status").textContent="Worker failed: "+String(data.error);
+        terminate();
+      }
+    };
+    current.onerror=()=>{
+      if(active!==id)return;
+      $("status").textContent="Worker execution failed. Runtime has been terminated.";
+      terminate();
+    };
+    const wheelBytes=candidate.bytes.buffer.slice(
+      candidate.bytes.byteOffset,candidate.bytes.byteOffset+candidate.bytes.byteLength);
+    current.postMessage({
+      type:"run-synthetic",id,scenario:$("scenario").value,
+      digest:candidate.asset.sha256,wheelBytes
+    },[wheelBytes]);
+  }catch(error){
+    if(active!==id)return;
+    $("status").textContent="Candidate loading failed: "+String(error?.message||error);
+    terminate();
+  }
+};
+</script></body></html>

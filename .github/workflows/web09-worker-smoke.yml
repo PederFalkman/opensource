@@ -1,0 +1,34 @@
+name: WEB-09 browser worker pilot (targeted)
+
+# Manual-only after the first actual Chromium worker parity PASS.
+# No automatic PR/push/schedule to conserve browser download costs.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  worker-smoke:
+    name: Real Chromium synthetic worker parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Install local package, wheel build and browser harness
+        run: |
+          set -euo pipefail
+          python -m pip install -e packages/energydata-kit build playwright
+          python -m playwright install --with-deps chromium
+      - name: Build local, review-only EnergyData Kit wheel
+        run: python -m build --wheel packages/energydata-kit --outdir /tmp/edk-worker-wheel
+      # Includes deterministic pending manifest/wheel cancellation regression.
+      - name: Test synthetic candidate verification, Web Worker and Python parity
+        run: |
+          set -euo pipefail
+          python apps/workbench/browser_worker_smoke.py --wheel "$(ls /tmp/edk-worker-wheel/energydata_kit-*.whl)" --timeout-ms 240000
