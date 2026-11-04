@@ -13,6 +13,7 @@ import json
 import re
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 from release_status_report import report as package_report
@@ -21,6 +22,9 @@ BROWSERS = ("chromium", "firefox", "webkit")
 RUN_URL = re.compile(r"https://github\.com/Solid-soup/opensource/actions/runs/[1-9][0-9]*\Z")
 SHA = re.compile(r"[0-9a-f]{40}\Z")
 MAX_RECEIPT_BYTES = 256 * 1024
+MAX_JSON_BYTES = 8192
+RUN_ID = re.compile(r"[1-9][0-9]*\\Z")
+RECEIPT_MEMBER = "web13-synthetic-review.json"
 
 
 def load_validator(root: Path):
@@ -46,6 +50,36 @@ def head_sha(root: Path) -> str:
     return sha
 
 
+
+def read_receipt(path: Path) -> dict[str, object]:
+    """Read JSON or one safe, bounded GitHub Actions artifact ZIP in memory."""
+    if path.stat().st_size > MAX_RECEIPT_BYTES:
+        raise ValueError("Artifact exceeds size limit")
+    if path.suffix.lower() == ".zip":
+        with zipfile.ZipFile(path) as archive:
+            entries = archive.infolist()
+            if len(entries) != 1 or entries[0].filename != RECEIPT_MEMBER:
+                raise ValueError("Expected exactly one known review receipt")
+            info = entries[0]
+            if (
+                info.is_dir()
+                or info.file_size > MAX_JSON_BYTES
+                or info.compress_size > MAX_RECEIPT_BYTES
+                or (info.external_attr >> 16) & 0o170000 == 0o120000
+            ):
+                raise ValueError("Unsafe or oversized receipt entry")
+            with archive.open(info) as stream:
+                raw = stream.read(MAX_JSON_BYTES + 1)
+    else:
+        raw = path.read_bytes()
+    if len(raw) > MAX_JSON_BYTES:
+        raise ValueError("Receipt exceeds JSON size limit")
+    data = json.loads(raw.decode("utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError("Receipt must be a JSON object")
+    return data
+
+
 def browser_matrix(
     expected_sha: str,
     receipts: dict[str, Path],
@@ -58,11 +92,7 @@ def browser_matrix(
         path = receipts.get(browser)
         if path is not None:
             try:
-                if path.stat().st_size > MAX_RECEIPT_BYTES:
-                    raise ValueError("Receipt exceeds size limit")
-                data = json.loads(path.read_text(encoding="utf-8"))
-                if not isinstance(data, dict):
-                    raise ValueError("Receipt must be a JSON object")
+                data = read_receipt(path)
                 ok, reason = validator(data, expected_sha, browser)
                 if not ok:
                     result["reason"] = reason
@@ -72,13 +102,19 @@ def browser_matrix(
                         result["reason"] = "No reviewer-supplied GitHub run URL"
                     elif RUN_URL.fullmatch(link) is None:
                         result["reason"] = "Invalid GitHub run URL"
+                    elif (
+                        not isinstance(data.get("github_run_id"), str)
+                        or RUN_ID.fullmatch(data["github_run_id"]) is None
+                        or link.rsplit("/", 1)[-1] != data["github_run_id"]
+                    ):
+                        result["reason"] = "Receipt does not match GitHub run URL"
                     else:
                         result = {
                             "status": "RECEIPT_VALID_REVIEW_REQUIRED",
                             "run_url": link,
                             "reason": "Receipt and run URL not independently verified via GitHub API",
                         }
-            except (OSError, UnicodeError, ValueError):
+            except (OSError, UnicodeError, ValueError, zipfile.BadZipFile, EOFError):
                 result["reason"] = "Receipt unreadable or malformed"
         results[browser] = result
     return results
