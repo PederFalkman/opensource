@@ -82,3 +82,14 @@ def test_browser_harness_requires_synthetic_receipt_and_negative_pin_checks() ->
     assert 'page.locator("#reviewPin").fill(reviewed_pin)' in text
     assert "Candidate asset requested before review pin supplied" in text
     assert "Incorrect review pin was not rejected" in text
+
+
+def test_web20_wheel_cancel_and_retry_are_covered_by_manual_smoke() -> None:
+    source = MODULE_PATH.read_text(encoding="utf-8")
+    assert 'page.route("**/candidate-assets/*.whl", hold_wheel)' in source
+    assert 'page.unroute("**/candidate-assets/*.whl", hold_wheel)' in source
+    assert "Wheel request was not intercepted" in source
+    assert "Export enabled after wheel cancellation" in source
+    assert "Run disabled after wheel cancellation" in source
+    assert "Late wheel response resurrected cancelled run" in source
+    assert source.index('page.unroute("**/candidate-assets/*.whl", hold_wheel)') < source.index("for scenario in SCENARIOS:")
