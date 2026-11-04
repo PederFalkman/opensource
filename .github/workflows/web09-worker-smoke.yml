@@ -14,6 +14,9 @@ on:
           - chromium
           - firefox
           - webkit
+  pull_request:
+    paths:
+      - ".github/workflows/web09-worker-smoke.yml"
 
 permissions:
   contents: read
@@ -34,11 +37,21 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install -e packages/energydata-kit build playwright
-          python -m playwright install --with-deps "${{ inputs.browser || 'chromium' }}"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            python -m playwright install --with-deps firefox webkit
+          else
+            python -m playwright install --with-deps "${{ inputs.browser || 'chromium' }}"
+          fi
       - name: Build local, review-only EnergyData Kit wheel
         run: python -m build --wheel packages/energydata-kit --outdir /tmp/edk-worker-wheel
       # Includes deterministic pending manifest/wheel cancellation regression.
       - name: Test synthetic candidate verification, Web Worker and Python parity
         run: |
           set -euo pipefail
-          python apps/workbench/browser_worker_smoke.py --wheel "$(ls /tmp/edk-worker-wheel/energydata_kit-*.whl)" --timeout-ms 240000 --browser "${{ inputs.browser || 'chromium' }}"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            for engine in firefox webkit; do
+              python apps/workbench/browser_worker_smoke.py --wheel "$(ls /tmp/edk-worker-wheel/energydata_kit-*.whl)" --timeout-ms 240000 --browser "$engine"
+            done
+          else
+            python apps/workbench/browser_worker_smoke.py --wheel "$(ls /tmp/edk-worker-wheel/energydata_kit-*.whl)" --timeout-ms 240000 --browser "${{ inputs.browser || 'chromium' }}"
+          fi
