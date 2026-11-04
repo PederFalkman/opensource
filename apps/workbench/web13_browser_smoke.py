@@ -19,6 +19,7 @@ import threading
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import urlsplit
 
 APP = Path(__file__).resolve().parent
 ASSETS = (
@@ -123,6 +124,8 @@ def run(wheel: Path, browser_name: str, timeout_ms: int) -> int:
         thread.start()
         outcomes: list[dict[str, object]] = []
         errors: list[str] = []
+        observed_hosts: set[str] = set()
+        negative_checks: list[str] = []
         try:
             with sync_playwright() as playwright:
                 browser = getattr(playwright, browser_name).launch()
@@ -130,6 +133,9 @@ def run(wheel: Path, browser_name: str, timeout_ms: int) -> int:
                     context = browser.new_context(accept_downloads=True)
                     page = context.new_page()
                     page.on("pageerror", lambda exc: errors.append(str(exc)))
+                    page.on("request", lambda request: observed_hosts.add(
+                        urlsplit(request.url).hostname or "unknown"
+                    ))
                     page.goto(
                         f"http://127.0.0.1:{server.server_address[1]}/web13_synthetic_review.html")
                     if page.locator("input[type=file]").count() != 0:
@@ -148,6 +154,7 @@ def run(wheel: Path, browser_name: str, timeout_ms: int) -> int:
                         raise RuntimeError("Missing manifest pin did not fail closed")
                     if manifest_requests or wheel_requests:
                         raise RuntimeError("Candidate asset requested before review pin supplied")
+                    negative_checks.append("missing_manifest_pin_no_requests")
                     page.locator("#reviewPin").fill("0" * 64)
                     page.locator("#run").click()
                     page.wait_for_function(
@@ -158,6 +165,7 @@ def run(wheel: Path, browser_name: str, timeout_ms: int) -> int:
                         raise RuntimeError("Wheel fetched after manifest pin mismatch")
                     if page.locator("#export").is_enabled():
                         raise RuntimeError("Export must remain disabled after invalid review pin")
+                    negative_checks.append("mismatched_manifest_pin_no_wheel")
                     page.locator("#reviewPin").fill(reviewed_pin)
                     # Cancel a pending package request and ensure stale responses do not win.
                     page.route("**/candidate-assets/manifest.json", lambda route: None)
@@ -169,6 +177,7 @@ def run(wheel: Path, browser_name: str, timeout_ms: int) -> int:
                     if page.locator("#export").is_enabled():
                         raise RuntimeError("Export must be disabled after cancel")
                     page.unroute("**/candidate-assets/manifest.json")
+                    negative_checks.append("cancel_pending_manifest")
                     # WEB-20: Hold the wheel response independently of the
                     # manifest. A cancelled download must never enable export,
                     # retain a report, or prevent the next synthetic run.
@@ -198,6 +207,7 @@ def run(wheel: Path, browser_name: str, timeout_ms: int) -> int:
                     page.wait_for_timeout(150)
                     if "Cancelled" not in page.locator("#status").inner_text():
                         raise RuntimeError("Late wheel response resurrected cancelled run")
+                    negative_checks.append("cancel_pending_wheel")
                     # Verify a same-length modified wheel is refused on SHA-256
                     # before an interpreter can run. No production asset changed.
                     original_wheel = wheel.read_bytes()
@@ -222,6 +232,7 @@ def run(wheel: Path, browser_name: str, timeout_ms: int) -> int:
                     if page.locator("#result").inner_text() != "No report.":
                         raise RuntimeError("Corrupted wheel retained a report")
                     page.unroute("**/candidate-assets/*.whl", corrupt_wheel)
+                    negative_checks.append("modified_wheel_sha256_rejected")
 
                     for scenario in SCENARIOS:
                         page.locator("#scenario").select_option(scenario)
@@ -278,9 +289,31 @@ def run(wheel: Path, browser_name: str, timeout_ms: int) -> int:
             server.shutdown()
             server.server_close()
             thread.join(timeout=3)
-        print(json.dumps({"browser": browser_name, "cases": outcomes,
-                          "page_errors": errors, "synthetic_only": True}, indent=2))
-        return 0 if len(outcomes) == 4 and not errors else 1
+        required_negative_checks = (
+            "missing_manifest_pin_no_requests",
+            "mismatched_manifest_pin_no_wheel",
+            "cancel_pending_manifest",
+            "cancel_pending_wheel",
+            "modified_wheel_sha256_rejected",
+        )
+        complete = (
+            len(outcomes) == len(SCENARIOS)
+            and all(item.get("status") == "PASS" for item in outcomes)
+            and tuple(negative_checks) == required_negative_checks
+            and not errors
+        )
+        print(json.dumps({
+            "evidence_schema": "energydata.workbench.manual-browser-smoke.v1",
+            "classification": "internal-synthetic-unattested",
+            "browser": browser_name,
+            "cases": outcomes,
+            "negative_checks": negative_checks,
+            "observed_hosts": sorted(observed_hosts),
+            "page_errors": errors,
+            "synthetic_only": True,
+            "result": "PASS" if complete else "FAIL",
+        }, indent=2, sort_keys=True))
+        return 0 if complete else 1
 
 
 def main() -> int:
