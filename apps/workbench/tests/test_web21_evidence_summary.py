@@ -77,3 +77,13 @@ def test_manual_workflow_only_and_evidence_file_are_wired() -> None:
     assert "--evidence-file" in workflow
     assert "render_web13_evidence_summary.py" in workflow
     assert "evidence_file.write_text(document, encoding=" in smoke
+
+
+def test_valid_source_commit_is_displayed_and_malformed_commit_is_rejected() -> None:
+    result = fixture()
+    result["source_commit"] = "1" * 40
+    assert MODULE.validated(result)[0] is True
+    assert "Source commit: " in MODULE.summary(result)
+    result["source_commit"] = "<untrusted>"
+    assert MODULE.validated(result)[0] is False
+    assert "<untrusted>" not in MODULE.summary(result)
