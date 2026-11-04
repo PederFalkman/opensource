@@ -30,6 +30,7 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Build local, review-only EnergyData Kit wheel
         run: python -m build --wheel packages/energydata-kit --outdir /tmp/edk-worker-wheel
+      # Includes deterministic pending manifest/wheel cancellation regression.
       - name: Test synthetic candidate verification, Web Worker and Python parity
         run: |
           set -euo pipefail
