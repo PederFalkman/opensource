@@ -46,3 +46,31 @@ def test_staged_assets_are_only_existing_review_components() -> None:
         "web09_engine_worker.mjs",
     }
     assert len(MODULE.SCENARIOS) == 4
+
+
+@pytest.mark.parametrize("scenario,expected_count", [
+    ("baseline", 96), ("dst_fall", 6), ("dst_spring", 5), ("mixed_offsets", 5),
+])
+def test_independent_reference_fixture_shape(scenario: str, expected_count: int) -> None:
+    rows = MODULE.reference_rows(scenario)
+    assert len(rows) == expected_count
+    assert rows[0] == ["timestamp", "power_kw"]
+    assert all(len(row) == 2 for row in rows)
+    assert all(row[0].endswith(("Z", "+01:00", "+02:00")) for row in rows[1:])
+
+
+def test_baseline_fixture_has_gap_duplicate_and_missing_value() -> None:
+    rows = MODULE.reference_rows("baseline")
+    timestamps = [row[0] for row in rows[1:]]
+    assert len(timestamps) > len(set(timestamps))
+    assert any(row[1] == "" for row in rows[1:])
+    assert "2026-10-19T07:00:00.000Z" not in timestamps
+    assert "2026-10-19T07:15:00.000Z" not in timestamps
+
+
+def test_fixtures_cover_distinct_dst_instants_and_reject_unknown_scenarios() -> None:
+    fall = MODULE.reference_rows("dst_fall")
+    assert any("+02:00" in row[0] for row in fall[1:])
+    assert any("+01:00" in row[0] for row in fall[1:])
+    with pytest.raises(ValueError, match="Unsupported synthetic scenario"):
+        MODULE.reference_rows("user-file")
