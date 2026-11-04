@@ -19,7 +19,7 @@ test("WEB-13 invokes fixed synthetic worker protocol only",()=>{
   assert.match(worker,/Only internally generated synthetic scenarios are supported/);
 });
 test("WEB-13 preserves cancellation, same-origin wheel loading, output validation",()=>{
-  assert.match(page,/fetchReviewPinnedCandidateWheel\\(\\{baseUrl:location.href,signal:abort.signal,expectedManifestSha256:reviewPin\\}\\)/);
+  assert.ok(page.includes("fetchReviewPinnedCandidateWheel({baseUrl:location.href,signal:abort.signal,expectedManifestSha256:reviewPin})"));
   assert.match(page,/worker\?\.terminate\(\)/);
   assert.match(page,/data.id!==state.runId/);
   assert.match(page,/transition\(state,\{type:"complete",id,result:data.result\}\)/);
