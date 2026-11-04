@@ -16,8 +16,10 @@ small{color:#596b63}
 <h1>Python in a Web Worker</h1>
 <p>This WEB-09 proof of concept fetches one locally staged, SHA-256-verified candidate wheel, then executes the actual EnergyData Kit Python engine in a dedicated browser worker. <strong>It is not a public product or approved package distribution.</strong></p>
 <article>
-<p>Data: one hard-coded synthetic 15-minute example with gaps, a duplicate and a blank value. No customer CSV input is available. The staged candidate manifest is review-only and <strong>does not authenticate the publisher</strong>.</p>
+<p>Data: four hard-coded synthetic 15-minute scenarios, including gaps, duplicates and daylight-saving transitions. No customer CSV input is available. The staged candidate manifest is review-only and <strong>does not authenticate the publisher</strong>.</p>
 <p>Python and its dependencies still download from third-party hosts on first run. Execution happens only after you click Run.</p>
+<label for="scenario">Synthetic scenario</label>
+<select id="scenario"><option value="baseline">Baseline: gaps, duplicate, blank</option><option value="dst_fall">Autumn DST</option><option value="dst_spring">Spring DST</option><option value="mixed_offsets">Mixed explicit UTC offsets</option></select>
 <button id="run">Verify candidate and run synthetic Python</button>
 <button id="cancel" disabled>Cancel / terminate worker</button>
 <p id="status" role="status" aria-live="polite">Not started. No external runtime loaded.</p>
@@ -98,7 +100,7 @@ $("run").onclick=async()=>{
     const wheelBytes=candidate.bytes.buffer.slice(
       candidate.bytes.byteOffset,candidate.bytes.byteOffset+candidate.bytes.byteLength);
     current.postMessage({
-      type:"run-synthetic",id,scenario:"baseline",
+      type:"run-synthetic",id,scenario:$("scenario").value,
       digest:candidate.asset.sha256,wheelBytes
     },[wheelBytes]);
   }catch(error){
