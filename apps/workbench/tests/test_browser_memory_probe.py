@@ -88,3 +88,34 @@ def test_empty_sample_is_absent_not_zero():
     result = memory.MemoryResult(0, None, None, None, 100).to_dict()
     assert result["peak_descendant_rss_bytes"] is None
     assert result["final_descendant_rss_bytes"] is None
+
+class FakePssChild(FakeChild):
+    def __init__(self, pss, **kwargs):
+        super().__init__(123, **kwargs)
+        self.pss = pss
+
+    def memory_full_info(self):
+        return type("Full", (), {})() if self.pss is None else type(
+            "Full", (), {"pss": self.pss}
+        )()
+
+
+def test_pss_complete_only_and_no_rss_fallback():
+    FakePsutil._children = [FakePssChild(125), FakePssChild(225)]
+    assert memory.process_tree_pss(42, FakePsutil) == {
+        "pss_bytes": 350, "processes_seen": 2,
+        "processes_with_pss": 2, "complete": True
+    }
+    FakePsutil._children = [FakePssChild(125), FakePssChild(None)]
+    incomplete = memory.process_tree_pss(42, FakePsutil)
+    assert incomplete["pss_bytes"] is None
+    assert incomplete["processes_seen"] == 2
+    assert incomplete["processes_with_pss"] == 1
+    assert not incomplete["complete"]
+
+
+def test_pss_unavailable_is_null_not_zero():
+    FakePsutil._children = [FakeChild(234)]
+    result = memory.process_tree_pss(42, FakePsutil)
+    assert result["pss_bytes"] is None
+    assert result["processes_with_pss"] == 0
