@@ -120,6 +120,14 @@ The same real-browser Worker smoke now supports `chromium`, `firefox`, and `webk
 
 The Playwright WebKit result **is not evidence of Safari on macOS/iOS**, nor of supported device-level memory, offline startup, general customer-data privacy, or dependency provenance. These browser results cover only the fixed, synthetic fixture collection and the described cancellation tests. The heavy workflow was returned to `workflow_dispatch` only and accepts an explicit browser choice; the default is Chromium.
 
+## Linux browser process-tree RSS instrumentation (implementation; numbers pending)
+
+`web09_memory_probe.py` is an **optional, Linux-only diagnostic** for the manually triggered real-browser test. While the runner, Playwright driver, browser and Web Worker execute, it samples descendants of the smoke-test Python process via `/proc` approximately every 200 ms. The browser harness records snapshots after cancellation of each pending candidate download, after immediate cancellation, after the controlled active-Python termination, and after the four canonical comparisons. It also reports the maximum **sampled sum of VmRSS across the runner process tree**.
+
+**Accounting boundary:** The metric includes the test Python process, Playwright subprocesses and browser processes; it may double-count shared resident pages. It is **not** browser-only RSS, proportional set size (PSS), unique set size (USS), Pyodide/WebAssembly heap, true unsampled peak memory or proof that the terminated Worker has released all allocations. Process count and how many processes provided RSS are reported, so missing `/proc` information is not silently represented as zero. The tool fails softly on non-Linux environments and records missing metrics rather than claiming success.
+
+The measurement is observational: no memory budget or successful reclamation is asserted. Repeat on stable runners/hardware and collect browser-specific data before introducing memory thresholds or claiming end-user readiness.
+
 ## Next gates
 
 1. Ensure real Chromium worker parity and ordinary CI/security are green; record run ID and failures.
