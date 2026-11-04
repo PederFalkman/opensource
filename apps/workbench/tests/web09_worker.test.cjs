@@ -85,8 +85,26 @@ test("worker uses internally generated fixture and refuses caller-supplied CSV",
   const actual=vmWorker.fixedSyntheticCsv().trim().split("\r\n").map(row=>row.split(","));
   assert.deepEqual(actual,expected);
   assert(worker.includes('Object.hasOwn(data,"csvText")'));
-  assert(pilot.includes('scenario:"baseline"'));
+  assert(pilot.includes('scenario:$("scenario").value'));
   assert(!pilot.includes('csvText:syntheticCsv()'));
+});
+
+test("worker synthetic DST scenarios have explicit unique UTC instants",()=>{
+  const worker=fs.readFileSync(path.join(root,"web09_engine_worker.mjs"),"utf8");
+  const begin=worker.indexOf("function fixedSyntheticCsv() {");
+  const end=worker.indexOf("\nfunction respond(",begin);
+  assert(begin>=0&&end>begin);
+  const context=vm.createContext({});
+  vm.runInContext(worker.slice(begin,end),context);
+  for(const scenario of ["baseline","dst_fall","dst_spring","mixed_offsets"]){
+    const text=context.syntheticScenarioCsv(scenario);
+    const lines=text.trim().split("\r\n").map(row=>row.split(","));
+    assert.equal(lines[0].join(","),"timestamp,power_kw");
+    const epochs=lines.slice(1).map(row=>Date.parse(row[0]));
+    assert(epochs.every(Number.isFinite));
+    if(scenario!=="baseline")assert.equal(new Set(epochs).size,epochs.length);
+  }
+  assert.throws(()=>context.syntheticScenarioCsv("user_csv"),/Unsupported/);
 });
 
 test("worker explicitly gates mismatched candidate digest before Pyodide import",()=>{
