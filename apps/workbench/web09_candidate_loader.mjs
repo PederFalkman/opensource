@@ -75,6 +75,11 @@ export async function fetchCandidateWheel({
   if(!cryptoFn?.subtle)throw Error("Secure context with SHA-256 required");
   const root=new URL(baseUrl);
   if(!["https:","http:"].includes(root.protocol))throw Error("HTTP(S) origin required");
+  // A browser page must never use a caller-supplied base URL to escape its origin.
+  // Node's offline tests do not expose location and use a loopback test origin.
+  if(typeof globalThis.location!=="undefined" && root.origin!==globalThis.location.origin)
+    throw Error("Candidate assets must use the current page origin");
+  if(root.username || root.password)throw Error("Credential-bearing asset URL prohibited");
   const manifestUrl=new URL(CANDIDATE_MANIFEST,root);
   if(manifestUrl.origin!==root.origin)throw Error("Cross-origin manifest prohibited");
   const options={cache:"no-store",credentials:"omit",redirect:"error",signal};
