@@ -86,19 +86,7 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
                     page.goto(
                         f"http://127.0.0.1:{server.server_address[1]}/web09_worker_pilot.html"
                     )
-                    page.locator("#run").click()
-                    page.wait_for_function(
-                        "() => document.querySelector('#status').textContent.includes('canonical v2 report') || "
-                        "document.querySelector('#status').textContent.includes('failed') || "
-                        "document.querySelector('#status').textContent.includes('Unexpected report')",
-                        timeout=timeout_ms,
-                    )
-                    status=page.locator("#status").inner_text()
-                    if "canonical v2 report" not in status:
-                        raise RuntimeError(f"Worker pipeline failed: {status}; JS errors={exceptions}")
-                    actual=json.loads(page.locator("#result").inner_text())
-                    # Independently compute the actual Workbench fixture without
-                    # reading any user-supplied CSV.
+                    # Build independent Python reference fixtures; none are user-provided.
                     grid=[["timestamp","power_kw"]]
                     import math
                     from datetime import datetime, timedelta, timezone
@@ -111,20 +99,66 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
                         grid.append(row)
                         if i==54:
                             grid.append(list(row))
-                    csv_path=root/"synthetic.csv"
-                    with csv_path.open("w",newline="",encoding="utf-8") as stream:
-                        csv.writer(stream).writerows(grid)
-                    reference=adapter.analyze_csv(csv_path,timestamp="timestamp",value="power_kw")
-                    differences=parity.changes(parity.canonical(reference),parity.canonical(actual))
+                    fixtures = {
+                        "baseline": grid,
+                        "dst_fall": [["timestamp","power_kw"],
+                            ["2026-10-25T01:30:00+02:00","1"],
+                            ["2026-10-25T02:00:00+02:00","2"],
+                            ["2026-10-25T02:30:00+02:00","3"],
+                            ["2026-10-25T02:00:00+01:00","4"],
+                            ["2026-10-25T02:30:00+01:00","5"]],
+                        "dst_spring": [["timestamp","power_kw"],
+                            ["2026-03-29T01:30:00+01:00","1"],
+                            ["2026-03-29T01:45:00+01:00","2"],
+                            ["2026-03-29T03:00:00+02:00","3"],
+                            ["2026-03-29T03:15:00+02:00","4"]],
+                        "mixed_offsets": [["timestamp","power_kw"],
+                            ["2026-01-01T00:00:00Z","1"],
+                            ["2026-01-01T01:15:00+01:00","2"],
+                            ["2026-01-01T00:30:00Z",""],
+                            ["2026-01-01T01:45:00+01:00","4"]]
+                    }
+                    comparisons=[]
+                    for scenario, rows in fixtures.items():
+                        page.locator("#scenario").select_option(scenario)
+                        page.locator("#run").click()
+                        page.wait_for_function(
+                            "() => !document.querySelector('#run').disabled && "
+                            "(document.querySelector('#status').textContent.includes('canonical v2 report') || "
+                            "document.querySelector('#status').textContent.includes('failed') || "
+                            "document.querySelector('#status').textContent.includes('Unexpected report'))",
+                            timeout=timeout_ms,
+                        )
+                        status=page.locator("#status").inner_text()
+                        if "canonical v2 report" not in status:
+                            raise RuntimeError(
+                                f"Worker pipeline failed for {scenario}: {status}; JS errors={exceptions}"
+                            )
+                        actual=json.loads(page.locator("#result").inner_text())
+                        csv_path=root/"synthetic.csv"
+                        with csv_path.open("w",newline="",encoding="utf-8") as stream:
+                            csv.writer(stream).writerows(rows)
+                        reference=adapter.analyze_csv(
+                            csv_path,timestamp="timestamp",value="power_kw"
+                        )
+                        differences=parity.changes(
+                            parity.canonical(reference),parity.canonical(actual)
+                        )
+                        comparisons.append({
+                            "scenario":scenario,"rows":len(rows)-1,
+                            "canonical_parity":"PASS" if not differences else "FAIL",
+                            "differences":differences[:30],
+                        })
                     print(json.dumps({
-                        "worker_status":status,
-                        "canonical_parity":"PASS" if not differences else "FAIL",
-                        "differences":differences[:30],
+                        "worker_status":"Python executed in isolated worker",
+                        "scenarios":comparisons,
                         "page_errors":exceptions,
                         "observed_hosts":sorted(hosts),
                         "candidate_sha256":hashlib.sha256(wheel.read_bytes()).hexdigest(),
                     },indent=2,sort_keys=True))
-                    return 1 if differences or exceptions else 0
+                    return 1 if exceptions or any(
+                        case["canonical_parity"]!="PASS" for case in comparisons
+                    ) else 0
                 finally:
                     browser.close()
         finally:
