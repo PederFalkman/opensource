@@ -1,0 +1,37 @@
+name: WEB-10 manual process-memory envelope
+
+# Temporary self-path PR trigger for initial evidence; remove after first run.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/web10-memory-envelope.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  memory-envelope:
+    name: Chromium synthetic Worker process-RSS observation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Install test-only tools and local EnergyData Kit
+        run: |
+          set -euo pipefail
+          python -m pip install -e packages/energydata-kit build playwright psutil
+          python -m playwright install --with-deps chromium
+      - name: Build local synthetic test wheel
+        run: python -m build --wheel packages/energydata-kit --outdir /tmp/edk-web10-wheel
+      - name: Measure process-tree RSS during synthetic Chromium worker smoke
+        run: |
+          set -euo pipefail
+          wheel="$(find /tmp/edk-web10-wheel -maxdepth 1 -name 'energydata_kit-*.whl' -print -quit)"
+          test -n "$wheel"
+          python apps/workbench/browser_memory_gate.py --wheel "$wheel" --sample-ms 100 --timeout-ms 240000
