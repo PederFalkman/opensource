@@ -4,9 +4,6 @@ name: WEB-09 browser worker pilot (targeted)
 # No automatic PR/push/schedule to conserve browser download costs.
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - ".github/workflows/web09-worker-smoke.yml"
 
 permissions:
   contents: read
