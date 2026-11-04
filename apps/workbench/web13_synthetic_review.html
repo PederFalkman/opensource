@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EnergyData Kit — WEB-13 Internal Python Review</title>
+<style>
+:root{color-scheme:light}[hidden]{display:none!important}*{box-sizing:border-box}body{margin:0;background:#f6f7f5;color:#193a32;font:15px/1.5 system-ui,sans-serif}
+main{max-width:940px;margin:auto;padding:24px}a{color:#195d48}header{border-bottom:1px solid #c9d8d0;padding-bottom:18px}
+h1{font-size:30px;letter-spacing:-.8px;margin:12px 0}p{color:#536b60}.panel{background:white;border:1px solid #d7e1db;border-radius:8px;padding:24px;margin-top:20px}
+button,select{font:inherit;padding:10px 14px}button{background:#164b3d;color:white;border:0;border-radius:4px;cursor:pointer}button.secondary{background:white;color:#164b3d;border:1px solid #164b3d}button:disabled{opacity:.5;cursor:not-allowed}
+.controls{display:flex;gap:12px;flex-wrap:wrap;align-items:end}label{display:grid;gap:5px}select{min-width:215px}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:20px}
+.metric{background:#f3f7f4;padding:12px;border-radius:5px}.metric span{display:block;color:#63746c;font-size:12px}.metric strong{font-size:26px;font-variant-numeric:tabular-nums}
+pre{background:#f3f7f4;padding:15px;max-height:300px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+small{color:#63746c}.warning{border-left:4px solid #a17c47;padding-left:12px}.status{min-height:24px} 
+@media(max-width:620px){.metrics{grid-template-columns:repeat(2,1fr)}main{padding:16px}}
+</style></head><body><main>
+<header><small>SOLID SOUP / OPEN · INTERNAL WORKING DRAFT</small><h1>Python verification workbench</h1>
+<p>Experimental, synthetic-only Python execution in an isolated Web Worker. Not approved for customer data or production use.</p>
+<p><a href="index.html">Return to preview Workbench</a></p></header>
+<section class="panel" aria-labelledby="pilot-title"><h2 id="pilot-title">Run a synthetic quality check</h2>
+<p class="warning">No file upload is supported. A candidate wheel is integrity-checked but publisher authenticity and third-party runtime dependencies are not yet approved.</p>
+<div class="controls"><label for="scenario">Test scenario<select id="scenario">
+<option value="baseline">Gaps, duplicate and blank measurement</option><option value="dst_fall">Autumn daylight-saving transition</option>
+<option value="dst_spring">Spring daylight-saving transition</option><option value="mixed_offsets">Mixed explicit UTC offsets</option>
+</select></label><button id="run">Run Python analysis</button><button id="cancel" class="secondary" disabled>Cancel</button>
+<button id="export" class="secondary" disabled>Export synthetic JSON</button></div>
+<p id="status" class="status" role="status" aria-live="polite">Idle. Python runtime not loaded.</p>
+<div class="metrics" id="metrics" hidden>
+<div class="metric"><span>Rows</span><strong id="rows">—</strong></div>
+<div class="metric"><span>Missing intervals</span><strong id="missing">—</strong></div>
+<div class="metric"><span>Duplicate timestamps</span><strong id="duplicates">—</strong></div>
+<div class="metric"><span>Completeness</span><strong id="completeness">—</strong></div>
+</div><h3>Canonical v2 result</h3><pre id="result">No report.</pre>
+</section><p><small>On first run, Pyodide and dependencies may be downloaded from third-party hosts. No operational datasets should be introduced into this review page. Browser-engine parity of synthetic scenarios does not constitute release approval.</small></p>
+</main><script type="module">
+import {fetchCandidateWheel} from "./web09_candidate_loader.mjs";
+import {scenarioAllowed,freshState,transition} from "./web13_pilot_state.mjs";
+import {createSyntheticEvidence} from "./web14_evidence.mjs";
+const $=id=>document.getElementById(id);
+let state=freshState(),worker=null,abort=null,serial=0,fullReport=null;
+let startMs=null,scenarioInFlight=null,wheelDigest=null,deadline=null;
+const MAX_RUN_MS=300000;
+const running=()=>["verifying","loading","analyzing"].includes(state.stage);
+function display(message){
+  $("run").disabled=running();$("cancel").disabled=!running();
+  $("export").disabled=state.stage!=="complete"||!fullReport;
+  $("metrics").hidden=state.stage!=="complete";
+  $("status").textContent=message;
+  if(state.report){
+    const r=state.report;
+    $("rows").textContent=String(r.n_rows);
+    $("missing").textContent=String(r.n_missing_intervals);
+    $("duplicates").textContent=String(r.n_duplicate_timestamps);
+    $("completeness").textContent=r.completeness==null?"N/A":(100*r.completeness).toFixed(1)+"%";
+  }
+}
+function cleanup(){if(deadline!==null){clearTimeout(deadline);deadline=null}abort?.abort();abort=null;worker?.terminate();worker=null}
+function fail(id,message){
+  if(id!==state.runId)return;
+  state=transition(state,{type:"error",id,error:message});cleanup();fullReport=null;
+  $("result").textContent="No report.";display("Failed: "+state.error);
+}
+$("cancel").onclick=()=>{
+  if(!running())return;
+  state=transition(state,{type:"cancel"});fullReport=null;cleanup();
+  $("result").textContent="No report.";display("Cancelled. Worker terminated.");
+};
+$("run").onclick=async()=>{
+  if(running())return;
+  const scenario=$("scenario").value;
+  if(!scenarioAllowed(scenario)){display("Invalid scenario");return}
+  const id=String(++serial);
+  state=transition(state,{type:"start",id,scenario});fullReport=null;
+  startMs=performance.now();scenarioInFlight=scenario;wheelDigest=null;
+  deadline=setTimeout(()=>fail(id,"Run exceeded five-minute time limit"),MAX_RUN_MS);
+  $("result").textContent="No report.";display("Verifying candidate package...");
+  try {
+    abort=new AbortController();
+    const candidate=await fetchCandidateWheel({baseUrl:location.href,signal:abort.signal});
+    if(state.runId!==id)return;
+    wheelDigest=candidate.asset.sha256;
+    worker=new Worker("./web09_engine_worker.mjs",{type:"module"});
+    const current=worker;
+    current.onmessage=({data})=>{
+      if(!data||data.id!==state.runId||!running())return;
+      try {
+        if(data.stage==="loading"||data.stage==="analyzing"){
+          state=transition(state,{type:data.stage,id});
+          display(data.detail||data.stage);return;
+        }
+        if(data.stage==="error"){fail(id,data.error);return}
+        if(data.stage==="complete"){
+          const envelope=createSyntheticEvidence({
+            scenario:scenarioInFlight,wheelSha256:wheelDigest,
+            elapsedMs:performance.now()-startMs,output:data.result
+          });
+          state=transition(state,{type:"complete",id,result:data.result});
+          fullReport=envelope;
+          $("result").textContent=JSON.stringify(envelope,null,2);
+          display("Synthetic Python report completed. Evidence is internal and not independently attested.");
+          cleanup();
+        }
+      }catch(e){fail(id,String(e.message||e))}
+    };
+    current.onerror=()=>fail(id,"Python worker execution error");
+    const wheelBytes=candidate.bytes.buffer.slice(candidate.bytes.byteOffset,
+      candidate.bytes.byteOffset+candidate.bytes.byteLength);
+    current.postMessage({type:"run-synthetic",id,scenario,
+      digest:candidate.asset.sha256,wheelBytes},[wheelBytes]);
+  }catch(e){fail(id,String(e.message||e))}
+};
+$("export").onclick=()=>{
+  if(state.stage!=="complete"||!fullReport)return;
+  const blob=new Blob([JSON.stringify(fullReport,null,2)+"\n"],{type:"application/json"});
+  const url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download="energydata-synthetic-review-evidence.json";a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+display("Idle. Python runtime not loaded.");
+</script></body></html>
