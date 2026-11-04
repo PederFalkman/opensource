@@ -17,6 +17,19 @@ The new worker code still contacts Pyodide CDN, PyPI and wheel dependency origin
 
 This is an **architectural pilot**, not an automatically installable or secure end-user product. Real browser worker parity is pending until the workflow completes.
 
+## First real Chromium Worker validation — 2026-11-04
+
+- GitHub Actions: [run 41804021927](https://github.com/Solid-soup/opensource/actions/runs/41804021927).
+- Tested branch commit: `300968236e399bda836f57963611cfe92dd2d7ab`.
+- **PASS**: signed-off only as *numerical parity of one synthetic dataset* (no publisher attestation).
+- Worker loaded actual Pyodide, consumed a same-origin SHA-256-checked local candidate wheel, executed `energydata_kit.assess_quality`, and returned canonical schema-v2 data.
+- Canonical field differences from local Python: **0**. Browser JavaScript page errors: **0**.
+- The observed dependency hosts were `cdn.jsdelivr.net`, `pypi.org`, `files.pythonhosted.org`; wheel served from `127.0.0.1`.
+- Subsequent hardening on this branch moves synthetic CSV generation **inside the worker** and rejects any caller-supplied CSV field. This change needs latest-head CI and a further real browser execution to be considered verified.
+- After this initial test, the expensive Chromium workflow was restored to `workflow_dispatch` only.
+
+**Not established:** identity/authenticity of the candidate manifest, cross-browser behavior, dependency trust, full browser/process memory, customer-data security or production readiness.
+
 ## Next gates
 
 1. Ensure real Chromium worker parity and ordinary CI/security are green; record run ID and failures.
