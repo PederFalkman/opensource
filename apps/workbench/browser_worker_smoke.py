@@ -108,6 +108,10 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
                             ), timeout=10000
                         ):
                             page.locator("#run").click()
+                        # expect_request resolves on requestWillBeSent; the
+                        # route callback is dispatched on a subsequent event-loop
+                        # turn. Give Playwright time to deliver interception.
+                        page.wait_for_timeout(100)
                         if not held_routes:
                             raise RuntimeError(f"{phase} request was not intercepted")
                         page.locator("#cancel").click()
