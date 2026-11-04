@@ -106,7 +106,19 @@ This controlled interruption subsequently passed in real Chromium (run 418261816
 
 The isolated, synthetic-only Worker smoke harness now accepts `--browser chromium|firefox|webkit` and launches the selected Playwright browser engine. The costly `web09-worker-smoke.yml` remains manually dispatched with an explicit browser choice; its installation step downloads only the selected browser. Fast offline Python tests enforce browser name validation and fail-closed input handling.
 
-**Verification boundary:** The earlier Chromium runs establish Chromium behavior only. Firefox and WebKit have not yet passed until each has a real recorded job. Playwright's Linux WebKit does not substitute for Safari on Apple hardware or iOS. Any browser failure must be recorded as a compatibility blocker, not silently skipped.
+**Verification boundary:** The earlier Chromium runs establish Chromium behavior only. Firefox and WebKit now have recorded PASS runs listed below. Playwright's Linux WebKit does not substitute for Safari on Apple hardware or iOS. Any browser failure must be recorded as a compatibility blocker, not silently skipped.
+
+## Three-engine synthetic Worker verification — 2026-11-04
+
+The same real-browser Worker smoke now supports `chromium`, `firefox`, and `webkit` via explicit Playwright engine selection. Each engine is independently installed and tested in a scoped GitHub Actions run; the selected run includes held manifest and wheel fetch cancellation, the temporary test-only active-Python cancellation, restart, and exact canonical-v2 parity against local EnergyData Kit for all four fixed synthetic scenarios.
+
+| Engine | Recorded GitHub Actions evidence | Exact canonical parity | Cancellation gates | Browser page errors |
+|---|---|---|---|---|
+| Chromium | [41826181638](https://github.com/Solid-soup/opensource/actions/runs/41826181638) | 4/4 PASS | PASS | 0 |
+| Firefox on Linux | [41827071633](https://github.com/Solid-soup/opensource/actions/runs/41827071633) | 4/4 PASS | PASS | 0 |
+| WebKit on Linux | [41827311219](https://github.com/Solid-soup/opensource/actions/runs/41827311219) | 4/4 PASS | PASS | 0 |
+
+The Playwright WebKit result **is not evidence of Safari on macOS/iOS**, nor of supported device-level memory, offline startup, general customer-data privacy, or dependency provenance. These browser results cover only the fixed, synthetic fixture collection and the described cancellation tests. The heavy workflow was returned to `workflow_dispatch` only and accepts an explicit browser choice; the default is Chromium.
 
 ## Next gates
 
