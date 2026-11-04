@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EnergyData Kit · Local static asset verification experiment</title>
+<style>
+body{font:16px/1.55 system-ui,sans-serif;color:#18392f;background:#f5f8f5;margin:0}
+main{max-width:770px;padding:28px 18px;margin:auto}article{border:1px solid #d6e1d9;border-radius:8px;background:#fff;padding:18px;margin:18px 0}
+h1{line-height:1.1}button{font:inherit;border:0;border-radius:5px;color:white;background:#205849;padding:10px 16px}
+button:disabled{opacity:.5}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#edf3ee;padding:12px;font-size:12px}
+</style></head><body><main>
+<p><a href="index.html">Back to Workbench</a></p>
+<p><strong>SOLID SOUP / OPEN</strong> · review-only experiment</p>
+<h1>Verify a candidate static Python wheel</h1>
+<p>This page checks a <strong>locally hosted candidate</strong> wheel against the byte size and SHA-256 declared by its manifest. It does not run Python or approve the candidate for release.</p>
+<article>
+<p>Candidate files must be staged by a reviewer under <code>candidate-assets/</code> next to this HTML file. The manifest is expected at <code>candidate-assets/manifest.json</code>. No candidate files are committed or deployed by this experiment.</p>
+<p>Only one same-origin <code>energydata_kit-*.whl</code> is accepted, with a maximum size of 10 MiB. Data are fetched only after pressing the button.</p>
+<button id="verify">Verify candidate files</button>
+<p id="status" role="status" aria-live="polite">Not started; no candidate files fetched.</p>
+<pre id="details">No verification result.</pre>
+</article>
+<p><small>Checksum comparison detects mismatched bytes; it does not establish publisher identity or review CDN/runtime dependencies. Candidate manifests are explicitly not approved assets. No customer CSV or executable wheel is accepted by this page.</small></p>
+</main>
+<script type="module">
+"use strict";
+const $=id=>document.getElementById(id);
+const MANIFEST="candidate-assets/manifest.json";
+const MAX_MANIFEST=128*1024, MAX_WHEEL=10*1024*1024;
+function validateCandidateManifest(input) {
+  if(!input || typeof input!=="object" || Array.isArray(input) ||
+      input.schema_version!=="1" || input.status!=="candidate-not-approved" ||
+      input.purpose!=="review-only-static-asset-inventory" ||
+      !Array.isArray(input.assets) || input.assets.length===0 || input.assets.length>1000) {
+    throw Error("Not a valid review-only candidate manifest");
+  }
+  const files=input.assets.filter(item=>item && typeof item.path==="string" &&
+    /^energydata_kit-[0-9][a-zA-Z0-9_.]*-py3-none-any\.whl$/.test(item.path));
+  if(files.length!==1)throw Error("Manifest must list exactly one top-level EnergyData Kit wheel");
+  const wheel=files[0];
+  if(!Number.isSafeInteger(wheel.bytes)||wheel.bytes<=0||wheel.bytes>MAX_WHEEL||
+     typeof wheel.sha256!=="string"||!/^[a-f0-9]{64}$/.test(wheel.sha256)) {
+    throw Error("Invalid wheel size or SHA-256");
+  }
+  if(!Number.isSafeInteger(input.total_bytes)||input.total_bytes<wheel.bytes)
+    throw Error("Inconsistent manifest byte total");
+  return wheel;
+}
+async function readBounded(response,maxBytes,label) {
+  if(!response.ok)throw Error(label+" HTTP "+response.status);
+  const declared=response.headers.get("content-length");
+  if(declared!==null && (!/^\d+$/.test(declared)||Number(declared)>maxBytes))
+    throw Error(label+" exceeds size cap");
+  if(!response.body)throw Error(label+" streaming response unavailable");
+  const reader=response.body.getReader(),chunks=[];
+  let total=0;
+  try {
+    while(true){
+      const {done,value}=await reader.read();
+      if(done)break;
+      total+=value.byteLength;
+      if(total>maxBytes)throw Error(label+" exceeds size cap");
+      chunks.push(value);
+    }
+  }finally{reader.releaseLock()}
+  const out=new Uint8Array(total);let at=0;
+  for(const chunk of chunks){out.set(chunk,at);at+=chunk.byteLength}
+  return out;
+}
+async function verifyCandidate(fetchImpl=fetch, cryptoImpl=globalThis.crypto) {
+  if(!cryptoImpl?.subtle)throw Error("Secure-context SHA-256 is required");
+  const manifestUrl=new URL(MANIFEST,location.href);
+  if(manifestUrl.origin!==location.origin)throw Error("Manifest must be same-origin");
+  const mResponse=await fetchImpl(manifestUrl.href,{cache:"no-store",credentials:"omit",redirect:"error"});
+  const manifest=JSON.parse(new TextDecoder().decode(await readBounded(mResponse,MAX_MANIFEST,"Manifest")));
+  const wheel=validateCandidateManifest(manifest);
+  const wheelUrl=new URL(wheel.path,manifestUrl.href);
+  if(wheelUrl.origin!==location.origin || wheelUrl.pathname.includes("%"))
+    throw Error("Wheel must be same-origin with an unencoded name");
+  const wResponse=await fetchImpl(wheelUrl.href,{cache:"no-store",credentials:"omit",redirect:"error"});
+  const bytes=await readBounded(wResponse,wheel.bytes,"Wheel");
+  if(bytes.byteLength!==wheel.bytes)throw Error("Wheel byte count differs from manifest");
+  const digest=Array.from(new Uint8Array(await cryptoImpl.subtle.digest("SHA-256",bytes)),
+    b=>b.toString(16).padStart(2,"0")).join("");
+  if(digest!==wheel.sha256)throw Error("Wheel SHA-256 mismatch");
+  return {wheel:wheel.path,bytes:bytes.byteLength,sha256:digest,status:manifest.status,
+    message:"Byte integrity PASS only. Package not approved or executed."};
+}
+$("verify").onclick=async()=>{
+  $("verify").disabled=true;$("status").textContent="Checking locally staged files...";
+  $("details").textContent="No verification result.";
+  try {
+    const result=await verifyCandidate();
+    $("status").textContent="Integrity PASS (review only).";
+    $("details").textContent=JSON.stringify(result,null,2);
+  }catch(err){
+    $("status").textContent="Candidate verification failed.";
+    $("details").textContent=String(err?.message||err);
+  }finally{$("verify").disabled=false}
+};
+</script></body></html>

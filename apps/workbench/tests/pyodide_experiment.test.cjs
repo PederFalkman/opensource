@@ -25,7 +25,7 @@ test("no Python engine is loaded before explicit user action", () => {
   assert(script.indexOf('await import(RUNTIME+"pyodide.mjs")') >
          script.indexOf('$("run").onclick=async()=>'));
   assert(html.includes("This isolated prototype"));
-  assert(html.includes("Use synthetic, non-sensitive CSV files only"));
+  assert(html.includes("generates its own synthetic CSV in the browser"));
 });
 test("real Python package API is invoked, not JS approximation", () => {
   assert(html.includes("ek.assess_quality(series"));

@@ -1,0 +1,49 @@
+name: WEB-07 manual Chromium/Pyodide parity
+
+# Manual-only after the initial Chromium parity gates have been proven.
+# Never run this expensive browser/Pyodide download on PR, push or schedule.
+# Synthetic-only input; never customer data.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-parity:
+    name: Chromium real Python parity (manual)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Install local EnergyData Kit and optional browser test tooling
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -e packages/energydata-kit build playwright
+          python -m playwright install --with-deps chromium
+      - name: Build local trusted wheel
+        run: python -m build --wheel packages/energydata-kit --outdir /tmp/edk-wheel
+      # Targeted four-scenario run; wait for the current asynchronous browser assessment before reading JSON.
+      - name: Execute synthetic-only Chromium/Pyodide parity
+        run: |
+          set -euo pipefail
+          wheel=(/tmp/edk-wheel/energydata_kit-*.whl)
+          test "${#wheel[@]}" -eq 1
+          set +e
+          python apps/workbench/browser_parity_smoke.py \
+            --wheel "${wheel[0]}" --timeout-ms 300000 \
+            2>&1 | tee /tmp/edk-browser-parity.log
+          code="${PIPESTATUS[0]}"
+          set -e
+          {
+            echo "## WEB-07 Chromium parity"
+            echo "Synthetic-only browser test exit code: ${code}"
+            echo "Inspect this job's log for the report comparison, diagnostics and observed network hosts."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$code"

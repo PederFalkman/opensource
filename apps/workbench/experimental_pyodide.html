@@ -6,7 +6,7 @@
 :root{color-scheme:light}body{margin:0;background:#f4f7f4;color:#17372f;font:16px/1.55 system-ui,sans-serif}
 main{max-width:800px;margin:auto;padding:30px 18px}h1{font-size:32px;line-height:1.1}h2{font-size:19px}
 article{background:white;border:1px solid #d7e2d9;border-radius:8px;padding:20px;margin:18px 0}
-label{display:block;font-weight:600;margin:15px 0}input{display:block;margin-top:6px;max-width:100%}
+label{display:block;font-weight:600;margin:15px 0}input,select{display:block;margin-top:6px;max-width:100%;padding:5px}
 button{background:#164a3d;border:0;border-radius:5px;color:white;padding:10px 16px;font:inherit;cursor:pointer}
 button:disabled{opacity:.5;cursor:not-allowed}.warning{border-left:4px solid #a46f2d;padding:12px;background:#fff3df}
 pre{overflow:auto;max-height:340px;background:#eaf0e9;padding:16px;border-radius:6px;font-size:12px}
@@ -17,16 +17,14 @@ small{color:#52645e}a{color:#14563c}
 <p><strong>SOLID SOUP / OPEN</strong> · local research spike</p>
 <h1>Experimental Python in your browser</h1>
 <p>This isolated prototype evaluates the real <code>energydata_kit.assess_quality()</code> library under Pyodide. It is <strong>not a released, tested or offline-ready feature</strong>.</p>
-<p class="warning">Use synthetic, non-sensitive CSV files only. Loading Python downloads Pyodide and dependencies from third-party hosts. Your selected CSV and wheel are processed inside the browser; this page does not intentionally upload their contents. A Python wheel executes code: select only a trusted locally built EnergyData Kit wheel. Never use this prototype for operational decisions.</p>
-<article><h2>1. Select files</h2>
+<p class="warning">This experiment generates its own synthetic CSV in the browser and does not accept uploaded CSV. Loading Python downloads Pyodide and dependencies from third-party hosts. Your selected CSV and wheel are processed inside the browser; this page does not intentionally upload their contents. A Python wheel executes code: select only a trusted locally built EnergyData Kit wheel and verify its SHA-256 against an independently calculated value. Never use this prototype for operational decisions.</p>
+<article><h2>1. Select a trusted Python wheel</h2>
 <label>Locally built EnergyData Kit wheel (.whl)
 <input type="file" id="wheel" accept=".whl"></label>
-<label>Synthetic CSV (max 5 MiB)
-<input type="file" id="csv" accept=".csv,text/csv"></label>
-<label>Timestamp column<input id="timestamp" value="timestamp"></label>
-<label>Value column<input id="value" value="power_kw"></label>
-<label>Expected interval (minutes)<input id="interval" type="number" value="15" min="1" max="1440"></label>
-<p><small>First build a wheel from <code>packages/energydata-kit</code> using <code>python -m build --wheel</code>. The wheel is never published or uploaded by this page.</small></p></article>
+<label>Expected SHA-256 of the trusted local wheel (64 lowercase or uppercase hex characters)
+<input id="wheelHash" spellcheck="false" autocomplete="off" maxlength="64" placeholder="Compute locally with shasum -a 256"></label>
+<label>Synthetic test scenario<select id="scenario"><option value="baseline">Baseline: gaps, duplicate, blank value</option><option value="dst_fall">Autumn DST: repeated local hour, distinct UTC instants</option><option value="dst_spring">Spring DST: explicit offset transition</option><option value="mixed_offsets">Mixed Z and offset timestamps</option></select></label><p>All scenarios are generated locally from hard-coded values. No customer CSV files can be selected.</p>
+<p><small>Build the wheel locally with <code>python -m build --wheel</code>. On macOS/Linux, calculate the wheel hash using <code>shasum -a 256 dist/energydata_kit-*.whl</code> (or <code>sha256sum</code> on Linux) and independently copy its checksum above. A digest verifies file equality against the value you supplied; it does not establish who built the wheel.</small></p></article>
 <article><h2>2. Execute locally</h2>
 <button id="run">Load Python and analyze</button>
 <p role="status" aria-live="polite" id="status">Not started. No external runtime loaded.</p>
@@ -40,18 +38,87 @@ const $=id=>document.getElementById(id);
 const RUNTIME="https://cdn.jsdelivr.net/pyodide/v0.29.5/full/";
 let output=null,engine=null;
 function setStatus(message){$("status").textContent=message}
+// Keep this synthetic fixture numerically identical to the main Workbench.
+// Automated tests compare every row across both pages.
+function experimentSyntheticGrid() {
+  const base = Date.UTC(2026, 9, 19, 0, 0);
+  const grid = [["timestamp", "power_kw"]];
+  for (let i = 0; i < 96; i++) {
+    if (i === 28 || i === 29) continue;
+    const value = i === 62 ? "" : (440 + 75 * Math.sin(i / 8) + 20 * Math.cos(i / 3)).toFixed(2);
+    const line = [new Date(base + i * 900000).toISOString(), value];
+    grid.push(line);
+    if (i === 54) grid.push([...line]);
+  }
+  return grid;
+}
+function syntheticScenarioGrid(scenario) {
+  if (scenario === "baseline") return experimentSyntheticGrid();
+  const cases = {
+    // Repeated wall-clock hour in Europe/Stockholm; all instants are unique.
+    dst_fall: [
+      ["2026-10-25T01:30:00+02:00", "1"],
+      ["2026-10-25T02:00:00+02:00", "2"],
+      ["2026-10-25T02:30:00+02:00", "3"],
+      ["2026-10-25T02:00:00+01:00", "4"],
+      ["2026-10-25T02:30:00+01:00", "5"]
+    ],
+    dst_spring: [
+      ["2026-03-29T01:30:00+01:00", "1"],
+      ["2026-03-29T01:45:00+01:00", "2"],
+      ["2026-03-29T03:00:00+02:00", "3"],
+      ["2026-03-29T03:15:00+02:00", "4"]
+    ],
+    mixed_offsets: [
+      ["2026-01-01T00:00:00Z", "1"],
+      ["2026-01-01T01:15:00+01:00", "2"],
+      ["2026-01-01T00:30:00Z", ""],
+      ["2026-01-01T01:45:00+01:00", "4"]
+    ]
+  };
+  if (!Object.prototype.hasOwnProperty.call(cases, scenario)) {
+    throw Error("Unknown synthetic test scenario");
+  }
+  return [["timestamp", "power_kw"], ...cases[scenario].map(row => [...row])];
+}
+// Synthetic-only inspection hook for the optional real-browser parity harness.
+// Does not expose private data, a wheel, or a Python runtime.
+globalThis.__edkSyntheticFixtureForTest = experimentSyntheticGrid;
+globalThis.__edkSyntheticScenarioForTest = syntheticScenarioGrid;
+function syntheticCsvText() {
+  return syntheticScenarioGrid($("scenario").value).map(row => row.map(value => {
+    const cell = String(value);
+    return /[",\r\n]/.test(cell) ? '"' + cell.replaceAll('"', '""') + '"' : cell;
+  }).join(",")).join("\r\n") + "\r\n";
+}
+async function validateWheelDigest(wheelBytes, expectedHash) {
+  const expected = expectedHash.trim().toLowerCase();
+  if (!/^[a-f0-9]{64}$/.test(expected)) {
+    throw Error("Enter a 64-character SHA-256 copied from a trusted local build.");
+  }
+  if (!globalThis.crypto?.subtle) {
+    throw Error("Browser crypto.subtle is unavailable; use localhost or HTTPS.");
+  }
+  const digest = new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", wheelBytes));
+  const actual = Array.from(digest, byte => byte.toString(16).padStart(2, "0")).join("");
+  if (actual !== expected) throw Error("Wheel SHA-256 mismatch; nothing was executed.");
+  return actual;
+}
 $("run").onclick=async()=>{
   $("run").disabled=true;$("download").disabled=true;output=null;$("result").textContent="No report";
+  setStatus("Preparing selected synthetic scenario and validating wheel checksum...");
   try{
-    const wheel=$("wheel").files[0],csv=$("csv").files[0];
-    if(!wheel||!csv)throw Error("Select both a trusted wheel and a synthetic CSV.");
+    const wheel=$("wheel").files[0];
+    if(!wheel)throw Error("Select a trusted locally built wheel.");
     if(!/^energydata_kit-[\w.]+-py3-none-any\.whl$/i.test(wheel.name))
       throw Error("Expected a pure-Python energydata_kit wheel built from this repository.");
-    if(wheel.size>10*1024*1024 || csv.size>5*1024*1024)throw Error("Wheel or CSV exceeds size limit.");
-    const interval=Number($("interval").value);
-    if(!Number.isInteger(interval)||interval<1||interval>1440)throw Error("Interval must be 1–1440 minutes.");
-    const timestamp=$("timestamp").value.trim(), value=$("value").value.trim();
-    if(!timestamp||!value||timestamp===value)throw Error("Select distinct timestamp and value columns.");
+    if(wheel.size>10*1024*1024)throw Error("Wheel exceeds 10 MiB limit.");
+    // Refuse mismatched wheels before downloading or executing a Python runtime.
+    const wheelBytes=await wheel.arrayBuffer();
+    await validateWheelDigest(wheelBytes, $("wheelHash").value);
+    const interval=15, timestamp="timestamp", value="power_kw";
+    const chosenScenario=$("scenario").value;
+    syntheticScenarioGrid(chosenScenario);
     setStatus("Loading Python runtime and dependencies; requires network access...");
     if(!engine){
       const {loadPyodide}=await import(RUNTIME+"pyodide.mjs");
@@ -61,8 +128,8 @@ $("run").onclick=async()=>{
     }
     setStatus("Installing selected local pure-Python wheel in memory...");
     const sitePackages=engine.runPython("import site\nsite.getsitepackages()[0]");
-    engine.unpackArchive(await wheel.arrayBuffer(),"wheel",{extractDir:sitePackages});
-    engine.globals.set("csv_text",await csv.text());
+    engine.unpackArchive(wheelBytes,"wheel",{extractDir:sitePackages});
+    engine.globals.set("csv_text",syntheticCsvText());
     engine.globals.set("time_column",timestamp);
     engine.globals.set("value_column",value);
     engine.globals.set("interval_minutes",interval);
@@ -102,7 +169,7 @@ json.dumps({
     "adapter_version": "energydata.workbench.python.v1",
     "engine": "python-validated",
     "package_version": ek.__version__,
-    "source": "browser-local-synthetic-input",
+    "source": "fixed-synthetic-fixture",
     "columns": {"timestamp": time_column, "value": value_column},
     "interval_minutes": interval_minutes,
     "report": report.to_dict(),
