@@ -29,23 +29,41 @@
 const $=id=>document.getElementById(id);let rows=[],report=null,filename="";const N=25;
 // RFC 4180-style CSV import for the non-authoritative browser preview.
 // Quotes must cover the entire field; malformed quote placement is rejected.
+const MAX_CSV_BYTES = 5 * 1024 * 1024;
+const MAX_CSV_ROWS = 50000;
+const MAX_CSV_COLUMNS = 128;
+const MAX_CSV_FIELD_LENGTH = 16384;
 function csvParse(text) {
   if (typeof text !== "string") throw Error("CSV must be text");
+  if (text.length > MAX_CSV_BYTES) throw Error("CSV exceeds 5 MiB text limit");
+  if (text.includes("\0")) throw Error("CSV contains a NUL control character");
   const s = text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
   const out = [];
   let row = [], cell = "", state = "start";
-  const pushField = () => { row.push(cell); cell = ""; state = "start"; };
+  const pushField = () => {
+    if (cell.length > MAX_CSV_FIELD_LENGTH) throw Error("CSV field exceeds 16,384 characters");
+    row.push(cell);
+    if (row.length > MAX_CSV_COLUMNS) throw Error("CSV exceeds 128 columns");
+    cell = "";
+    state = "start";
+  };
   const pushRow = () => {
     pushField();
     // Ignore wholly blank physical lines, not quoted empty records or values.
-    if (row.length > 1 || row[0] !== "") out.push(row);
+    if (row.length > 1 || row[0] !== "") {
+      if (out.length >= MAX_CSV_ROWS + 1) throw Error("CSV exceeds 50,000 data rows");
+      out.push(row);
+    }
     row = [];
   };
   for (let i = 0; i < s.length; i++) {
     const ch = s[i];
     if (state === "quoted") {
       if (ch === '"') state = "after-quote";
-      else cell += ch;
+      else {
+        cell += ch;
+        if (cell.length > MAX_CSV_FIELD_LENGTH) throw Error("CSV field exceeds 16,384 characters");
+      }
       continue;
     }
     if (state === "after-quote") {
@@ -65,6 +83,7 @@ function csvParse(text) {
       continue;
     }
     cell += ch;
+    if (cell.length > MAX_CSV_FIELD_LENGTH) throw Error("CSV field exceeds 16,384 characters");
     state = "plain";
   }
   if (state === "quoted") throw Error("Unclosed quoted CSV field");
@@ -117,8 +136,10 @@ $("upload").onclick=()=>$("file").click();$("file").onchange=async e=>{
   try{
     const f=e.target.files[0];
     if(!f)return;
-    if(f.size>5*1024*1024)throw Error("CSV must be 5 MB or smaller");
-    setData(csvParse(await f.text()),f.name);
+    if(f.size>MAX_CSV_BYTES)throw Error("CSV must be 5 MiB or smaller");
+    // Fail closed on malformed UTF-8; file.text() silently replaces corrupt bytes.
+    const decoded=new TextDecoder("utf-8",{fatal:true}).decode(await f.arrayBuffer());
+    setData(csvParse(decoded),f.name);
     $("error").textContent="";
   }catch(err){clearPreviewAfterImportFailure(err.message)}
   finally{e.target.value=""}
