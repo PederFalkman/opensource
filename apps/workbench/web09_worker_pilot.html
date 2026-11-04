@@ -98,7 +98,7 @@ $("run").onclick=async()=>{
     const wheelBytes=candidate.bytes.buffer.slice(
       candidate.bytes.byteOffset,candidate.bytes.byteOffset+candidate.bytes.byteLength);
     current.postMessage({
-      type:"run-synthetic",id,csvText:syntheticCsv(),
+      type:"run-synthetic",id,scenario:"baseline",
       digest:candidate.asset.sha256,wheelBytes
     },[wheelBytes]);
   }catch(error){
