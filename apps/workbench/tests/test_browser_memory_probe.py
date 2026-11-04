@@ -119,3 +119,15 @@ def test_pss_unavailable_is_null_not_zero():
     result = memory.process_tree_pss(42, FakePsutil)
     assert result["pss_bytes"] is None
     assert result["processes_with_pss"] == 0
+
+
+def test_sampler_records_complete_pss_and_keeps_rss_distinct():
+    FakePsutil._children = [FakePssChild(250), FakePssChild(350)]
+    sampler = memory.MemorySampler(FakePsutil, root_pid=42, interval_ms=20)
+    sampler.start()
+    threading.Event().wait(0.06)
+    result = sampler.stop().to_dict()
+    assert result["samples"] >= 1
+    assert result["complete_pss_samples"] >= 1
+    assert result["peak_complete_pss_bytes"] == 600
+    assert result["peak_descendant_rss_bytes"] == 246
