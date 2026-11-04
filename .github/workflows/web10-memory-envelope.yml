@@ -1,11 +1,8 @@
 name: WEB-10 manual process-memory envelope
 
-# Temporary self-path PR trigger for initial evidence; remove after first run.
+# Manual-only after initial evidence; no PR, push or scheduled trigger.
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - ".github/workflows/web10-memory-envelope.yml"
 
 permissions:
   contents: read
