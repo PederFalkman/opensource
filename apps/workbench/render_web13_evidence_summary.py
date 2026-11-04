@@ -31,6 +31,11 @@ def validated(data: dict[str, object]) -> tuple[bool, str]:
         return False, "Synthetic-only constraint missing"
     if data.get("browser") not in BROWSERS:
         return False, "Unknown browser"
+    commit = data.get("source_commit")
+    if commit is not None and (
+        not isinstance(commit, str) or re.fullmatch(r"[0-9a-f]{40}", commit) is None
+    ):
+        return False, "Invalid source commit"
     digest = data.get("wheel_sha256")
     if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
         return False, "Wheel digest absent"
@@ -71,6 +76,9 @@ def summary(data: dict[str, object]) -> str:
                 "- Scenarios: four independent Python parity checks and four JSON export checks",
                 "- Security negatives: five completed checks",
                 f"- Wheel SHA-256: `{data['wheel_sha256']}`",
+                f"- Source commit: `{data['source_commit']}`"
+                if data.get("source_commit") is not None
+                else "- Source commit: not supplied (local test)",
                 "- Manual review of runtime network hosts, signed provenance, privacy and accessibility remains required.",
             ]
         )
