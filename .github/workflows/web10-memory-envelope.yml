@@ -2,9 +2,6 @@ name: WEB-10 manual process-memory envelope
 
 # Manual-only after initial evidence; no PR, push or scheduled trigger.
 on:
-  pull_request:
-    paths:
-      - '.github/workflows/web10-memory-envelope.yml'
   workflow_dispatch:
 
 permissions:
