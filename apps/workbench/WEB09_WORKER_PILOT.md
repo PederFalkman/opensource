@@ -42,6 +42,12 @@ This is an **architectural pilot**, not an automatically installable or secure e
 
 **Sign-off boundary:** exact numerical parity for these four synthetic fixtures in tested Chromium. This does not authorize real CSV input, release, hosting or use in operational decisions.
 
+## Cancellation and retry regression gate
+
+The optional real-Chromium `browser_worker_smoke.py` now exercises **Run → immediate Cancel → check no report or late status overwrite → Run again** before executing the established four-scenario numerical parity matrix. This is designed to detect stale asynchronous messages and workers that fail to recover after termination. The extra cancel/retry sequence is **not yet a verified browser PASS on the current head**; the existing 4/4 parity result cited above remains valid for its previously tested commit.
+
+The heavy workflow remains manual-only to control GitHub Actions minutes.
+
 ## Next gates
 
 1. Ensure real Chromium worker parity and ordinary CI/security are green; record run ID and failures.
