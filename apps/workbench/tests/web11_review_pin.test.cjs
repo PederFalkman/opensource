@@ -60,3 +60,27 @@ test("reviewed hash rejects a different valid candidate manifest",async()=>{
   const second=Buffer.from(manifest.replace("0.17.0.dev0","0.17.1"));
   await assert.rejects(verifyManifestReviewPin(second,pin,webcrypto),/mismatch/);
 });
+
+test("cross-origin browser asset base and embedded credentials fail before network",async()=>{
+  const {fetchReviewPinnedCandidateWheel}=await modulePromise;
+  const original=Object.getOwnPropertyDescriptor(globalThis,"location");
+  let requests=0;
+  try{
+    Object.defineProperty(globalThis,"location",{
+      configurable:true,value:{origin:"https://workbench.example"}
+    });
+    const fetchFn=async()=>{requests++;return response(Buffer.from(manifest))};
+    await assert.rejects(fetchReviewPinnedCandidateWheel({
+      baseUrl:"https://untrusted.example/web09_worker_pilot.html",
+      expectedManifestSha256:pin,cryptoFn:webcrypto,fetchFn
+    }),/current page origin/);
+    await assert.rejects(fetchReviewPinnedCandidateWheel({
+      baseUrl:"https://user:secret@workbench.example/web09_worker_pilot.html",
+      expectedManifestSha256:pin,cryptoFn:webcrypto,fetchFn
+    }),/Credential-bearing asset URL/);
+    assert.equal(requests,0);
+  }finally{
+    if(original)Object.defineProperty(globalThis,"location",original);
+    else delete globalThis.location;
+  }
+});
