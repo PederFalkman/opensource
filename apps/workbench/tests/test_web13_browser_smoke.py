@@ -74,3 +74,11 @@ def test_fixtures_cover_distinct_dst_instants_and_reject_unknown_scenarios() -> 
     assert any("+01:00" in row[0] for row in fall[1:])
     with pytest.raises(ValueError, match="Unsupported synthetic scenario"):
         MODULE.reference_rows("user-file")
+
+
+def test_browser_harness_requires_synthetic_receipt_and_negative_pin_checks() -> None:
+    text = MODULE_PATH.read_text(encoding="utf-8")
+    assert "reviewed_pin = hashlib.sha256(manifest_bytes).hexdigest()" in text
+    assert 'page.locator("#reviewPin").fill(reviewed_pin)' in text
+    assert "Manifest fetched before independent pin supplied" in text
+    assert "Incorrect review pin was not rejected" in text
