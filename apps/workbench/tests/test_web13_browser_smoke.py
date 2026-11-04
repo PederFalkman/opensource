@@ -80,5 +80,5 @@ def test_browser_harness_requires_synthetic_receipt_and_negative_pin_checks() ->
     text = MODULE_PATH.read_text(encoding="utf-8")
     assert "reviewed_pin = hashlib.sha256(manifest_bytes).hexdigest()" in text
     assert 'page.locator("#reviewPin").fill(reviewed_pin)' in text
-    assert "Manifest fetched before independent pin supplied" in text
+    assert "Candidate asset requested before review pin supplied" in text
     assert "Incorrect review pin was not rejected" in text
