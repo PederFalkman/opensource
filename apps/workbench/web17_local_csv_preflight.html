@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'none'; worker-src 'none'; form-action 'none'; img-src 'none'; object-src 'none'; base-uri 'none'">
+<title>EnergyData Kit – Local CSV Preflight</title>
+<style>
+:root{color-scheme:light}*{box-sizing:border-box}body{background:#f6f7f5;color:#183d33;font:15px/1.55 system-ui,sans-serif;margin:0}
+main{max-width:850px;margin:30px auto;padding:24px}article{background:white;border:1px solid #dbe2dd;padding:25px;border-radius:8px}
+button{border:1px solid #204f41;background:#204f41;color:white;border-radius:4px;padding:10px 16px;font:inherit;cursor:pointer}
+button:disabled{opacity:.55;cursor:not-allowed}h1{font-size:32px;letter-spacing:-.8px}
+.muted{color:#526b60}.status{margin-top:18px;min-height:25px}.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:15px}
+.metric{background:#f2f6f3;border:1px solid #e0e8e3;padding:12px}.metric strong{display:block;font-size:25px}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow:auto}
+[hidden]{display:none!important}.warning{border-left:3px solid #a58254;padding-left:12px}
+</style></head><body><main><p><a href="index.html">Back to Workbench</a></p>
+<small>SOLID SOUP / OPEN · INTERNAL WORKING DRAFT</small>
+<h1>Local CSV preflight</h1><p class="muted">Verify a CSV file's structure entirely inside this page before considering any Python analysis.</p>
+<article><p class="warning">This is a separate, non-authoritative technical review. It does not run Python, send files to a server, or approve files for the experimental Worker.</p>
+<label for="file"><strong>Select a CSV file (up to 5 MiB)</strong></label>
+<p><input id="file" type="file" accept=".csv,text/csv"></p><button id="clear" type="button">Clear local selection</button>
+<p id="status" class="status" role="status" aria-live="polite">No file selected.</p>
+<div id="metrics" class="metrics" hidden>
+<div class="metric">Data rows<strong id="rows">—</strong></div>
+<div class="metric">Columns<strong id="cols">—</strong></div>
+</div><p id="headers" class="muted" hidden></p><p class="muted">Raw rows are never printed, stored or sent to the Python Worker. This page has no external dependency or network call.</p>
+</article></main><script type="module" src="./web17_local_csv_preflight_ui.mjs"></script></body></html>
