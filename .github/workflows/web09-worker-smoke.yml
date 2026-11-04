@@ -3,9 +3,6 @@ name: WEB-09 browser worker pilot (targeted)
 # Manual-only after the first actual Chromium worker parity PASS.
 # No automatic PR/push/schedule to conserve browser download costs.
 on:
-  pull_request:
-    paths:
-      - '.github/workflows/web09-worker-smoke.yml'
   workflow_dispatch:
     inputs:
       browser:
