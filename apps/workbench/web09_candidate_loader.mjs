@@ -47,7 +47,7 @@ export async function boundedBytes(response,limit,label) {
 }
 
 export async function fetchCandidateWheel({
-  baseUrl, fetchFn=fetch, cryptoFn=globalThis.crypto
+  baseUrl, fetchFn=fetch, cryptoFn=globalThis.crypto, signal
 }={}) {
   if(!baseUrl)throw Error("Explicit same-origin base URL required");
   if(!cryptoFn?.subtle)throw Error("Secure context with SHA-256 required");
@@ -55,7 +55,7 @@ export async function fetchCandidateWheel({
   if(!["https:","http:"].includes(root.protocol))throw Error("HTTP(S) origin required");
   const manifestUrl=new URL(CANDIDATE_MANIFEST,root);
   if(manifestUrl.origin!==root.origin)throw Error("Cross-origin manifest prohibited");
-  const options={cache:"no-store",credentials:"omit",redirect:"error"};
+  const options={cache:"no-store",credentials:"omit",redirect:"error",signal};
   const manifestResponse=await fetchFn(manifestUrl.href,options);
   const manifestText=new TextDecoder().decode(
     await boundedBytes(manifestResponse,MAX_MANIFEST_BYTES,"Manifest")
