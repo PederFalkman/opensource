@@ -92,13 +92,15 @@ jobs:
         env:
           TEST_BROWSER: ${{ inputs.browser }}
           TEST_COMMIT: ${{ github.sha }}
+          TEST_RUN_ID: ${{ github.run_id }}
         run: |
           set -euo pipefail
           python apps/workbench/export_web13_review_receipt.py \
             "$RUNNER_TEMP/web13-synthetic-evidence.json" \
             "$RUNNER_TEMP/web13-synthetic-review.json" \
             --expected-commit "$TEST_COMMIT" \
-            --expected-browser "$TEST_BROWSER"
+            --expected-browser "$TEST_BROWSER" \
+            --run-id "$TEST_RUN_ID"
       - name: Retain short-lived synthetic-only browser review receipt
         if: ${{ success() && inputs.target == 'web13' }}
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1

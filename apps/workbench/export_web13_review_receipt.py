@@ -29,9 +29,13 @@ def validator():
     return module.validated
 
 
-def export_receipt(data: dict[str, object], commit: str, browser: str) -> dict[str, object]:
+def export_receipt(
+    data: dict[str, object], commit: str, browser: str, run_id: str | None = None
+) -> dict[str, object]:
     if COMMIT.fullmatch(commit) is None or browser not in BROWSERS:
         raise ValueError("Invalid expected run identity")
+    if run_id is not None and (not run_id.isascii() or not run_id.isdecimal() or int(run_id) <= 0):
+        raise ValueError("Invalid GitHub run ID")
     ok, reason = validator()(data, commit, browser)
     if not ok:
         raise ValueError(f"WEB-13 receipt is not a verified synthetic pass: {reason}")
@@ -48,6 +52,7 @@ def export_receipt(data: dict[str, object], commit: str, browser: str) -> dict[s
         "synthetic_only": True,
         "browser": browser,
         "source_commit": commit,
+        **({"github_run_id": run_id} if run_id is not None else {}),
         "wheel_sha256": data["wheel_sha256"],
         "result": "PASS",
         "page_errors": [],
@@ -71,6 +76,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("output", type=Path)
     parser.add_argument("--expected-commit", required=True)
     parser.add_argument("--expected-browser", choices=BROWSERS, required=True)
+    parser.add_argument("--run-id", required=True, help="GitHub Actions run ID")
     args = parser.parse_args(argv)
     try:
         if args.input.stat().st_size > MAX_BYTES:
@@ -78,7 +84,7 @@ def main(argv: list[str] | None = None) -> int:
         data = json.loads(args.input.read_text(encoding="utf-8"))
         if not isinstance(data, dict):
             raise ValueError("Receipt must be a JSON object")
-        result = export_receipt(data, args.expected_commit, args.expected_browser)
+        result = export_receipt(data, args.expected_commit, args.expected_browser, args.run_id)
         serialized = json.dumps(result, indent=2, sort_keys=True) + "\n"
         if len(serialized.encode("utf-8")) > 8192:
             raise ValueError("Sanitized receipt unexpectedly large")

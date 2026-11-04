@@ -6,6 +6,7 @@ import importlib.util
 import json
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -23,7 +24,8 @@ URL = "https://github.com/Solid-soup/opensource/actions/runs/123456"
 
 
 def make_receipt(path: Path, browser: str, commit: str = SHA) -> None:
-    path.write_text(json.dumps({"browser": browser, "source_commit": commit}), encoding="utf-8")
+    data = {"browser": browser, "source_commit": commit, "github_run_id": "123456"}
+    path.write_text(json.dumps(data), encoding="utf-8")
 
 
 def validator(data: dict, sha: str, browser: str) -> tuple[bool, str]:
@@ -104,3 +106,47 @@ def test_strict_matrix_option_exits_nonzero_without_receipts() -> None:
     )
     assert result.returncode == 1
     assert json.loads(result.stdout)["go_no_go"] == "NO_GO"
+
+
+def test_artifact_zip_can_be_read_without_manual_extraction(tmp_path: Path) -> None:
+    path = tmp_path / "web13-review.zip"
+    payload = {"browser": "chromium", "source_commit": SHA, "github_run_id": "123456"}
+    with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("web13-synthetic-review.json", json.dumps(payload))
+    assert MODULE.read_receipt(path) == payload
+    matrix = MODULE.browser_matrix(SHA, {"chromium": path}, {"chromium": URL}, validator)
+    assert matrix["chromium"]["status"] == "RECEIPT_VALID_REVIEW_REQUIRED"
+
+
+def test_run_id_and_run_url_must_match(tmp_path: Path) -> None:
+    path = tmp_path / "receipt.json"
+    make_receipt(path, "chromium")
+    mismatched = "https://github.com/Solid-soup/opensource/actions/runs/999999"
+    result = MODULE.browser_matrix(SHA, {"chromium": path}, {"chromium": mismatched}, validator)
+    assert result["chromium"]["status"] == "NOT_VERIFIED"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    del data["github_run_id"]
+    path.write_text(json.dumps(data), encoding="utf-8")
+    result = MODULE.browser_matrix(SHA, {"chromium": path}, {"chromium": URL}, validator)
+    assert result["chromium"]["status"] == "NOT_VERIFIED"
+
+
+def test_zip_path_traversal_and_multiple_members_rejected(tmp_path: Path) -> None:
+    path = tmp_path / "unsafe.zip"
+    with zipfile.ZipFile(path, "w") as archive:
+        archive.writestr("../web13-synthetic-review.json", "{}")
+    result = MODULE.browser_matrix(SHA, {"chromium": path}, {"chromium": URL}, validator)
+    assert result["chromium"]["status"] == "NOT_VERIFIED"
+    with zipfile.ZipFile(path, "w") as archive:
+        archive.writestr("web13-synthetic-review.json", "{}")
+        archive.writestr("other.json", "{}")
+    result = MODULE.browser_matrix(SHA, {"chromium": path}, {"chromium": URL}, validator)
+    assert result["chromium"]["status"] == "NOT_VERIFIED"
+
+
+def test_oversized_decompressed_zip_entry_rejected(tmp_path: Path) -> None:
+    path = tmp_path / "large.zip"
+    with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("web13-synthetic-review.json", "x" * 9000)
+    result = MODULE.browser_matrix(SHA, {"chromium": path}, {"chromium": URL}, validator)
+    assert result["chromium"]["status"] == "NOT_VERIFIED"
