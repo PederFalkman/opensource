@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import zipfile
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -24,7 +24,8 @@ URL = "https://github.com/Solid-soup/opensource/actions/runs/123456"
 
 
 def make_receipt(path: Path, browser: str, commit: str = SHA) -> None:
-    path.write_text(json.dumps({"browser": browser, "source_commit": commit, "github_run_id": "123456"}), encoding="utf-8")
+    data = {"browser": browser, "source_commit": commit, "github_run_id": "123456"}
+    path.write_text(json.dumps(data), encoding="utf-8")
 
 
 def validator(data: dict, sha: str, browser: str) -> tuple[bool, str]:
