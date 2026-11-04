@@ -35,7 +35,9 @@ python tools/release_status_report.py > release-readiness-local.json
 The first command requires local git history and returns an error instead
 of claiming an empty diff when the tag is unavailable. The JSON contains
 deduplicated changed-file lists split between Python package, Workbench
-and other repository code. It does not inspect binary content or sign
+and other repository code. A changed Python source file, including
+`__init__.py`, always sets `python_source_review_required=true`; that
+flag does not imply the change contains a new API or algorithm. It does not inspect binary content or sign
 ownership/IP findings, and it never grants publication approval.
 
 ## Decision required before 0.17.0
