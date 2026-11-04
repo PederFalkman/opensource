@@ -30,7 +30,7 @@ small{color:#596b63}
 "use strict";
 import {fetchCandidateWheel} from "./web09_candidate_loader.mjs";
 const $=id=>document.getElementById(id);
-let worker=null,runId=0,active=null;
+let worker=null,runId=0,active=null,downloadController=null;
 function syntheticGrid() {
   const base=Date.UTC(2026,9,19,0,0);
   const grid=[["timestamp","power_kw"]];
@@ -50,6 +50,7 @@ function reset(){
   $("run").disabled=false;
   $("cancel").disabled=true;
   active=null;
+  downloadController=null;
 }
 function terminate(){
   if(worker){worker.terminate();worker=null}
@@ -58,6 +59,7 @@ function terminate(){
 }
 $("cancel").onclick=()=>{
   runId++;
+  downloadController?.abort();
   terminate();
   $("status").textContent="Cancelled. Worker terminated; no Python report retained.";
   $("result").textContent="No report.";
@@ -71,7 +73,8 @@ $("run").onclick=async()=>{
   $("result").textContent="No report.";
   $("status").textContent="Verifying same-origin candidate package...";
   try {
-    const candidate=await fetchCandidateWheel({baseUrl:location.href});
+    downloadController=new AbortController();
+    const candidate=await fetchCandidateWheel({baseUrl:location.href,signal:downloadController.signal});
     if(active!==id)return;
     if(!worker)worker=new Worker("./web09_engine_worker.mjs",{type:"module"});
     const current=worker;
