@@ -198,6 +198,30 @@ def run(wheel: Path, browser_name: str, timeout_ms: int) -> int:
                     page.wait_for_timeout(150)
                     if "Cancelled" not in page.locator("#status").inner_text():
                         raise RuntimeError("Late wheel response resurrected cancelled run")
+                    # Verify a same-length modified wheel is refused on SHA-256
+                    # before an interpreter can run. No production asset changed.
+                    original_wheel = wheel.read_bytes()
+                    modified_wheel = bytearray(original_wheel)
+                    modified_wheel[len(modified_wheel) // 2] ^= 0x01
+                    def corrupt_wheel(route):
+                        route.fulfill(
+                            status=200,
+                            content_type="application/octet-stream",
+                            body=bytes(modified_wheel),
+                        )
+                    page.route("**/candidate-assets/*.whl", corrupt_wheel)
+                    page.locator("#run").click()
+                    page.wait_for_function(
+                        "() => !document.querySelector('#run').disabled",
+                        timeout=10000,
+                    )
+                    if "Wheel SHA-256 mismatch" not in page.locator("#status").inner_text():
+                        raise RuntimeError("Modified wheel not blocked by SHA-256 gate")
+                    if page.locator("#export").is_enabled():
+                        raise RuntimeError("Export enabled after corrupted wheel")
+                    if page.locator("#result").inner_text() != "No report.":
+                        raise RuntimeError("Corrupted wheel retained a report")
+                    page.unroute("**/candidate-assets/*.whl", corrupt_wheel)
 
                     for scenario in SCENARIOS:
                         page.locator("#scenario").select_option(scenario)
