@@ -92,6 +92,9 @@ jobs:
       - name: WEB-17 local CSV preflight regression (offline Node)
         if: matrix.python == '3.12' && !matrix.lowest
         run: node --test ../../apps/workbench/tests/web17_csv_preflight.test.mjs ../../apps/workbench/tests/web17_preflight_contract.test.mjs
+      - name: WEB-13 synthetic pilot and evidence tests (offline Node)
+        if: matrix.python == '3.12' && !matrix.lowest
+        run: node --test ../../apps/workbench/tests/*.test.mjs
 
   energydata-kit-os:
     # Lint and types do not depend on the OS, so only the tests run here.
