@@ -56,3 +56,14 @@ Select the actual generated wheel filename if the package version differs. Fast 
 
 ### Traceable changes
 - 2026-11-04: Added five-minute timeout with termination/abort cleanup; synthetic evidence metadata and size guards; dedicated opt-in E2E/browser export harness; offline harness contract tests. Review-only, not customer-authorized.
+
+## WEB-16 — independent reference parity and automatic offline regression gate
+
+The manual WEB-13 browser harness now generates independent local Python reference CSV fixtures for all four fixed scenarios, invokes `python_report.py` and compares **every canonical-v2 field** with the actual browser Worker output using `compare_parity.py`. This detects differences in gap/DST/duplicate handling that schema and export validation alone could miss. Browser output remains synthetic-only and unauthenticated; numerical parity is not provenance.
+
+The existing Python 3.12 Workbench test step already runs `pytest` for `apps/workbench/tests`. A new fast Node ES-module test step now runs `*.test.mjs`; previously only CommonJS `*.test.cjs` tests were included in the automatic job. Playwright still requires an explicit manual invocation, so the change adds no automatic browser downloads.
+
+**Verification caveat:** These changes are committed but neither the new latest-head GitHub CI nor real WEB-13 browser E2E was observed passing at the time of the edit. Do not merge based only on earlier WEB-09 evidence.
+
+### Traceable change history
+- 2026-11-04: WEB-16 independent Python canonical-v2 four-scenario reference parity in optional E2E; new reference-fixture offline tests; included Node ESM pilot/evidence tests in existing low-cost CI matrix (Python 3.12 only).
