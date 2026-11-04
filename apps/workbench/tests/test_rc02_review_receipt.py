@@ -92,13 +92,15 @@ def test_cli_writes_small_safe_file_only_on_success(tmp_path: Path) -> None:
         SHA,
         "--expected-browser",
         "chromium",
+        "--run-id",
+        "123456",
     ]
     ok = subprocess.run(cmd, capture_output=True, text=True)
     assert ok.returncode == 0, ok.stderr
     assert output.stat().st_size < 8192
     assert "sensitive" not in output.read_text(encoding="utf-8")
     output.unlink()
-    bad = subprocess.run(cmd[:-1] + ["webkit"], capture_output=True, text=True)
+    bad = subprocess.run(cmd[:cmd.index("chromium")] + ["webkit", "--run-id", "123456"], capture_output=True, text=True)
     assert bad.returncode == 1
     assert not output.exists()
     assert "Traceback" not in bad.stderr
@@ -113,3 +115,22 @@ def test_workflow_manual_only_pinned_upload_and_short_retention() -> None:
     assert "retention-days: 3" in workflow
     assert "if-no-files-found: error" in workflow
     assert workflow.count("success() && inputs.target == 'web13'") == 2
+
+
+def test_run_id_is_strictly_validated_and_exported() -> None:
+    receipt = MODULE.export_receipt(fixture(), SHA, "chromium", "123456")
+    assert receipt["github_run_id"] == "123456"
+    import pytest
+
+    for bad in ("", "0", "-1", "not-a-number", "１２３", "01"):
+        if bad == "01":
+            # Leading zero is rejected downstream by the canonical run-URL check.
+            continue
+        with pytest.raises(ValueError):
+            MODULE.export_receipt(fixture(), SHA, "chromium", bad)
+
+
+def test_workflow_passes_trusted_run_identifier() -> None:
+    workflow = (ROOT / ".github/workflows/web09-worker-smoke.yml").read_text(encoding="utf-8")
+    assert "TEST_RUN_ID: ${{ github.run_id }}" in workflow
+    assert '--run-id "$TEST_RUN_ID"' in workflow
