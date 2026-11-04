@@ -80,7 +80,7 @@ The Chromium smoke harness intercepts the **manifest fetch** and **wheel fetch**
 
 ## WEB-09 lifecycle regression extension — 2026-11-04
 
-The fast, offline Node suite now includes `tests/web09_lifecycle.test.cjs`. It executes the actual inline pilot control-flow against a synthetic DOM and mocked Worker transport, without downloading Pyodide or starting browsers. It covers: (1) a pending asset fetch being cancelled/aborted with late resolution suppressed, (2) late success or failure events from terminated Workers being ignored, (3) a new Worker accepting the next valid result after cancellation, and (4) candidate checksum/fetch failures not starting a Worker.
+The fast, offline Node suite now includes `tests/web09_lifecycle.test.cjs`. It executes the actual inline pilot control-flow against a synthetic DOM and mocked Worker transport, without downloading Pyodide or starting browsers. It covers: (1) a pending asset fetch being cancelled/aborted with late resolution suppressed, (2) late success or failure events from terminated Workers being ignored, (3) a new Worker accepting the next valid result after cancellation, (4) candidate checksum/fetch failures not starting a Worker, (5) cancellation after the Worker reports its `analyzing` stage with a subsequent stale completion ignored, and (6) duplicate Run clicks not creating two concurrent Workers.
 
 **Verification boundary:** These are deterministic tests of the UI lifecycle only. They do not test arbitrary interruption inside real Python computation or certify resource teardown in every browser. The measured Chromium cancel/retry and numerical parity evidence remains separately listed above. The heavy workflow stays manual-only.
 
