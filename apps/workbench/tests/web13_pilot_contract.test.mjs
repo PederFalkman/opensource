@@ -38,3 +38,10 @@ test("WEB-13 bounded run expires and clears timer on cancellation",()=>{
   assert.match(page,/setTimeout\(\(\)=>fail\(id,"Run exceeded five-minute time limit"\),MAX_RUN_MS\)/);
   assert.match(page,/clearTimeout\(deadline\)/);
 });
+
+test("WEB-19 requires a review pin before any candidate download",()=>{
+ assert.match(page,/id="reviewPin"/);
+ assert.match(page,/\^\[a-f0-9\]\{64\}\$/);
+ assert.match(page,/reviewed manifest SHA-256 is required before any package request/);
+ assert.match(page,/expectedManifestSha256:reviewPin/);
+});
