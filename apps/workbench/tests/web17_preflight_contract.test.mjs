@@ -6,8 +6,8 @@ const page=readFileSync(fileURLToPath(new URL("../web17_local_csv_preflight.html
 const controller=readFileSync(fileURLToPath(new URL("../web17_local_csv_preflight_ui.mjs",import.meta.url)),"utf8");
 test("WEB-17 has only local file intake and never posts data",()=>{
  assert.match(page,/type="file"/);
- assert.match(page,/chosen\.arrayBuffer\(\)/);
- assert.match(page,/inspectCsvBytes\(bytes\)/);
+ assert.match(controller,/chosen\.arrayBuffer\(\)/);
+ assert.match(controller,/inspectCsvBytes\(bytes\)/);
  assert.doesNotMatch(page,/<form\b/i);
  assert.doesNotMatch(page,/fetch\s*\(/);
  assert.doesNotMatch(controller,/XMLHttpRequest/);
@@ -16,9 +16,9 @@ test("WEB-17 has only local file intake and never posts data",()=>{
  assert.doesNotMatch(page,/\.runPython/);
 });
 test("WEB-17 reports structural metadata only and supports reset",()=>{
- assert.match(page,/result\.data_rows/);
- assert.match(page,/result\.columns/);
- assert.match(page,/selection\+\+/);
+ assert.match(controller,/result\.data_rows/);
+ assert.match(controller,/result\.columns/);
+ assert.match(controller,/selection\+\+/);
  assert.match(controller,/ticket!==selection/);
  assert.match(controller,/Python execution remains disabled/);
 });
