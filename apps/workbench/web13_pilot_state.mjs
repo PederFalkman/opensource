@@ -6,13 +6,24 @@ export function scenarioAllowed(value) {
 }
 export function safeReport(payload) {
   const r = payload?.report;
-  if(!r || r.schema_version !== "2") throw Error("Canonical v2 report required");
+  if(!r || typeof r!=="object" || Array.isArray(r) || r.schema_version !== "2")
+    throw Error("Canonical v2 report required");
   for(const k of ["n_rows","n_missing_intervals","n_duplicate_timestamps"])
     if(!Number.isSafeInteger(r[k]) || r[k]<0)throw Error("Invalid canonical counter: "+k);
   if(r.completeness!==null && r.completeness!==undefined &&
       (typeof r.completeness!=="number" || !Number.isFinite(r.completeness) ||
         r.completeness<0 || r.completeness>1))
     throw Error("Invalid canonical completeness");
+  if(r.n_duplicate_timestamps>r.n_rows)throw Error("Inconsistent canonical counters");
+  for(const optional of ["n_expected_intervals","n_missing_explained","n_gaps"]){
+    const value=r[optional];
+    if(value!==null && value!==undefined && (!Number.isSafeInteger(value)||value<0))
+      throw Error("Invalid canonical counter: "+optional);
+  }
+  if(r.n_expected_intervals!=null && r.n_missing_intervals>r.n_expected_intervals)
+    throw Error("Inconsistent canonical counters");
+  if(r.n_missing_explained!=null && r.n_missing_explained>r.n_missing_intervals)
+    throw Error("Inconsistent canonical counters");
   if(payload.engine!=="python-validated" || payload.source!=="web09-synthetic-only")
     throw Error("Only synthetic Python pilot reports supported");
   return r;
