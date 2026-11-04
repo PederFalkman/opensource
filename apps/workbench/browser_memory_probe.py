@@ -41,6 +41,40 @@ def process_tree_rss(root_pid: int, psutil_module: Any) -> tuple[int, int]:
     return total, count
 
 
+def process_tree_pss(root_pid: int, psutil_module: Any) -> dict[str, int | bool | None]:
+    """Best-effort proportional set size for every live descendant.
+
+    On systems without memory_full_info().pss, do not replace missing PSS with
+    RSS or zero. Missing or denied process readings make total incomplete.
+    """
+    if not isinstance(root_pid, int) or root_pid <= 0:
+        raise ValueError("root_pid must be a positive PID")
+    root = psutil_module.Process(root_pid)
+    count = 0
+    measured = 0
+    total = 0
+    for child in root.children(recursive=True):
+        try:
+            if not child.is_running():
+                continue
+            count += 1
+            value = getattr(child.memory_full_info(), "pss", None)
+            if not isinstance(value, (int, float)) or value < 0:
+                continue
+            total += int(value)
+            measured += 1
+        except (psutil_module.NoSuchProcess, psutil_module.AccessDenied,
+                AttributeError, NotImplementedError):
+            continue
+    complete = measured == count
+    return {
+        "pss_bytes": total if complete and measured else None,
+        "processes_seen": count,
+        "processes_with_pss": measured,
+        "complete": complete and measured > 0,
+    }
+
+
 @dataclass(frozen=True)
 class MemoryResult:
     samples: int
