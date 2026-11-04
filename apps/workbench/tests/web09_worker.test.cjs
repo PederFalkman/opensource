@@ -70,6 +70,25 @@ test("worker demo uses same synthetic fixture as Workbench",()=>{
                    JSON.parse(JSON.stringify(b.syntheticGrid())));
   assert(!pilot.includes('type="file"'));
 });
+test("worker uses internally generated fixture and refuses caller-supplied CSV",()=>{
+  const worker=fs.readFileSync(path.join(root,"web09_engine_worker.mjs"),"utf8");
+  const main=fs.readFileSync(path.join(root,"index.html"),"utf8");
+  const pilot=fs.readFileSync(path.join(root,"web09_worker_pilot.html"),"utf8");
+  const fromMain=main.slice(main.indexOf("function syntheticGrid() {"),
+    main.indexOf("\nfunction downloadText(",main.indexOf("function syntheticGrid() {")));
+  const fromWorker=worker.slice(worker.indexOf("function fixedSyntheticCsv() {"),
+    worker.indexOf("\nfunction respond(",worker.indexOf("function fixedSyntheticCsv() {")));
+  const vmMain=vm.createContext({}),vmWorker=vm.createContext({});
+  vm.runInContext(fromMain,vmMain);
+  vm.runInContext(fromWorker,vmWorker);
+  const expected=JSON.parse(JSON.stringify(vmMain.syntheticGrid()));
+  const actual=vmWorker.fixedSyntheticCsv().trim().split("\r\n").map(row=>row.split(","));
+  assert.deepEqual(actual,expected);
+  assert(worker.includes('Object.hasOwn(data,"csvText")'));
+  assert(pilot.includes('scenario:"baseline"'));
+  assert(!pilot.includes('csvText:syntheticCsv()'));
+});
+
 test("worker explicitly gates mismatched candidate digest before Pyodide import",()=>{
   const worker=fs.readFileSync(path.join(root,"web09_engine_worker.mjs"),"utf8");
   assert(worker.indexOf('actual !== data.digest') <
