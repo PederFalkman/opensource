@@ -87,3 +87,23 @@ jobs:
               echo "Inspect the test job logs for the failure."
             } >> "$GITHUB_STEP_SUMMARY"
           fi
+      - name: Prepare bounded synthetic-only review receipt
+        if: ${{ success() && inputs.target == 'web13' }}
+        env:
+          TEST_BROWSER: ${{ inputs.browser }}
+          TEST_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python apps/workbench/export_web13_review_receipt.py \
+            "$RUNNER_TEMP/web13-synthetic-evidence.json" \
+            "$RUNNER_TEMP/web13-synthetic-review.json" \
+            --expected-commit "$TEST_COMMIT" \
+            --expected-browser "$TEST_BROWSER"
+      - name: Retain short-lived synthetic-only browser review receipt
+        if: ${{ success() && inputs.target == 'web13' }}
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        with:
+          name: web13-review-${{ inputs.browser }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/web13-synthetic-review.json
+          if-no-files-found: error
+          retention-days: 3
