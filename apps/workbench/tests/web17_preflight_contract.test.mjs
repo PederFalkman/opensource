@@ -21,3 +21,12 @@ test("WEB-17 reports structural metadata only and supports reset",()=>{
  assert.match(page,/ticket!==selection/);
  assert.match(page,/Python execution remains disabled/);
 });
+
+test("WEB-17 CSP forbids network APIs, Workers and form submission",()=>{
+ assert.match(page,/http-equiv="Content-Security-Policy"/);
+ assert.match(page,/default-src 'none'/);
+ assert.match(page,/connect-src 'none'/);
+ assert.match(page,/worker-src 'none'/);
+ assert.match(page,/form-action 'none'/);
+ assert.match(page,/script-src 'self'/);
+});
