@@ -20,6 +20,7 @@ def test_workbench_does_not_count_as_package_change() -> None:
     result = MODULE.classify(["apps/workbench/web13_synthetic_review.html", "docs/README.md"])
     assert result["workbench_change_detected"] is True
     assert result["python_implementation_change_detected"] is False
+    assert result["python_source_review_required"] is False
     assert result["python_package_files"] == []
 
 
@@ -32,6 +33,7 @@ def test_version_module_is_disclosed_not_assumed_to_be_version_only() -> None:
     )
     assert result["python_source_files"] == ["packages/energydata-kit/src/energydata_kit/__init__.py"]
     assert result["python_implementation_change_detected"] is False
+    assert result["python_source_review_required"] is True
     assert "__init__.py" in result["review_notice"]
     assert result["python_package_metadata_or_docs"] == ["packages/energydata-kit/pyproject.toml"]
 
@@ -46,6 +48,7 @@ def test_implementation_change_is_detected_and_paths_deduplicated() -> None:
     )
     assert result["total_changed_files"] == 2
     assert result["python_implementation_change_detected"] is True
+    assert result["python_source_review_required"] is True
 
 
 def test_ref_failure_is_not_silently_reported_as_empty_diff(tmp_path: Path) -> None:
