@@ -1,4 +1,5 @@
 """Guard against accidental release approval in readiness JSON output."""
+
 from __future__ import annotations
 
 import json
