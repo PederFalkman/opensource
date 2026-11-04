@@ -17,6 +17,34 @@ function fixedSyntheticCsv() {
   return rows.map(row=>row.join(",")).join("\r\n")+"\r\n";
 }
 
+function syntheticScenarioCsv(scenario) {
+  if(scenario==="baseline")return fixedSyntheticCsv();
+  const fixtures={
+    dst_fall:[
+      ["2026-10-25T01:30:00+02:00","1"],
+      ["2026-10-25T02:00:00+02:00","2"],
+      ["2026-10-25T02:30:00+02:00","3"],
+      ["2026-10-25T02:00:00+01:00","4"],
+      ["2026-10-25T02:30:00+01:00","5"]
+    ],
+    dst_spring:[
+      ["2026-03-29T01:30:00+01:00","1"],
+      ["2026-03-29T01:45:00+01:00","2"],
+      ["2026-03-29T03:00:00+02:00","3"],
+      ["2026-03-29T03:15:00+02:00","4"]
+    ],
+    mixed_offsets:[
+      ["2026-01-01T00:00:00Z","1"],
+      ["2026-01-01T01:15:00+01:00","2"],
+      ["2026-01-01T00:30:00Z",""],
+      ["2026-01-01T01:45:00+01:00","4"]
+    ]
+  };
+  if(!Object.hasOwn(fixtures,scenario))throw Error("Unsupported synthetic scenario");
+  return [["timestamp","power_kw"],...fixtures[scenario]]
+    .map(row=>row.join(",")).join("\r\n")+"\r\n";
+}
+
 function respond(id, stage, extras = {}) {
   self.postMessage({id, stage, ...extras});
 }
@@ -33,8 +61,9 @@ self.onmessage = async ({data}) => {
       throw Error("Invalid wheel bytes");
     if (typeof data.digest !== "string" || !/^[a-f0-9]{64}$/.test(data.digest))
       throw Error("Invalid SHA-256");
-    if (data.scenario !== "baseline" || Object.hasOwn(data,"csvText"))
-      throw Error("Only internally generated synthetic baseline is supported");
+    if (!["baseline","dst_fall","dst_spring","mixed_offsets"].includes(data.scenario) ||
+        Object.hasOwn(data,"csvText"))
+      throw Error("Only internally generated synthetic scenarios are supported");
     const actual = Array.from(new Uint8Array(
       await self.crypto.subtle.digest("SHA-256", data.wheelBytes)),
       byte => byte.toString(16).padStart(2,"0")).join("");
@@ -53,7 +82,7 @@ self.onmessage = async ({data}) => {
     } else if (installedDigest !== actual) {
       throw Error("Different wheel requires a fresh worker");
     }
-    interpreter.globals.set("csv_text",fixedSyntheticCsv());
+    interpreter.globals.set("csv_text",syntheticScenarioCsv(data.scenario));
     respond(id,"analyzing",{detail:"Running actual EnergyData Kit Python"});
     const result=JSON.parse(await interpreter.runPythonAsync(PYTHON_ASSESSMENT));
     if (result.report?.schema_version !== "2") throw Error("Unexpected canonical schema");
