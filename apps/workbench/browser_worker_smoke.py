@@ -44,7 +44,17 @@ def load_helper(filename: str, name: str) -> Any:
     return module
 
 
-def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
+SUPPORTED_BROWSERS = ("chromium", "firefox", "webkit")
+
+
+def validate_browser(browser: str) -> str:
+    if browser not in SUPPORTED_BROWSERS:
+        raise ValueError(f"Unsupported browser: {browser}")
+    return browser
+
+
+def run(wheel: Path, *, timeout_ms: int = 180_000, browser_name: str = "chromium") -> int:
+    browser_name = validate_browser(browser_name)
     if not wheel.is_file() or not wheel.name.startswith("energydata_kit-") or wheel.suffix != ".whl":
         raise ValueError("A locally built EnergyData Kit wheel is required")
     if wheel.stat().st_size > 10*1024*1024:
@@ -75,7 +85,7 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
         thread.start()
         try:
             with sync_playwright() as playwright:
-                browser = playwright.chromium.launch()
+                browser = getattr(playwright, browser_name).launch()
                 try:
                     page = browser.new_page()
                     exceptions: list[str] = []
@@ -176,8 +186,10 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
                             ["2026-01-01T01:45:00+01:00","4"]]
                     }
                     comparisons=[]
+                    from time import perf_counter
                     for scenario, rows in fixtures.items():
                         page.locator("#scenario").select_option(scenario)
+                        began=perf_counter()
                         page.locator("#run").click()
                         page.wait_for_function(
                             "() => !document.querySelector('#run').disabled && "
@@ -203,11 +215,14 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
                         )
                         comparisons.append({
                             "scenario":scenario,"rows":len(rows)-1,
+                            "elapsed_seconds":round(perf_counter()-began,3),
                             "canonical_parity":"PASS" if not differences else "FAIL",
                             "differences":differences[:30],
                         })
                     print(json.dumps({
                         "worker_status":"Python executed in isolated worker",
+                        "browser":browser_name,
+                        "tested_scenarios":len(comparisons),
                         "cancelled_pending_fetch_phases":cancelled_phases,
                         "scenarios":comparisons,
                         "page_errors":exceptions,
@@ -229,11 +244,12 @@ def main(argv: list[str] | None = None) -> int:
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--wheel",type=Path,required=True)
     parser.add_argument("--timeout-ms",type=int,default=180000)
+    parser.add_argument("--browser",choices=SUPPORTED_BROWSERS,default="chromium")
     args=parser.parse_args(argv)
     if not 1000 <= args.timeout_ms <= 300000:
         parser.error("Timeout must be within 1000–300000 ms")
     try:
-        return run(args.wheel,timeout_ms=args.timeout_ms)
+        return run(args.wheel,timeout_ms=args.timeout_ms,browser_name=args.browser)
     except (RuntimeError,ValueError,OSError) as exc:
         print(f"WEB-09 SMOKE FAILED: {exc}",file=sys.stderr)
         return 2
