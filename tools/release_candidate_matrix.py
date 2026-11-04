@@ -23,7 +23,7 @@ RUN_URL = re.compile(r"https://github\.com/Solid-soup/opensource/actions/runs/[1
 SHA = re.compile(r"[0-9a-f]{40}\Z")
 MAX_RECEIPT_BYTES = 256 * 1024
 MAX_JSON_BYTES = 8192
-RUN_ID = re.compile(r"[1-9][0-9]*\\Z")
+RUN_ID = re.compile(r"[1-9][0-9]*\Z")
 RECEIPT_MEMBER = "web13-synthetic-review.json"
 
 
@@ -48,7 +48,6 @@ def head_sha(root: Path) -> str:
     if SHA.fullmatch(sha) is None:
         raise ValueError("Unable to resolve full commit SHA")
     return sha
-
 
 
 def read_receipt(path: Path) -> dict[str, object]:
