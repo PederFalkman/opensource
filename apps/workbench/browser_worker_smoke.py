@@ -141,6 +141,46 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
                     page.wait_for_timeout(150)
                     if "Cancelled" not in page.locator("#status").inner_text():
                         raise RuntimeError("Late message overwrote cancelled state")
+                    # Test actual Python-execution cancellation with a temporary
+                    # *test-only* copy of the worker. Inject a bounded Python sleep
+                    # before the real assessment, never into repository runtime.
+                    # This ensures the "analyzing" status stays observable while
+                    # real interpreter execution is active; terminate, reload,
+                    # and then run the unchanged production worker for parity.
+                    worker_path = root / "web09_engine_worker.mjs"
+                    original_worker = worker_path.read_text(encoding="utf-8")
+                    target = 'interpreter.runPythonAsync(PYTHON_ASSESSMENT)'
+                    injected = 'interpreter.runPythonAsync("import time\\\\ntime.sleep(3)\\\\n" + PYTHON_ASSESSMENT)'
+                    if original_worker.count(target) != 1:
+                        raise RuntimeError("Cannot instrument Python execution safely")
+                    worker_path.write_text(
+                        original_worker.replace(target, injected), encoding="utf-8"
+                    )
+                    try:
+                        page.reload(wait_until="load")
+                        page.locator("#scenario").select_option("baseline")
+                        page.locator("#run").click()
+                        page.wait_for_function(
+                            "() => document.querySelector('#status').textContent.includes("
+                            "'Running actual EnergyData Kit Python')",
+                            timeout=timeout_ms,
+                        )
+                        page.wait_for_timeout(150)
+                        if page.locator("#run").is_enabled():
+                            raise RuntimeError("Python completed before active-cancel probe")
+                        page.locator("#cancel").click()
+                        if "Cancelled" not in page.locator("#status").inner_text():
+                            raise RuntimeError("Active Python cancel not reflected in UI")
+                        if page.locator("#result").inner_text() != "No report.":
+                            raise RuntimeError("Active Python cancel retained a report")
+                        page.wait_for_timeout(250)
+                        if "Cancelled" not in page.locator("#status").inner_text():
+                            raise RuntimeError("Active Python late status overwrote cancellation")
+                        cancelled_phases.append("active_python_test_copy")
+                    finally:
+                        worker_path.write_text(original_worker, encoding="utf-8")
+                        # No test-only Python delay survives into parity checks.
+                        page.reload(wait_until="load")
                     # The normal scenario matrix below verifies that a fresh
                     # worker and a new asset fetch can recover after cancellation.
                     # Build independent Python reference fixtures; none are user-provided.
