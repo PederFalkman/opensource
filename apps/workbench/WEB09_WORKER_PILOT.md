@@ -63,9 +63,20 @@ The heavy workflow remains manual-only to control GitHub Actions minutes.
 
 ## Pending-request cancellation test (new, not yet browser-verified)
 
-The Chromium smoke harness now intercepts the **manifest fetch** and **wheel fetch** separately, holds each request pending, then presses Cancel and checks that no report is retained, the Run control is enabled, and no delayed error overwrites the cancellation state. A subsequent normal run must still reproduce all four canonical Python reports. The harness emits the list of tested pending-fetch phases.
+The Chromium smoke harness intercepts the **manifest fetch** and **wheel fetch** separately and proves cancellation/recovery with subsequent Python parity. The real-browser PASS is recorded below. Worker startup and active Python execution cancellations are separate remaining gates.
 
-This is a deterministic test design, **not a passing result until the targeted real-browser run succeeds**. Worker startup and active Python execution cancellations are separate remaining gates.
+## Manifest and wheel download cancellation verified — 2026-11-04
+
+- [Chromium workflow 41823191892](https://github.com/Solid-soup/opensource/actions/runs/41823191892), tested commit `dc453d9d635ed9b7169dd967c5d1c565443dfe7b`.
+- **PASS:** held the candidate manifest request open, pressed Cancel, verified the UI reports cancellation, holds no result, and re-enables Run.
+- **PASS:** held the candidate EnergyData Kit wheel request open, repeated the same cancellation assertions, including absence of late UI status overwrite.
+- **PASS:** after these two intentional pending-fetch cancellations and the existing immediate-cancel smoke, the worker restarted and returned **4/4 exact canonical v2 Python report matches** for the fixed synthetic scenarios.
+- Browser page errors: **0**. No customer data or wheel upload was used; all candidate files came from the disposable loopback test server.
+- The first attempt (run `41822963199`) failed because the Playwright request observer fired before its route handler had been dispatched. The harness now allows one event-loop dispatch interval before checking interception. The subsequent run passed.
+- Playwright may log an internal `asyncio.exceptions.CancelledError` when a deliberately suspended intercepted route is torn down; the actual browser assertions and job outcome passed. This is instrumentation cleanup, **not** evidence that a full network/privacy audit has been completed.
+- The expensive browser workflow was restored to `workflow_dispatch` only.
+
+**Scope:** two pending network download stages and restart in tested Chromium. This does not yet prove cancellation during arbitrary Pyodide runtime initialization, Python computation, Firefox/Safari execution, total WASM memory safety or signed dependency provenance.
 
 ## Next gates
 
