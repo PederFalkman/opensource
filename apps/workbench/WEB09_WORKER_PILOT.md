@@ -44,9 +44,22 @@ This is an **architectural pilot**, not an automatically installable or secure e
 
 ## Cancellation and retry regression gate
 
-The optional real-Chromium `browser_worker_smoke.py` now exercises **Run → immediate Cancel → check no report or late status overwrite → Run again** before executing the established four-scenario numerical parity matrix. This is designed to detect stale asynchronous messages and workers that fail to recover after termination. The extra cancel/retry sequence is **not yet a verified browser PASS on the current head**; the existing 4/4 parity result cited above remains valid for its previously tested commit.
+The optional real-Chromium `browser_worker_smoke.py` now exercises **Run → immediate Cancel → check no report or late status overwrite → Run again** before executing the established four-scenario numerical parity matrix. This is designed to detect stale asynchronous messages and workers that fail to recover after termination. The cancel/retry sequence subsequently passed in Chromium (run 41821627726; see evidence below).
 
 The heavy workflow remains manual-only to control GitHub Actions minutes.
+
+## Real Chromium cancel/retry verification — 2026-11-04
+
+- [GitHub Actions run 41821627726](https://github.com/Solid-soup/opensource/actions/runs/41821627726)
+- Tested commit `1eea79b02b49c0fa0de00bea9d605791bf0599ac`
+- **PASS:** browser clicked Run, immediately Cancel, confirmed canceled status and empty result, checked the Run control was enabled, waited for stale-message overwrite, then started a new run.
+- The restarted isolated Worker completed the baseline and three additional synthetic scenario comparisons against local Python.
+- Canonical v2 report parity: **4/4 PASS; zero field differences**.
+- Browser page errors: **0**.
+- Observed runtime dependency origins: `cdn.jsdelivr.net`, `pypi.org`, `files.pythonhosted.org`; candidate assets served from loopback.
+- After verification the costly browser workflow returned to **manual-only**, with no automatic PR/push/schedule trigger.
+
+**Limitations:** This is a single browser test of an immediate cancellation and recovery path; it does not guarantee cancellation during every possible Pyodide initialization, package download or Python computation stage. It does not measure cancellation latency distributions, worker/process memory, Safari/Firefox behavior, or dependency integrity beyond the candidate wheel. The pilot remains synthetic-only and not release-approved.
 
 ## Next gates
 
