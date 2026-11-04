@@ -136,19 +136,26 @@ def run(wheel: Path, browser_name: str, timeout_ms: int) -> int:
                         raise RuntimeError("Review pilot unexpectedly accepts local files")
                     # No candidate fetch may occur without a separately supplied pin.
                     manifest_requests = []
-                    page.on("request", lambda req: manifest_requests.append(req.url)
-                            if req.url.endswith("/candidate-assets/manifest.json") else None)
+                    wheel_requests = []
+                    def observe_request(request):
+                        if request.url.endswith("/candidate-assets/manifest.json"):
+                            manifest_requests.append(request.url)
+                        if request.url.endswith(".whl"):
+                            wheel_requests.append(request.url)
+                    page.on("request", observe_request)
                     page.locator("#run").click()
                     if "reviewed manifest SHA-256 is required" not in page.locator("#status").inner_text():
                         raise RuntimeError("Missing manifest pin did not fail closed")
-                    if manifest_requests:
-                        raise RuntimeError("Manifest fetched before independent pin supplied")
+                    if manifest_requests or wheel_requests:
+                        raise RuntimeError("Candidate asset requested before review pin supplied")
                     page.locator("#reviewPin").fill("0" * 64)
                     page.locator("#run").click()
                     page.wait_for_function(
                         "() => !document.querySelector('#run').disabled", timeout=10000)
                     if "SHA-256 mismatch" not in page.locator("#status").inner_text():
                         raise RuntimeError("Incorrect review pin was not rejected")
+                    if wheel_requests:
+                        raise RuntimeError("Wheel fetched after manifest pin mismatch")
                     if page.locator("#export").is_enabled():
                         raise RuntimeError("Export must remain disabled after invalid review pin")
                     page.locator("#reviewPin").fill(reviewed_pin)
