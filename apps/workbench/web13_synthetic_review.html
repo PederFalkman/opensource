@@ -33,8 +33,10 @@ small{color:#63746c}.warning{border-left:4px solid #a17c47;padding-left:12px}.st
 </main><script type="module">
 import {fetchCandidateWheel} from "./web09_candidate_loader.mjs";
 import {scenarioAllowed,freshState,transition} from "./web13_pilot_state.mjs";
+import {createSyntheticEvidence} from "./web14_evidence.mjs";
 const $=id=>document.getElementById(id);
 let state=freshState(),worker=null,abort=null,serial=0,fullReport=null;
+let startMs=null,scenarioInFlight=null,wheelDigest=null;
 const running=()=>["verifying","loading","analyzing"].includes(state.stage);
 function display(message){
   $("run").disabled=running();$("cancel").disabled=!running();
@@ -66,11 +68,13 @@ $("run").onclick=async()=>{
   if(!scenarioAllowed(scenario)){display("Invalid scenario");return}
   const id=String(++serial);
   state=transition(state,{type:"start",id,scenario});fullReport=null;
+  startMs=performance.now();scenarioInFlight=scenario;wheelDigest=null;
   $("result").textContent="No report.";display("Verifying candidate package...");
   try {
     abort=new AbortController();
     const candidate=await fetchCandidateWheel({baseUrl:location.href,signal:abort.signal});
     if(state.runId!==id)return;
+    wheelDigest=candidate.asset.sha256;
     worker=new Worker("./web09_engine_worker.mjs",{type:"module"});
     const current=worker;
     current.onmessage=({data})=>{
@@ -82,10 +86,14 @@ $("run").onclick=async()=>{
         }
         if(data.stage==="error"){fail(id,data.error);return}
         if(data.stage==="complete"){
+          const envelope=createSyntheticEvidence({
+            scenario:scenarioInFlight,wheelSha256:wheelDigest,
+            elapsedMs:performance.now()-startMs,output:data.result
+          });
           state=transition(state,{type:"complete",id,result:data.result});
-          fullReport=data.result;
-          $("result").textContent=JSON.stringify(data.result,null,2);
-          display("Synthetic Python report completed. This run is not independently attested.");
+          fullReport=envelope;
+          $("result").textContent=JSON.stringify(envelope,null,2);
+          display("Synthetic Python report completed. Evidence is internal and not independently attested.");
           cleanup();
         }
       }catch(e){fail(id,String(e.message||e))}
@@ -101,7 +109,7 @@ $("export").onclick=()=>{
   if(state.stage!=="complete"||!fullReport)return;
   const blob=new Blob([JSON.stringify(fullReport,null,2)+"\n"],{type:"application/json"});
   const url=URL.createObjectURL(blob),a=document.createElement("a");
-  a.href=url;a.download="energydata-synthetic-python-report.json";a.click();
+  a.href=url;a.download="energydata-synthetic-review-evidence.json";a.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 display("Idle. Python runtime not loaded.");
