@@ -34,6 +34,14 @@ The wheel path must exist and be a trusted local development build. No asset is 
 - Summing RSS can **double-count shared memory pages** between processes. Samples miss spikes between intervals. A single before/after comparison is not evidence of a memory leak or memory release.
 - Reproducible analysis requires repeated cold/warm runs on defined hardware, OS, browser build and pinned dependencies. Future work should add phase-tagged snapshots (prior to startup, before cancellation, after cancellation/GC, after restart) and OS-specific measurements.
 
+## Optional proportional set size (PSS) sampling — implementation, not yet measured
+
+The memory sampler now attempts Linux/OS process `memory_full_info().pss` alongside each periodic descendant-process RSS sample. The result includes `peak_complete_pss_bytes` and `complete_pss_samples`. **A PSS peak is reported only when every observed live descendant in that snapshot supplied a nonnegative PSS value.** Unsupported/denied/partial snapshots do not produce a guessed PSS total, and no samples means `null`, not zero.
+
+PSS is a different allocation view from RSS and helps avoid some double counting of shared resident pages; it still covers the **Python test harness's descendant process tree** (browser plus Playwright driver), **not** an individual Web Worker or isolated Pyodide/WASM heap. The sampling routines enumerate live processes independently for RSS and PSS; rapidly changing process trees may prevent perfect timestamp alignment. The value is an observed sample maximum, not a continuous true peak or a memory-reclamation proof.
+
+This is implementation and fast offline test coverage only. The previous 104-sample Chromium run did **not** collect PSS; its published RSS figures must not be relabeled.
+
 ## Acceptance gates
 
 1. The new offline tests must pass routine CI/security.
