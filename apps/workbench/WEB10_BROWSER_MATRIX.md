@@ -23,3 +23,16 @@ The manual-only workflow `.github/workflows/web09-worker-smoke.yml` has a browse
 WEB-09 Chromium four-case parity PASS: https://github.com/Solid-soup/opensource/actions/runs/41805199318
 
 WEB-10 Firefox and WebKit are **not verified** merely because their options exist. Actual engine execution must be recorded with run IDs and numerical differences. Third-party dependencies remain fetched at runtime and the candidate manifest has no independently authenticated publisher. Real customer CSV, releases and production hosting remain prohibited.
+
+## Real Firefox and WebKit evidence — 2026-11-04
+
+Targeted browser run: [41836406188](https://github.com/Solid-soup/opensource/actions/runs/41836406188), tested commit `e2808cbdb3dc64c5813ab947c2bab02355c5cb52`.
+
+| Engine | Baseline, cold (s) | Autumn DST (s) | Spring DST (s) | Mixed offsets (s) | Canonical parity |
+|---|---:|---:|---:|---:|---|
+| Firefox (Playwright Linux) | 4.774 | 0.079 | 0.095 | 0.095 | 4/4 PASS |
+| WebKit (Playwright Linux) | 4.414 | 0.076 | 0.076 | 0.077 | 4/4 PASS |
+
+Both engines reported zero canonical field differences, zero page errors, and successful manifest/wheel pending-request cancellation checks. Tested on Linux GitHub Actions browser builds, **not macOS Safari or iOS Safari**. The early Python 3.12 Playwright runner logs include teardown callback cancellation traces; the job itself exited successfully. Those traces should not be confused with application page errors. These are single-run observations rather than comparable device benchmarks; runtimes/dependencies were downloaded from third-party hosts.
+
+After collecting evidence, the heavy browser workflow reverted to manual-only dispatch. 
