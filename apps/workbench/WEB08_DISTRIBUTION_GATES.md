@@ -35,6 +35,26 @@ python apps/workbench/build_asset_manifest.py \
 
 Files in the asset directory must be regular local files (no symlinks); the utility has a 1,000-file and 512 MiB aggregate limit. Output must be outside the asset directory. Automated tests verify reproducibility and rejection of unsafe inputs. The manifest records **observed bytes and checksums**, not independent software provenance or approval.
 
+## Same-origin candidate wheel verifier (implemented, no execution)
+
+A new review-only page, `apps/workbench/verify_candidate_assets.html`, tests whether a **prebuilt candidate wheel** can be fetched from a local static directory and matched against a manifest without any manual wheel picker. It deliberately does **not** unpack the wheel, launch Pyodide, execute packages, or mark the asset as approved.
+
+For an explicitly reviewed local build, use a disposable static staging directory outside any deployed/public folder:
+
+```bash
+mkdir -p apps/workbench/candidate-assets
+cp /path/to/locally-built/energydata_kit-*.whl apps/workbench/candidate-assets/
+python apps/workbench/build_asset_manifest.py \
+  --assets-dir apps/workbench/candidate-assets \
+  --output /tmp/edk-candidate-manifest.json
+cp /tmp/edk-candidate-manifest.json apps/workbench/candidate-assets/manifest.json
+python -m http.server 8080 --directory apps/workbench
+```
+
+Open `http://localhost:8080/verify_candidate_assets.html` and explicitly press **Verify candidate files**. Keep the candidate directory and wheel out of source control and do not deploy them. The test page uses a bounded stream reader (128 KiB manifest, at most 10 MiB wheel), same-origin URLs, omitted credentials, disallowed redirects and WebCrypto SHA-256. The candidate manifest must have `status: candidate-not-approved`. Its hash can verify bytes against the manifest, **not whether that manifest itself comes from a trusted source**.
+
+This proves a step toward distribution without manual wheel selection only; it is not a trust-root, signature verifier, audited supply-chain mechanism or functional Pyodide startup. A release-capable mode must be separate and require an independently trusted, pinned manifest, content security policy and explicit release gates. Synthetic-only WEB-07 remains the only browser-Python execution experiment.
+
 ## Required gates before main Workbench integration
 
 | Gate | Status and evidence required |
