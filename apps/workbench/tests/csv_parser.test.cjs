@@ -6,7 +6,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const source = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
-const begin = source.indexOf("function csvParse(text) {");
+const begin = source.indexOf("const MAX_CSV_BYTES =");
 const end = source.indexOf("\nfunction setData(", begin);
 assert(begin !== -1 && end > begin, "CSV parser must exist in Workbench");
 const context = vm.createContext({});
