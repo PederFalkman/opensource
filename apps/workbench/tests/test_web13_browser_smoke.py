@@ -93,3 +93,13 @@ def test_web20_wheel_cancel_and_retry_are_covered_by_manual_smoke() -> None:
     assert "Run disabled after wheel cancellation" in source
     assert "Late wheel response resurrected cancelled run" in source
     assert source.index('page.unroute("**/candidate-assets/*.whl", hold_wheel)') < source.index("for scenario in SCENARIOS:")
+
+
+def test_web20_modified_wheel_is_refused_before_python() -> None:
+    source = MODULE_PATH.read_text(encoding="utf-8")
+    assert "modified_wheel[len(modified_wheel) // 2] ^= 0x01" in source
+    assert 'page.route("**/candidate-assets/*.whl", corrupt_wheel)' in source
+    assert "Modified wheel not blocked by SHA-256 gate" in source
+    assert "Export enabled after corrupted wheel" in source
+    assert "Corrupted wheel retained a report" in source
+    assert 'page.unroute("**/candidate-assets/*.whl", corrupt_wheel)' in source
