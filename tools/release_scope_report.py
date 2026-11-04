@@ -34,11 +34,12 @@ def classify(files: list[str]) -> dict[str, object]:
         "python_package_metadata_or_docs": metadata,
         "workbench_files": workbench,
         "python_implementation_change_detected": bool(implementation),
+        "python_source_review_required": bool(source),
         "workbench_change_detected": bool(workbench),
         "review_notice": (
             "Path-level inventory only: source, compatibility and IP impact "
-            "must still be reviewed. __init__.py may contain implementation "
-            "changes, not only version changes."
+            "must still be reviewed. Any changed Python source including __init__.py "
+            "requires content review; the classifier cannot infer version-only edits."
         ),
     }
 
