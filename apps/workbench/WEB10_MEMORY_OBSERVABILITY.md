@@ -40,7 +40,20 @@ The memory sampler now attempts Linux/OS process `memory_full_info().pss` alongs
 
 PSS is a different allocation view from RSS and helps avoid some double counting of shared resident pages; it still covers the **Python test harness's descendant process tree** (browser plus Playwright driver), **not** an individual Web Worker or isolated Pyodide/WASM heap. The sampling routines enumerate live processes independently for RSS and PSS; rapidly changing process trees may prevent perfect timestamp alignment. The value is an observed sample maximum, not a continuous true peak or a memory-reclamation proof.
 
-This is implementation and fast offline test coverage only. The previous 104-sample Chromium run did **not** collect PSS; its published RSS figures must not be relabeled.
+This is implementation and fast offline test coverage only. The previous 104-sample Chromium run did **not** collect PSS; its published RSS figures must not be relabeled. The first separate real PSS-enabled run is recorded below.
+
+## First measured Linux PSS observation — 2026-11-04
+
+- [Real Chromium workflow run 41837679380](https://github.com/Solid-soup/opensource/actions/runs/41837679380); tested commit `75dc4e36a937d382847c8ff974de5e18f625363a`.
+- Synthetic isolated-Worker smoke: **PASS**, exit code 0, **4/4** canonical report parity. No timeout.
+- Sampling interval: **100 ms**; total **97** samples, of which **88** provided complete PSS measurements for all *observed descendants*.
+- Maximum sampled **complete-snapshot proportional-set-size sum: 632,248,320 bytes** (632.2 MB decimal).
+- Maximum sampled **descendant-process RSS sum: 938,618,880 bytes** (938.6 MB decimal).
+- Final descendant count **0** and final RSS sum **0 bytes** after the entire browser smoke and driver exited.
+
+**Strict interpretation:** RSS and PSS peak values may come from different sample timestamps. Scope is the Playwright-driver and browser-descendant process tree of the Python smoke runner, not a separately identified browser Worker or Pyodide/WebAssembly heap. A missing/partial PSS sample is excluded from PSS peak accounting; 88 complete snapshots do not imply continuous coverage. Final process count zero is only observed **after all browser processes exit**, not proof that memory was reclaimed at the earlier individual Worker cancellation. This is one run, not a stable resource benchmark or release threshold. It must not be added to or directly compared as a matched experiment with the separate WEB-09 process-tree RSS figures collected by a different sampler.
+
+The expensive workflow was returned to manual-only dispatch after the measurement.
 
 ## Acceptance gates
 
