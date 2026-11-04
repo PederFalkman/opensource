@@ -218,3 +218,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local review-only WEB-08 wheel and manifest staging; never commit binary candidates.
+apps/workbench/candidate-assets/
