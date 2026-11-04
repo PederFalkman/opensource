@@ -88,7 +88,19 @@ The fast, offline Node suite now includes `tests/web09_lifecycle.test.cjs`. It e
 
 The optional `browser_worker_smoke.py` now creates an **ephemeral test-only** copy of `web09_engine_worker.mjs`, inserts a bounded three-second sleep into the Python assessment call, and starts actual Pyodide. Once the worker reports `analyzing`, the harness cancels the worker during the controlled Python execution interval, checks there is no retained report or late status overwrite, restores the unmodified worker from the checkout and reruns the four established numerical parity fixtures. No injection reaches the committed runtime or any release package.
 
-This is a deterministic **test design**, not evidence of passing Chromium until the new browser job succeeds. It does not establish graceful cooperative Python cancellation or native memory reclamation; termination is a worker kill. Timing, Firefox/Safari and arbitrary computation cancellation remain out of scope.
+This controlled interruption subsequently passed in real Chromium (run 41826181638; see below). It does not establish graceful cooperative Python cancellation or native memory reclamation; termination is a worker kill. Timing, Firefox/Safari and arbitrary computation cancellation remain out of scope.
+
+## Controlled active Python cancellation — Chromium PASS, 2026-11-04
+
+- Real Chromium / Pyodide workflow: [run 41826181638](https://github.com/Solid-soup/opensource/actions/runs/41826181638)
+- Tested commit: `3b86dabb4d9b688e72a58e3270fc2ab6a0f3d225`
+- **PASS:** after the worker entered the `analyzing` stage, the browser terminated a real Python-executing Worker while an intentionally inserted three-second `time.sleep` was executing.
+- **PASS:** Cancel left the UI with an empty report and a stable cancellation message, then re-enabled Run.
+- **PASS:** restored the original untouched worker (the test-only delay existed only in a temporary HTTP-server directory), restarted the worker and matched **4/4 synthetic canonical v2 reports** against local Python, with **zero field differences** and **zero page errors**.
+- Previous pending-manifest and pending-wheel cancellation probes also passed.
+- The experimental Chromium workflow was returned to **manual-only** for GitHub Actions cost control.
+
+**Evidence boundary:** This proves forced Worker termination and UI recovery during the deliberately extended Python stage of one Chromium test. It is not cooperative Python cancellation, a universal runtime-termination guarantee, a memory reclamation benchmark, Safari/Firefox validation, a privacy audit, or release approval.
 
 ## Next gates
 
