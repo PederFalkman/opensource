@@ -29,7 +29,8 @@ def validated(data: dict[str, object]) -> tuple[bool, str]:
         return False, "Untrusted evidence classification"
     if data.get("synthetic_only") is not True:
         return False, "Synthetic-only constraint missing"
-    if data.get("browser") not in BROWSERS:
+    browser = data.get("browser")
+    if not isinstance(browser, str) or browser not in BROWSERS:
         return False, "Unknown browser"
     commit = data.get("source_commit")
     if commit is not None and (
@@ -44,19 +45,29 @@ def validated(data: dict[str, object]) -> tuple[bool, str]:
     scenarios = data.get("cases")
     if not isinstance(scenarios, list) or len(scenarios) != 4:
         return False, "Four scenarios required"
-    if {item.get("scenario") for item in scenarios if isinstance(item, dict)} != SCENARIOS:
+    if any(not isinstance(item, dict) for item in scenarios):
+        return False, "Malformed scenario entries"
+    scenario_names = [item.get("scenario") for item in scenarios]
+    if any(not isinstance(name, str) for name in scenario_names):
+        return False, "Malformed scenario identifier"
+    if set(scenario_names) != SCENARIOS:
         return False, "Unexpected scenario set"
     if any(
         not isinstance(item, dict)
         or item.get("status") != "PASS"
         or item.get("parity") != "PASS"
         or item.get("export") != "PASS"
+        or type(item.get("field_differences")) is not int
         or item.get("field_differences") != 0
         for item in scenarios
     ):
         return False, "Scenario parity or export failed"
     negative = data.get("negative_checks")
-    if not isinstance(negative, list) or len(negative) != len(NEGATIVE) or set(negative) != NEGATIVE:
+    if not isinstance(negative, list) or len(negative) != len(NEGATIVE):
+        return False, "Required negative checks absent"
+    if any(not isinstance(item, str) for item in negative):
+        return False, "Malformed negative check"
+    if set(negative) != NEGATIVE:
         return False, "Required negative checks absent"
     return True, "PASS"
 
