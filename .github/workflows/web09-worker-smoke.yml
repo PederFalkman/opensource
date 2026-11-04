@@ -1,11 +1,9 @@
 name: WEB-09 browser worker pilot (targeted)
 
-# One-time scoped PR test. Restore manual-only after real validation.
+# Manual-only after the first actual Chromium worker parity PASS.
+# No automatic PR/push/schedule to conserve browser download costs.
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - ".github/workflows/web09-worker-smoke.yml"
 
 permissions:
   contents: read
