@@ -4,6 +4,7 @@
 Outputs mechanical checks and explicitly unresolved human gates for a package.
 No releases, tags, uploads, classifier changes or approval decisions occur.
 """
+
 from __future__ import annotations
 
 import argparse
