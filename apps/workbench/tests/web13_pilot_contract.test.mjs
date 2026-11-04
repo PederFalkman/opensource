@@ -23,5 +23,12 @@ test("WEB-13 preserves cancellation, same-origin wheel loading, output validatio
   assert.match(page,/worker\?\.terminate\(\)/);
   assert.match(page,/data.id!==state.runId/);
   assert.match(page,/transition\(state,\{type:"complete",id,result:data.result\}\)/);
-  assert.match(page,/energydata-synthetic-python-report.json/);
+  assert.match(page,/energydata-synthetic-review-evidence.json/);
+});
+
+test("WEB-14 exports an explicitly unattested evidence envelope",()=>{
+  assert.match(page,/createSyntheticEvidence/);
+  assert.match(page,/wheelSha256:wheelDigest/);
+  assert.match(page,/elapsedMs:performance.now\(\)-startMs/);
+  assert.match(page,/internal and not independently attested/);
 });
