@@ -150,7 +150,7 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
                     worker_path = root / "web09_engine_worker.mjs"
                     original_worker = worker_path.read_text(encoding="utf-8")
                     target = 'interpreter.runPythonAsync(PYTHON_ASSESSMENT)'
-                    injected = 'interpreter.runPythonAsync("import time\\\\ntime.sleep(3)\\\\n" + PYTHON_ASSESSMENT)'
+                    injected = 'interpreter.runPythonAsync("import time\\ntime.sleep(3)\\n" + PYTHON_ASSESSMENT)'
                     if original_worker.count(target) != 1:
                         raise RuntimeError("Cannot instrument Python execution safely")
                     worker_path.write_text(
