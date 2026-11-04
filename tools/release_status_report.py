@@ -26,10 +26,7 @@ HUMAN_GATES = (
 
 def report(root: Path, package: str) -> dict[str, object]:
     checks = check_package(root, package)
-    mechanical = [
-        {"name": check.name, "passed": check.ok, "detail": check.detail}
-        for check in checks
-    ]
+    mechanical = [{"name": check.name, "passed": check.ok, "detail": check.detail} for check in checks]
     # Never infer a human approval from a passing mechanical gate, nor repeat
     # the approval from a prior release version.
     return {
