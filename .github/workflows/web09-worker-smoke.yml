@@ -9,11 +9,14 @@ on:
         description: "Playwright engine (manual only)"
         required: true
         default: chromium
+        description: 'Browser engine for synthetic-only Worker smoke'
         type: choice
         options:
           - chromium
           - firefox
           - webkit
+        default: chromium
+        required: true
 
 permissions:
   contents: read
@@ -42,3 +45,4 @@ jobs:
         run: |
           set -euo pipefail
           python apps/workbench/browser_worker_smoke.py --wheel "$(ls /tmp/edk-worker-wheel/energydata_kit-*.whl)" --timeout-ms 240000 --browser "${{ inputs.browser || 'chromium' }}"
+          python apps/workbench/browser_worker_smoke.py --wheel "$(ls /tmp/edk-worker-wheel/energydata_kit-*.whl)" --browser "${{ inputs.browser || 'chromium' }}" --timeout-ms 240000
