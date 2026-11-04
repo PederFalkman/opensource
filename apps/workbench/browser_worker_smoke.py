@@ -4,7 +4,8 @@
 Synthetic-only, ephemeral loopback static server. No deployment, customer files,
 or persistent candidate-assets directory. Requires playwright, Chromium and
 local energydata-kit installed from the repository source. This does NOT
-validate signed release provenance or cross-browser compatibility.
+validate signed release provenance. Supported browser engines must be tested
+independently; WebKit under Linux is not a substitute for iOS Safari.
 """
 from __future__ import annotations
 
@@ -44,7 +45,9 @@ def load_helper(filename: str, name: str) -> Any:
     return module
 
 
-def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
+def run(wheel: Path, *, timeout_ms: int = 180_000, browser_name: str = "chromium") -> int:
+    if browser_name not in {"chromium", "firefox", "webkit"}:
+        raise ValueError("Browser must be chromium, firefox or webkit")
     if not wheel.is_file() or not wheel.name.startswith("energydata_kit-") or wheel.suffix != ".whl":
         raise ValueError("A locally built EnergyData Kit wheel is required")
     if wheel.stat().st_size > 10*1024*1024:
@@ -75,7 +78,7 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
         thread.start()
         try:
             with sync_playwright() as playwright:
-                browser = playwright.chromium.launch()
+                browser = getattr(playwright, browser_name).launch()
                 try:
                     page = browser.new_page()
                     exceptions: list[str] = []
@@ -248,6 +251,7 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
                         })
                     print(json.dumps({
                         "worker_status":"Python executed in isolated worker",
+                        "browser":browser_name,
                         "cancelled_pending_fetch_phases":cancelled_phases,
                         "scenarios":comparisons,
                         "page_errors":exceptions,
@@ -268,12 +272,13 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--wheel",type=Path,required=True)
+    parser.add_argument("--browser",choices=("chromium","firefox","webkit"),default="chromium")
     parser.add_argument("--timeout-ms",type=int,default=180000)
     args=parser.parse_args(argv)
     if not 1000 <= args.timeout_ms <= 300000:
         parser.error("Timeout must be within 1000–300000 ms")
     try:
-        return run(args.wheel,timeout_ms=args.timeout_ms)
+        return run(args.wheel,timeout_ms=args.timeout_ms,browser_name=args.browser)
     except (RuntimeError,ValueError,OSError) as exc:
         print(f"WEB-09 SMOKE FAILED: {exc}",file=sys.stderr)
         return 2
