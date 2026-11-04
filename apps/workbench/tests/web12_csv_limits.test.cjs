@@ -48,14 +48,14 @@ test("file import requires fatal UTF-8 and preserves failure reset",()=>{
 });
 
 test("exact field and column ceilings are accepted",()=>{
-  assert.equal(parse("field\\n"+"x".repeat(16384))[1][0].length,16384);
+  assert.equal(parse("field\n"+"x".repeat(16384))[1][0].length,16384);
   const header=Array.from({length:128},(_,i)=>"c"+i).join(",");
   assert.equal(parse(header)[0].length,128);
 });
 test("quoted newlines and escaped double-quotes do not change row accounting",()=>{
-  const result=parse('timestamp,note\\r\\n2026-01-01T00:00:00Z,"first\\nsecond ""quoted"""\\r\\n');
+  const result=parse('timestamp,note\r\n2026-01-01T00:00:00Z,"first\nsecond ""quoted"""\r\n');
   assert.equal(result.length,2);
-  assert.equal(result[1][1],'first\\nsecond "quoted"');
+  assert.equal(result[1][1],'first\nsecond "quoted"');
 });
 test("invalid UTF-8 is rejected by strict decoder rather than silently repaired",()=>{
   const decoder=new TextDecoder("utf-8",{fatal:true});
