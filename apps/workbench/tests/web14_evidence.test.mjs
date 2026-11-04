@@ -40,7 +40,7 @@ test("refuses contradictory or forged canonical quality reports",()=>{
 test("rejects unknown wrapper metadata and oversized evidence",()=>{
  assert.throws(()=>createSyntheticEvidence({...input,output:{...output,customer_path:"/private/data.csv"}}),/Unexpected Python result metadata/);
  assert.throws(()=>createSyntheticEvidence({...input,output:{...output,
-   report:{...output.report,fingerprint:"x".repeat(260000)}
+   report:{...output.report,fingerprint:"x".repeat(270000)}
  }}),/256 KiB/);
 });
 test("rejects non-synthetic provenance, interval or column selections",()=>{
@@ -48,4 +48,11 @@ test("rejects non-synthetic provenance, interval or column selections",()=>{
  assert.throws(()=>createSyntheticEvidence({...input,output:{...output,interval_minutes:60}}),/provenance/);
  assert.throws(()=>createSyntheticEvidence({...input,output:{...output,
    columns:{timestamp:"time",value:"power_kw"}}}),/provenance/);
+});
+
+test("bounded evidence accepts a compact synthetic report",()=>{
+ const small=createSyntheticEvidence({...input,output:{...output,
+   report:{...output.report,fingerprint:"f".repeat(128)}
+ }});
+ assert.equal(small.status,"internal-unattested-synthetic-only");
 });
