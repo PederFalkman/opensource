@@ -55,6 +55,7 @@ def run(wheel: Path, *, timeout_ms: int = 180_000, browser_name: str = "chromium
     adapter = load_helper("python_report.py", "web09_python_adapter")
     parity = load_helper("compare_parity.py", "web09_parity")
     inventory = load_helper("build_asset_manifest.py", "web09_manifest")
+    memory_module = load_helper("web09_memory_probe.py", "web09_memory_probe")
     try:
         from playwright.sync_api import sync_playwright
     except ImportError as exc:
@@ -79,6 +80,9 @@ def run(wheel: Path, *, timeout_ms: int = 180_000, browser_name: str = "chromium
         try:
             with sync_playwright() as playwright:
                 browser = getattr(playwright, browser_name).launch()
+                sampler = memory_module.ProcessTreeRssSampler()
+                sampler.start()
+                rss_checkpoints: dict[str, Any] = {}
                 try:
                     page = browser.new_page()
                     exceptions: list[str] = []
@@ -129,6 +133,7 @@ def run(wheel: Path, *, timeout_ms: int = 180_000, browser_name: str = "chromium
                         if "Cancelled" not in page.locator("#status").inner_text():
                             raise RuntimeError(f"{phase} late response overwrote Cancelled state")
                         cancelled_phases.append(phase)
+                        rss_checkpoints[f"after_cancel_{phase}"] = sampler.snapshot()
                     # Verify real-browser cancel and immediate retry before parity.
                     # The first request is intentionally cancelled; it must leave
                     # no report and must not allow late worker messages to win.
@@ -180,10 +185,12 @@ def run(wheel: Path, *, timeout_ms: int = 180_000, browser_name: str = "chromium
                         if "Cancelled" not in page.locator("#status").inner_text():
                             raise RuntimeError("Active Python late status overwrote cancellation")
                         cancelled_phases.append("active_python_test_copy")
+                        rss_checkpoints["after_active_python_cancel"] = sampler.snapshot()
                     finally:
                         worker_path.write_text(original_worker, encoding="utf-8")
                         # No test-only Python delay survives into parity checks.
                         page.reload(wait_until="load")
+                    rss_checkpoints["after_immediate_cancel"] = sampler.snapshot()
                     # The normal scenario matrix below verifies that a fresh
                     # worker and a new asset fetch can recover after cancellation.
                     # Build independent Python reference fixtures; none are user-provided.
@@ -249,8 +256,11 @@ def run(wheel: Path, *, timeout_ms: int = 180_000, browser_name: str = "chromium
                             "canonical_parity":"PASS" if not differences else "FAIL",
                             "differences":differences[:30],
                         })
+                    rss_checkpoints["after_four_scenarios"] = sampler.snapshot()
                     print(json.dumps({
                         "worker_status":"Python executed in isolated worker",
+                        "rss_checkpoints":rss_checkpoints,
+                        "process_rss_sampling":sampler.summary(),
                         "browser":browser_name,
                         "cancelled_pending_fetch_phases":cancelled_phases,
                         "scenarios":comparisons,
@@ -263,6 +273,7 @@ def run(wheel: Path, *, timeout_ms: int = 180_000, browser_name: str = "chromium
                     ) else 0
                 finally:
                     browser.close()
+                    sampler.stop()
         finally:
             server.shutdown()
             server.server_close()
