@@ -30,6 +30,17 @@ This is an **architectural pilot**, not an automatically installable or secure e
 
 **Not established:** identity/authenticity of the candidate manifest, cross-browser behavior, dependency trust, full browser/process memory, customer-data security or production readiness.
 
+## Expanded worker-internal parity validation — 2026-11-04
+
+- [Chromium workflow 41805199318](https://github.com/Solid-soup/opensource/actions/runs/41805199318), tested commit `16b493ace258e1d221d7363e850de18098110e48`.
+- **4/4 PASS**, no canonical schema-v2 field differences, no page errors.
+- Scenarios: baseline with 95 readings, autumn DST with 5, spring DST with 4, mixed UTC offset with 4.
+- The Worker now constructs all four fixed test fixtures internally; calls carrying a `csvText` field are rejected. The browser sends only an approved scenario ID and the already SHA-256-checked wheel.
+- The Pyodide interpreter was reused across the four scenarios. External dependencies were requested from jsDelivr and Python package hosts; this does not prove offline usability or supply-chain authenticity.
+- The expensive targeted browser workflow was immediately returned to manual-only triggering after PASS.
+
+**Sign-off boundary:** exact numerical parity for these four synthetic fixtures in tested Chromium. This does not authorize real CSV input, release, hosting or use in operational decisions.
+
 ## Next gates
 
 1. Ensure real Chromium worker parity and ordinary CI/security are green; record run ID and failures.
