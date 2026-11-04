@@ -22,7 +22,7 @@ The manual-only workflow `.github/workflows/web09-worker-smoke.yml` has a browse
 
 WEB-09 Chromium four-case parity PASS: https://github.com/Solid-soup/opensource/actions/runs/41805199318
 
-WEB-10 Firefox and WebKit are **not verified** merely because their options exist. Actual engine execution must be recorded with run IDs and numerical differences. Third-party dependencies remain fetched at runtime and the candidate manifest has no independently authenticated publisher. Real customer CSV, releases and production hosting remain prohibited.
+Firefox and Linux WebKit parity were subsequently verified in real targeted runs; see the evidence table and run ID below. Those runs validate the tested commits and environment, not every subsequent code revision. Third-party dependencies remain fetched at runtime and the candidate manifest has no independently authenticated publisher. Real customer CSV, releases and production hosting remain prohibited.
 
 ## Real Firefox and WebKit evidence — 2026-11-04
 
@@ -35,4 +35,4 @@ Targeted browser run: [41836406188](https://github.com/Solid-soup/opensource/act
 
 Both engines reported zero canonical field differences, zero page errors, and successful manifest/wheel pending-request cancellation checks. Tested on Linux GitHub Actions browser builds, **not macOS Safari or iOS Safari**. The early Python 3.12 Playwright runner logs include teardown callback cancellation traces; the job itself exited successfully. Those traces should not be confused with application page errors. These are single-run observations rather than comparable device benchmarks; runtimes/dependencies were downloaded from third-party hosts.
 
-After collecting evidence, the heavy browser workflow reverted to manual-only dispatch. 
+After collecting evidence, the heavy browser workflow reverted to manual-only dispatch. Following merge of PR #201, PR #203 was reconciled to remove duplicate browser arguments, duplicate function declarations and a second redundant smoke invocation. Latest-head CI must be checked separately before merge. 
