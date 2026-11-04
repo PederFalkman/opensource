@@ -10,9 +10,13 @@ The last documented GitHub release is `energydata-kit-v0.16.0`.
 A GitHub compare against `main`, inspected on 2026-11-04, showed
 276 commits and extensive Workbench, testing, CI and documentation changes,
 but no changed Python implementation file beyond
-`src/energydata_kit/__init__.py`. The latter **must be diff-reviewed**:
-path classification alone cannot establish that it only changes the
-version string. Package metadata and README also changed.
+`src/energydata_kit/__init__.py`. The version module was separately compared byte-for-byte apart from the
+`__version__` line: its only difference is `0.16.0` to `0.17.0.dev0`.
+The package's `pyproject.toml` comparison showed only restoration of the
+`Private :: Do Not Upload` classifier and its explanatory comment;
+declared dependencies are unchanged. Package README also changed.
+This source comparison is a technical observation, not an IP sign-off or
+a claim that Workbench changes are released Python APIs.
 
 Do not advertise WEB-09–WEB-20 as newly shipped Python library APIs or
 as an independently verified Workbench release. The currently developed
@@ -35,8 +39,8 @@ and other repository code. It does not inspect binary content or sign
 ownership/IP findings, and it never grants publication approval.
 
 ## Decision required before 0.17.0
-- Review the exact source diff, especially `__init__.py` and dependency
-  metadata, and establish which **package-specific changes** justify 0.17.0.
+- Preserve the observed source and dependency diff as release evidence, and
+  establish which **package-specific changes** justify 0.17.0.
 - If the changes are only version, packaging or documentation, explicitly
   decide whether to issue a package maintenance release or defer a new
   Python library version until new approved API changes exist.
