@@ -84,6 +84,12 @@ The fast, offline Node suite now includes `tests/web09_lifecycle.test.cjs`. It e
 
 **Verification boundary:** These are deterministic tests of the UI lifecycle only. They do not test arbitrary interruption inside real Python computation or certify resource teardown in every browser. The measured Chromium cancel/retry and numerical parity evidence remains separately listed above. The heavy workflow stays manual-only.
 
+## Active-Python interruption experiment (pending real Chromium validation)
+
+The optional `browser_worker_smoke.py` now creates an **ephemeral test-only** copy of `web09_engine_worker.mjs`, inserts a bounded three-second sleep into the Python assessment call, and starts actual Pyodide. Once the worker reports `analyzing`, the harness cancels the worker during the controlled Python execution interval, checks there is no retained report or late status overwrite, restores the unmodified worker from the checkout and reruns the four established numerical parity fixtures. No injection reaches the committed runtime or any release package.
+
+This is a deterministic **test design**, not evidence of passing Chromium until the new browser job succeeds. It does not establish graceful cooperative Python cancellation or native memory reclamation; termination is a worker kill. Timing, Firefox/Safari and arbitrary computation cancellation remain out of scope.
+
 ## Next gates
 
 1. Ensure real Chromium worker parity and ordinary CI/security are green; record run ID and failures.
