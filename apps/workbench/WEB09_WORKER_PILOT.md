@@ -102,6 +102,12 @@ This controlled interruption subsequently passed in real Chromium (run 418261816
 
 **Evidence boundary:** This proves forced Worker termination and UI recovery during the deliberately extended Python stage of one Chromium test. It is not cooperative Python cancellation, a universal runtime-termination guarantee, a memory reclamation benchmark, Safari/Firefox validation, a privacy audit, or release approval.
 
+## Optional cross-browser regression gate — 2026-11-04
+
+The isolated, synthetic-only Worker smoke harness now accepts `--browser chromium|firefox|webkit` and launches the selected Playwright browser engine. The costly `web09-worker-smoke.yml` remains manually dispatched with an explicit browser choice; its installation step downloads only the selected browser. Fast offline Python tests enforce browser name validation and fail-closed input handling.
+
+**Verification boundary:** The earlier Chromium runs establish Chromium behavior only. Firefox and WebKit have not yet passed until each has a real recorded job. Playwright's Linux WebKit does not substitute for Safari on Apple hardware or iOS. Any browser failure must be recorded as a compatibility blocker, not silently skipped.
+
 ## Next gates
 
 1. Ensure real Chromium worker parity and ordinary CI/security are green; record run ID and failures.
