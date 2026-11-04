@@ -113,3 +113,38 @@ test("failed candidate fetch never creates worker or runs Python",async()=>{
   assert.match(h.elements.status.textContent,/Wheel checksum mismatch/);
   assert.equal(h.elements.run.disabled,false);
 });
+
+
+test("cancel during analyzing suppresses late completion and permits a clean retry",async()=>{
+  const h=harness();
+  await h.elements.run.onclick();
+  const first=h.workers[0];
+  const firstId=first.sent[0].id;
+  first.emit({id:firstId,stage:"analyzing",detail:"Running actual EnergyData Kit Python"});
+  assert.match(h.elements.status.textContent,/Running actual EnergyData Kit Python/);
+  h.elements.cancel.onclick();
+  assert.equal(first.terminated,true);
+  assert.equal(h.elements.result.textContent,"No report.");
+  first.emit({id:firstId,stage:"complete",result:{report:{schema_version:"2"},source:"stale"}});
+  assert.equal(h.elements.result.textContent,"No report.");
+  assert.match(h.elements.status.textContent,/Cancelled/);
+  await h.elements.run.onclick();
+  const second=h.workers[1];
+  assert(second && second!==first && !second.terminated);
+  second.emit({id:second.sent[0].id,stage:"complete",
+    result:{report:{schema_version:"2"},source:"new-synthetic"}});
+  assert.match(h.elements.result.textContent,/new-synthetic/);
+  assert.doesNotMatch(h.elements.result.textContent,/"stale"/);
+});
+
+test("duplicate Run clicks cannot produce multiple simultaneous Workers",async()=>{
+  let completeFetch;
+  const pending=new Promise(resolve=>{completeFetch=resolve});
+  const h=harness(async()=>pending);
+  const first=h.elements.run.onclick();
+  const second=h.elements.run.onclick();
+  completeFetch({bytes:Uint8Array.of(1,2),asset:{sha256:digest}});
+  await Promise.all([first,second]);
+  assert.equal(h.workers.length,1);
+  assert.equal(h.workers[0].sent.length,1);
+});
