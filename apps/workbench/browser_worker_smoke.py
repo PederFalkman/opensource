@@ -4,7 +4,8 @@
 Synthetic-only, ephemeral loopback static server. No deployment, customer files,
 or persistent candidate-assets directory. Requires playwright, Chromium and
 local energydata-kit installed from the repository source. This does NOT
-validate signed release provenance or cross-browser compatibility.
+validate signed release provenance. Supported browser engines must be tested
+independently; WebKit under Linux is not a substitute for iOS Safari.
 """
 from __future__ import annotations
 
@@ -44,7 +45,9 @@ def load_helper(filename: str, name: str) -> Any:
     return module
 
 
-def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
+def run(wheel: Path, *, timeout_ms: int = 180_000, browser_name: str = "chromium") -> int:
+    if browser_name not in {"chromium", "firefox", "webkit"}:
+        raise ValueError("Browser must be chromium, firefox or webkit")
     if not wheel.is_file() or not wheel.name.startswith("energydata_kit-") or wheel.suffix != ".whl":
         raise ValueError("A locally built EnergyData Kit wheel is required")
     if wheel.stat().st_size > 10*1024*1024:
@@ -52,6 +55,7 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
     adapter = load_helper("python_report.py", "web09_python_adapter")
     parity = load_helper("compare_parity.py", "web09_parity")
     inventory = load_helper("build_asset_manifest.py", "web09_manifest")
+    memory_module = load_helper("web09_memory_probe.py", "web09_memory_probe")
     try:
         from playwright.sync_api import sync_playwright
     except ImportError as exc:
@@ -75,7 +79,10 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
         thread.start()
         try:
             with sync_playwright() as playwright:
-                browser = playwright.chromium.launch()
+                browser = getattr(playwright, browser_name).launch()
+                sampler = memory_module.ProcessTreeRssSampler()
+                sampler.start()
+                rss_checkpoints: dict[str, Any] = {}
                 try:
                     page = browser.new_page()
                     exceptions: list[str] = []
@@ -126,6 +133,7 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
                         if "Cancelled" not in page.locator("#status").inner_text():
                             raise RuntimeError(f"{phase} late response overwrote Cancelled state")
                         cancelled_phases.append(phase)
+                        rss_checkpoints[f"after_cancel_{phase}"] = sampler.snapshot()
                     # Verify real-browser cancel and immediate retry before parity.
                     # The first request is intentionally cancelled; it must leave
                     # no report and must not allow late worker messages to win.
@@ -141,6 +149,48 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
                     page.wait_for_timeout(150)
                     if "Cancelled" not in page.locator("#status").inner_text():
                         raise RuntimeError("Late message overwrote cancelled state")
+                    # Test actual Python-execution cancellation with a temporary
+                    # *test-only* copy of the worker. Inject a bounded Python sleep
+                    # before the real assessment, never into repository runtime.
+                    # This ensures the "analyzing" status stays observable while
+                    # real interpreter execution is active; terminate, reload,
+                    # and then run the unchanged production worker for parity.
+                    worker_path = root / "web09_engine_worker.mjs"
+                    original_worker = worker_path.read_text(encoding="utf-8")
+                    target = 'interpreter.runPythonAsync(PYTHON_ASSESSMENT)'
+                    injected = 'interpreter.runPythonAsync("import time\\ntime.sleep(3)\\n" + PYTHON_ASSESSMENT)'
+                    if original_worker.count(target) != 1:
+                        raise RuntimeError("Cannot instrument Python execution safely")
+                    worker_path.write_text(
+                        original_worker.replace(target, injected), encoding="utf-8"
+                    )
+                    try:
+                        page.reload(wait_until="load")
+                        page.locator("#scenario").select_option("baseline")
+                        page.locator("#run").click()
+                        page.wait_for_function(
+                            "() => document.querySelector('#status').textContent.includes("
+                            "'Running actual EnergyData Kit Python')",
+                            timeout=timeout_ms,
+                        )
+                        page.wait_for_timeout(150)
+                        if page.locator("#run").is_enabled():
+                            raise RuntimeError("Python completed before active-cancel probe")
+                        page.locator("#cancel").click()
+                        if "Cancelled" not in page.locator("#status").inner_text():
+                            raise RuntimeError("Active Python cancel not reflected in UI")
+                        if page.locator("#result").inner_text() != "No report.":
+                            raise RuntimeError("Active Python cancel retained a report")
+                        page.wait_for_timeout(250)
+                        if "Cancelled" not in page.locator("#status").inner_text():
+                            raise RuntimeError("Active Python late status overwrote cancellation")
+                        cancelled_phases.append("active_python_test_copy")
+                        rss_checkpoints["after_active_python_cancel"] = sampler.snapshot()
+                    finally:
+                        worker_path.write_text(original_worker, encoding="utf-8")
+                        # No test-only Python delay survives into parity checks.
+                        page.reload(wait_until="load")
+                    rss_checkpoints["after_immediate_cancel"] = sampler.snapshot()
                     # The normal scenario matrix below verifies that a fresh
                     # worker and a new asset fetch can recover after cancellation.
                     # Build independent Python reference fixtures; none are user-provided.
@@ -206,8 +256,12 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
                             "canonical_parity":"PASS" if not differences else "FAIL",
                             "differences":differences[:30],
                         })
+                    rss_checkpoints["after_four_scenarios"] = sampler.snapshot()
                     print(json.dumps({
                         "worker_status":"Python executed in isolated worker",
+                        "rss_checkpoints":rss_checkpoints,
+                        "process_rss_sampling":sampler.summary(),
+                        "browser":browser_name,
                         "cancelled_pending_fetch_phases":cancelled_phases,
                         "scenarios":comparisons,
                         "page_errors":exceptions,
@@ -219,6 +273,7 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
                     ) else 0
                 finally:
                     browser.close()
+                    sampler.stop()
         finally:
             server.shutdown()
             server.server_close()
@@ -228,12 +283,13 @@ def run(wheel: Path, *, timeout_ms: int = 180_000) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--wheel",type=Path,required=True)
+    parser.add_argument("--browser",choices=("chromium","firefox","webkit"),default="chromium")
     parser.add_argument("--timeout-ms",type=int,default=180000)
     args=parser.parse_args(argv)
     if not 1000 <= args.timeout_ms <= 300000:
         parser.error("Timeout must be within 1000–300000 ms")
     try:
-        return run(args.wheel,timeout_ms=args.timeout_ms)
+        return run(args.wheel,timeout_ms=args.timeout_ms,browser_name=args.browser)
     except (RuntimeError,ValueError,OSError) as exc:
         print(f"WEB-09 SMOKE FAILED: {exc}",file=sys.stderr)
         return 2

@@ -78,6 +78,76 @@ The Chromium smoke harness intercepts the **manifest fetch** and **wheel fetch**
 
 **Scope:** two pending network download stages and restart in tested Chromium. This does not yet prove cancellation during arbitrary Pyodide runtime initialization, Python computation, Firefox/Safari execution, total WASM memory safety or signed dependency provenance.
 
+## WEB-09 lifecycle regression extension — 2026-11-04
+
+The fast, offline Node suite now includes `tests/web09_lifecycle.test.cjs`. It executes the actual inline pilot control-flow against a synthetic DOM and mocked Worker transport, without downloading Pyodide or starting browsers. It covers: (1) a pending asset fetch being cancelled/aborted with late resolution suppressed, (2) late success or failure events from terminated Workers being ignored, (3) a new Worker accepting the next valid result after cancellation, (4) candidate checksum/fetch failures not starting a Worker, (5) cancellation after the Worker reports its `analyzing` stage with a subsequent stale completion ignored, and (6) duplicate Run clicks not creating two concurrent Workers.
+
+**Verification boundary:** These are deterministic tests of the UI lifecycle only. They do not test arbitrary interruption inside real Python computation or certify resource teardown in every browser. The measured Chromium cancel/retry and numerical parity evidence remains separately listed above. The heavy workflow stays manual-only.
+
+## Active-Python interruption experiment (pending real Chromium validation)
+
+The optional `browser_worker_smoke.py` now creates an **ephemeral test-only** copy of `web09_engine_worker.mjs`, inserts a bounded three-second sleep into the Python assessment call, and starts actual Pyodide. Once the worker reports `analyzing`, the harness cancels the worker during the controlled Python execution interval, checks there is no retained report or late status overwrite, restores the unmodified worker from the checkout and reruns the four established numerical parity fixtures. No injection reaches the committed runtime or any release package.
+
+This controlled interruption subsequently passed in real Chromium (run 41826181638; see below). It does not establish graceful cooperative Python cancellation or native memory reclamation; termination is a worker kill. Timing, Firefox/Safari and arbitrary computation cancellation remain out of scope.
+
+## Controlled active Python cancellation — Chromium PASS, 2026-11-04
+
+- Real Chromium / Pyodide workflow: [run 41826181638](https://github.com/Solid-soup/opensource/actions/runs/41826181638)
+- Tested commit: `3b86dabb4d9b688e72a58e3270fc2ab6a0f3d225`
+- **PASS:** after the worker entered the `analyzing` stage, the browser terminated a real Python-executing Worker while an intentionally inserted three-second `time.sleep` was executing.
+- **PASS:** Cancel left the UI with an empty report and a stable cancellation message, then re-enabled Run.
+- **PASS:** restored the original untouched worker (the test-only delay existed only in a temporary HTTP-server directory), restarted the worker and matched **4/4 synthetic canonical v2 reports** against local Python, with **zero field differences** and **zero page errors**.
+- Previous pending-manifest and pending-wheel cancellation probes also passed.
+- The experimental Chromium workflow was returned to **manual-only** for GitHub Actions cost control.
+
+**Evidence boundary:** This proves forced Worker termination and UI recovery during the deliberately extended Python stage of one Chromium test. It is not cooperative Python cancellation, a universal runtime-termination guarantee, a memory reclamation benchmark, Safari/Firefox validation, a privacy audit, or release approval.
+
+## Optional cross-browser regression gate — 2026-11-04
+
+The isolated, synthetic-only Worker smoke harness now accepts `--browser chromium|firefox|webkit` and launches the selected Playwright browser engine. The costly `web09-worker-smoke.yml` remains manually dispatched with an explicit browser choice; its installation step downloads only the selected browser. Fast offline Python tests enforce browser name validation and fail-closed input handling.
+
+**Verification boundary:** The earlier Chromium runs establish Chromium behavior only. Firefox and WebKit now have recorded PASS runs listed below. Playwright's Linux WebKit does not substitute for Safari on Apple hardware or iOS. Any browser failure must be recorded as a compatibility blocker, not silently skipped.
+
+## Three-engine synthetic Worker verification — 2026-11-04
+
+The same real-browser Worker smoke now supports `chromium`, `firefox`, and `webkit` via explicit Playwright engine selection. Each engine is independently installed and tested in a scoped GitHub Actions run; the selected run includes held manifest and wheel fetch cancellation, the temporary test-only active-Python cancellation, restart, and exact canonical-v2 parity against local EnergyData Kit for all four fixed synthetic scenarios.
+
+| Engine | Recorded GitHub Actions evidence | Exact canonical parity | Cancellation gates | Browser page errors |
+|---|---|---|---|---|
+| Chromium | [41826181638](https://github.com/Solid-soup/opensource/actions/runs/41826181638) | 4/4 PASS | PASS | 0 |
+| Firefox on Linux | [41827071633](https://github.com/Solid-soup/opensource/actions/runs/41827071633) | 4/4 PASS | PASS | 0 |
+| WebKit on Linux | [41827311219](https://github.com/Solid-soup/opensource/actions/runs/41827311219) | 4/4 PASS | PASS | 0 |
+
+The Playwright WebKit result **is not evidence of Safari on macOS/iOS**, nor of supported device-level memory, offline startup, general customer-data privacy, or dependency provenance. These browser results cover only the fixed, synthetic fixture collection and the described cancellation tests. The heavy workflow was returned to `workflow_dispatch` only and accepts an explicit browser choice; the default is Chromium.
+
+## Linux browser process-tree RSS instrumentation (implementation; numbers pending)
+
+`web09_memory_probe.py` is an **optional, Linux-only diagnostic** for the manually triggered real-browser test. While the runner, Playwright driver, browser and Web Worker execute, it samples descendants of the smoke-test Python process via `/proc` approximately every 200 ms. The browser harness records snapshots after cancellation of each pending candidate download, after immediate cancellation, after the controlled active-Python termination, and after the four canonical comparisons. It also reports the maximum **sampled sum of VmRSS across the runner process tree**.
+
+**Accounting boundary:** The metric includes the test Python process, Playwright subprocesses and browser processes; it may double-count shared resident pages. It is **not** browser-only RSS, proportional set size (PSS), unique set size (USS), Pyodide/WebAssembly heap, true unsampled peak memory or proof that the terminated Worker has released all allocations. Process count and how many processes provided RSS are reported, so missing `/proc` information is not silently represented as zero. The tool fails softly on non-Linux environments and records missing metrics rather than claiming success.
+
+The initial observational run is now recorded below. No memory budget or successful reclamation is asserted; repeat on stable runners/hardware before setting thresholds or claiming readiness.
+
+## First measured Linux Chromium process-tree RSS sample — 2026-11-04
+
+- Browser workflow: [41829269682](https://github.com/Solid-soup/opensource/actions/runs/41829269682); tested commit `b18d07da4e08f5a2a2308336be1457fa4efa6b1b`.
+- **PASS:** pending manifest/wheel and test-only active-Python cancellation, clean restart, 4/4 canonical parity, zero field differences and no browser page errors.
+- Python `/proc` sampler used a 200 ms polling interval, 55 process-tree samples, maximum observed process count 8.
+- Maximum **sampled sum of process VmRSS**: **1,059,491,840 bytes**.
+- One-off checkpoints (sums of VmRSS, not WebAssembly memory):
+
+| Checkpoint | Process-tree VmRSS sum (bytes) |
+|---|---:|
+| After cancelling manifest fetch | 698,556,416 |
+| After cancelling candidate wheel fetch | 705,421,312 |
+| After immediate cancellation | 785,166,336 |
+| After cancelling controlled active Python computation | 780,853,248 |
+| After four canonical reports | 1,056,792,576 |
+
+Each checkpoint included 8 processes providing RSS. These values include the Python test harness and Playwright/browser subprocesses, **may double-count shared memory**, and come from **one** Linux CI run. They **do not prove** a memory leak, browser-only peak, exact WASM heap allocation, or reclamation of Worker memory after termination. Sampled peak is not a continuously measured true peak. The browser stays open during the checkpoints; a separate controlled browser/worker baseline, repeated test runs and OS-specific metrics are required before setting resource limits.
+
+The expensive browser workflow was restored to `workflow_dispatch` only after the measurement to avoid extra browser downloads per commit.
+
 ## Next gates
 
 1. Ensure real Chromium worker parity and ordinary CI/security are green; record run ID and failures.
