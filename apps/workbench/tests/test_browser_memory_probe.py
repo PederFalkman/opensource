@@ -42,7 +42,7 @@ class FakeChild:
 class FakePsutil:
     NoSuchProcess = FakeNoSuchProcess
     AccessDenied = FakeAccessDenied
-    children = []
+    _children = []
 
     @classmethod
     def Process(cls, pid):
@@ -51,11 +51,11 @@ class FakePsutil:
 
     def children(self, recursive=False):
         assert recursive
-        return self.__class__.children
+        return self.__class__._children
 
 
 def test_process_tree_rss_skips_terminated_and_access_denied():
-    FakePsutil.children = [
+    FakePsutil._children = [
         FakeChild(500), FakeChild(100, running=False),
         FakeChild(3, exc=FakeAccessDenied), FakeChild(1500)
     ]
@@ -70,7 +70,7 @@ def test_invalid_root_or_interval():
 
 
 def test_sampler_is_bounded_and_reports_scope_without_leak_claim():
-    FakePsutil.children = [FakeChild(1234)]
+    FakePsutil._children = [FakeChild(1234)]
     sampler = memory.MemorySampler(FakePsutil, root_pid=42, interval_ms=20)
     sampler.start()
     threading.Event().wait(0.06)
