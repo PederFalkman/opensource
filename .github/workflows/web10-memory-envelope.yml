@@ -2,6 +2,9 @@ name: WEB-10 manual process-memory envelope
 
 # Manual-only after initial evidence; no PR, push or scheduled trigger.
 on:
+  pull_request:
+    paths:
+      - '.github/workflows/web10-memory-envelope.yml'
   workflow_dispatch:
 
 permissions:
@@ -26,7 +29,7 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Build local synthetic test wheel
         run: python -m build --wheel packages/energydata-kit --outdir /tmp/edk-web10-wheel
-      - name: Measure process-tree RSS during synthetic Chromium worker smoke
+      - name: Measure process-tree RSS and complete-only PSS during synthetic Chromium worker smoke
         run: |
           set -euo pipefail
           wheel="$(find /tmp/edk-web10-wheel -maxdepth 1 -name 'energydata_kit-*.whl' -print -quit)"
