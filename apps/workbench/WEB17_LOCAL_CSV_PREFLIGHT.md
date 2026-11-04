@@ -24,3 +24,10 @@ This preflight reports CSV *structure*, not timestamp quality, measurement value
 
 ## Traceable change history
 - 2026-11-04: Added separate local-only CSV preflight module and UI, strict bounds, offline tests and dedicated low-cost CI step. No change to existing public-facing `index.html` or to the synthetic Python Worker.
+
+## Browser CSP hardening
+
+The standalone review page now applies a restrictive Content Security Policy: `default-src 'none'`, `connect-src 'none'`, `worker-src 'none'`, `form-action 'none'` and `script-src 'self'`. To avoid relying on unsafe inline scripts, UI event handling resides in `web17_local_csv_preflight_ui.mjs` and imports the bounded parser from a second same-origin module. CSP is defense-in-depth; it is not a substitute for tested privacy controls or an externally validated deployment configuration.
+
+### Additional change history
+- 2026-11-04: Added strict browser CSP and external same-origin controller module, with static regression contracts; no Python Worker or external runtime introduced.
