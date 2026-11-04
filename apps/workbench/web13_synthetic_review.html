@@ -5,7 +5,7 @@
 :root{color-scheme:light}[hidden]{display:none!important}*{box-sizing:border-box}body{margin:0;background:#f6f7f5;color:#193a32;font:15px/1.5 system-ui,sans-serif}
 main{max-width:940px;margin:auto;padding:24px}a{color:#195d48}header{border-bottom:1px solid #c9d8d0;padding-bottom:18px}
 h1{font-size:30px;letter-spacing:-.8px;margin:12px 0}p{color:#536b60}.panel{background:white;border:1px solid #d7e1db;border-radius:8px;padding:24px;margin-top:20px}
-button,select{font:inherit;padding:10px 14px}button{background:#164b3d;color:white;border:0;border-radius:4px;cursor:pointer}button.secondary{background:white;color:#164b3d;border:1px solid #164b3d}button:disabled{opacity:.5;cursor:not-allowed}
+button,select,input{font:inherit;padding:10px 14px}input#reviewPin{width:min(100%,480px);font-family:ui-monospace,monospace;font-size:12px}button{background:#164b3d;color:white;border:0;border-radius:4px;cursor:pointer}button.secondary{background:white;color:#164b3d;border:1px solid #164b3d}button:disabled{opacity:.5;cursor:not-allowed}
 .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:end}label{display:grid;gap:5px}select{min-width:215px}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:20px}
 .metric{background:#f3f7f4;padding:12px;border-radius:5px}.metric span{display:block;color:#63746c;font-size:12px}.metric strong{font-size:26px;font-variant-numeric:tabular-nums}
 pre{background:#f3f7f4;padding:15px;max-height:300px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
@@ -16,12 +16,13 @@ small{color:#63746c}.warning{border-left:4px solid #a17c47;padding-left:12px}.st
 <p>Experimental, synthetic-only Python execution in an isolated Web Worker. Not approved for customer data or production use.</p>
 <p><a href="index.html">Return to preview Workbench</a></p></header>
 <section class="panel" aria-labelledby="pilot-title"><h2 id="pilot-title">Run a synthetic quality check</h2>
-<p class="warning">No file upload is supported. A candidate wheel is integrity-checked but publisher authenticity and third-party runtime dependencies are not yet approved.</p>
+<p class="warning">No file upload is supported. A candidate manifest and wheel are checked against an independent review digest, but publisher authenticity and third-party runtime dependencies are not approved.</p>
 <div class="controls"><label for="scenario">Test scenario<select id="scenario">
 <option value="baseline">Gaps, duplicate and blank measurement</option><option value="dst_fall">Autumn daylight-saving transition</option>
 <option value="dst_spring">Spring daylight-saving transition</option><option value="mixed_offsets">Mixed explicit UTC offsets</option>
-</select></label><button id="run">Run Python analysis</button><button id="cancel" class="secondary" disabled>Cancel</button>
+</select></label><label for="reviewPin">Independently reviewed manifest SHA-256<input id="reviewPin" type="text" autocomplete="off" spellcheck="false" maxlength="64" pattern="[a-f0-9]{64}" aria-describedby="pinHelp" placeholder="64 lowercase hex characters"></label><button id="run">Run Python analysis</button><button id="cancel" class="secondary" disabled>Cancel</button>
 <button id="export" class="secondary" disabled>Export synthetic JSON</button></div>
+<p id="pinHelp"><small>Obtain this digest from an independently governed review record. Never copy it from the downloaded manifest itself. SHA-256 does not authenticate the publisher.</small></p>
 <p id="status" class="status" role="status" aria-live="polite">Idle. Python runtime not loaded.</p>
 <div class="metrics" id="metrics" hidden>
 <div class="metric"><span>Rows</span><strong id="rows">—</strong></div>
@@ -31,7 +32,7 @@ small{color:#63746c}.warning{border-left:4px solid #a17c47;padding-left:12px}.st
 </div><h3>Canonical v2 result</h3><pre id="result">No report.</pre>
 </section><p><small>On first run, Pyodide and dependencies may be downloaded from third-party hosts. No operational datasets should be introduced into this review page. Browser-engine parity of synthetic scenarios does not constitute release approval.</small></p>
 </main><script type="module">
-import {fetchCandidateWheel} from "./web09_candidate_loader.mjs";
+import {fetchReviewPinnedCandidateWheel} from "./web09_candidate_loader.mjs";
 import {scenarioAllowed,freshState,transition} from "./web13_pilot_state.mjs";
 import {createSyntheticEvidence} from "./web14_evidence.mjs";
 const $=id=>document.getElementById(id);
@@ -67,6 +68,11 @@ $("run").onclick=async()=>{
   if(running())return;
   const scenario=$("scenario").value;
   if(!scenarioAllowed(scenario)){display("Invalid scenario");return}
+  const reviewPin=$("reviewPin").value.trim();
+  if(!/^[a-f0-9]{64}$/.test(reviewPin)){
+    display("A separate 64-character reviewed manifest SHA-256 is required before any package request.");
+    return;
+  }
   const id=String(++serial);
   state=transition(state,{type:"start",id,scenario});fullReport=null;
   startMs=performance.now();scenarioInFlight=scenario;wheelDigest=null;
@@ -74,7 +80,7 @@ $("run").onclick=async()=>{
   $("result").textContent="No report.";display("Verifying candidate package...");
   try {
     abort=new AbortController();
-    const candidate=await fetchCandidateWheel({baseUrl:location.href,signal:abort.signal});
+    const candidate=await fetchReviewPinnedCandidateWheel({baseUrl:location.href,signal:abort.signal,expectedManifestSha256:reviewPin});
     if(state.runId!==id)return;
     wheelDigest=candidate.asset.sha256;
     worker=new Worker("./web09_engine_worker.mjs",{type:"module"});
