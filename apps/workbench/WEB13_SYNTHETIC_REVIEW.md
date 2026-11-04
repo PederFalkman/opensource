@@ -23,3 +23,12 @@ Fast offline Node regression tests cover scenario allowlist, stage transitions, 
 
 ## Change history
 - 2026-11-04: First separate integrated synthetic review experience, state guards, regression tests and explicit data boundaries.
+
+## WEB-14 addition — synthetic evidence envelope
+
+The pilot exports `energydata-synthetic-review-evidence.json` with fixed scenario identifier, the SHA-256 of the fetched wheel, a single wall-clock elapsed measurement, and the original canonical-v2 Python wrapper. Its explicit `internal-unattested-synthetic-only` status and limitations prevent equating byte-integrity evidence with publisher authenticity or independent scientific verification. It is **not** a signed provenance ledger or a benchmark.
+
+`web14_evidence.mjs` checks the allowlisted scenario, valid lowercase digest, bounded finite elapsed duration and internally consistent report counters before constructing the envelope. Dedicated Node tests cover malicious identifiers, invalid digests, implausible times, contradictory quality counters and forged data-source metadata. Latest-head test execution and browser end-to-end validation remain required.
+
+### Traceable change history
+- 2026-11-04: WEB-14 synthetic evidence export and stricter canonical validation added to experimental WEB-13 branch. No customer file input, new dependencies or automatic paid browser workflow.
