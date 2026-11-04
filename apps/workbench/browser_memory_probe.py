@@ -82,6 +82,8 @@ class MemoryResult:
     final_descendant_rss_bytes: int | None
     final_descendant_process_count: int | None
     interval_ms: int
+    peak_complete_pss_bytes: int | None = None
+    complete_pss_samples: int = 0
     scope: str = "test-driver-descendants-including-playwright-and-browser"
 
     def to_dict(self) -> dict[str, Any]:
@@ -91,10 +93,12 @@ class MemoryResult:
             "final_descendant_rss_bytes": self.final_descendant_rss_bytes,
             "final_descendant_process_count": self.final_descendant_process_count,
             "interval_ms": self.interval_ms,
+            "peak_complete_pss_bytes": self.peak_complete_pss_bytes,
+            "complete_pss_samples": self.complete_pss_samples,
             "scope": self.scope,
             "limitations": (
                 "OS RSS summed across descendant processes; includes Playwright driver; "
-                "shared memory may be counted repeatedly; sampled peak is not continuous; "
+                "RSS may double-count shared memory; PSS is reported only for complete snapshots; sampled peak is not continuous; "
                 "not equivalent to WASM linear memory or memory reclaimed by a single Worker."
             ),
         }
@@ -116,6 +120,8 @@ class MemorySampler:
         self._thread: threading.Thread | None = None
         self._samples = 0
         self._peak: int | None = None
+        self._peak_pss: int | None = None
+        self._complete_pss_samples = 0
         self._final: int | None = None
         self._count: int | None = None
         self._lock = threading.Lock()
@@ -125,8 +131,15 @@ class MemorySampler:
         while not self._stop.is_set() and self._samples < MAX_SAMPLES:
             try:
                 rss, count = process_tree_rss(self.root_pid, self.psutil)
+                # PSS may be unsupported, denied, or incomplete. Do not
+                # record a fabricated all-process number in those cases.
+                pss = process_tree_pss(self.root_pid, self.psutil)
                 with self._lock:
                     self._samples += 1
+                    if pss["complete"] and pss["pss_bytes"] is not None:
+                        value = int(pss["pss_bytes"])
+                        self._peak_pss = value if self._peak_pss is None else max(self._peak_pss, value)
+                        self._complete_pss_samples += 1
                     self._peak = rss if self._peak is None else max(self._peak, rss)
                     self._final = rss
                     self._count = count
@@ -161,6 +174,8 @@ class MemorySampler:
                 final_descendant_rss_bytes=self._final,
                 final_descendant_process_count=self._count,
                 interval_ms=self.interval_ms,
+                peak_complete_pss_bytes=self._peak_pss,
+                complete_pss_samples=self._complete_pss_samples,
             )
 
 
