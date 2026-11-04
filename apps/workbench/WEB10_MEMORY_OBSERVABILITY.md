@@ -42,4 +42,17 @@ The wheel path must exist and be a trusted local development build. No asset is 
 4. Firefox and Safari/WebKit compatibility and supply-chain trust remain independent requirements.
 5. Do not integrate with customer-facing Workbench or permit customer data without release review.
 
-**Current status:** observability instrumentation and regression tests implemented; actual memory numbers not yet measured by this WEB-10 tool.
+## First real Chromium process-tree measurement — 2026-11-04
+
+- GitHub Actions: [run 41828378423](https://github.com/Solid-soup/opensource/actions/runs/41828378423)
+- Tested commit: `ce0bc1e567c6f19a23c8384e0aa48d7088d0814f`
+- WEB-09 synthetic Chromium/Pyodide smoke completed successfully (`smoke_exit_code: 0`).
+- Descendant-process RSS sampled **104 times**, at **100 ms** intervals.
+- Maximum *sampled sum* of Playwright-driver and Chromium-child process RSS: **946,016,256 bytes** (approximately **946 MB decimal / 902 MiB binary**).
+- Final sampled descendant-process RSS: **0 bytes**, with **0 remaining descendant processes** after browser/test shutdown.
+- The test did not time out.
+- The heavyweight workflow was restored to **manual-only** triggering after collecting evidence.
+
+**Critical limitation:** The approximately 946 MB number is not Pyodide WASM usage, nor even necessarily distinct physical browser memory; RSS summation can double-count shared pages and includes the Playwright driver. The zero final measurement is observed after the **entire browser smoke exits**, not at the moment a single Worker is terminated. It cannot be used to claim per-Worker memory reclamation or memory leak absence. A phase-tagged, replicated experiment is the next gate.
+
+**Current status:** Initial manual Chromium process-tree RSS sample recorded, with strict interpretation limits. Phase-specific Worker reclamation and replicated statistics remain unverified.
