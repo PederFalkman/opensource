@@ -71,13 +71,15 @@ jobs:
         if: always()
         env:
           TEST_TARGET: ${{ inputs.target }}
+          TEST_BROWSER: ${{ inputs.browser }}
+          TEST_COMMIT: ${{ github.sha }}
         run: |
           set -euo pipefail
           if [ "$TEST_TARGET" != "web13" ]; then
             exit 0
           fi
           if [ -s "$RUNNER_TEMP/web13-synthetic-evidence.json" ]; then
-            python apps/workbench/render_web13_evidence_summary.py "$RUNNER_TEMP/web13-synthetic-evidence.json" >> "$GITHUB_STEP_SUMMARY"
+            python apps/workbench/render_web13_evidence_summary.py "$RUNNER_TEMP/web13-synthetic-evidence.json" --expected-commit "$TEST_COMMIT" --expected-browser "$TEST_BROWSER" >> "$GITHUB_STEP_SUMMARY"
           else
             {
               echo "## WEB-13 synthetic browser smoke"

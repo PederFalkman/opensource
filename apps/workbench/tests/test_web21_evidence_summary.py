@@ -128,3 +128,47 @@ def test_cli_malformed_nested_json_fails_cleanly(tmp_path: Path) -> None:
     assert result.returncode == 1
     assert "NOT VERIFIED" in result.stdout
     assert "Traceback" not in result.stderr
+
+
+def test_receipt_must_match_exact_workflow_commit_and_browser() -> None:
+    receipt = fixture()
+    receipt["source_commit"] = "a" * 40
+    assert MODULE.validated(receipt, "a" * 40, "chromium")[0] is True
+    assert MODULE.validated(receipt, "b" * 40, "chromium")[0] is False
+    assert MODULE.validated(receipt, "a" * 40, "firefox")[0] is False
+    assert MODULE.validated(receipt, "not-a-sha", "chromium")[0] is False
+    assert MODULE.validated(fixture(), "a" * 40, "chromium")[0] is False
+    assert "NOT VERIFIED" in MODULE.summary(receipt, "a" * 40, "webkit")
+
+
+def test_cli_workflow_binding_fail_closed(tmp_path: Path) -> None:
+    import json
+    import subprocess
+    import sys
+
+    path = tmp_path / "synthetic-receipt.json"
+    receipt = fixture()
+    receipt["source_commit"] = "a" * 40
+    path.write_text(json.dumps(receipt), encoding="utf-8")
+    command = [
+        sys.executable,
+        str(MODULE_PATH),
+        str(path),
+        "--expected-commit",
+        "a" * 40,
+        "--expected-browser",
+        "chromium",
+    ]
+    passed = subprocess.run(command, capture_output=True, text=True)
+    assert passed.returncode == 0
+    assert "Verification: **PASS**" in passed.stdout
+    wrong = subprocess.run(command[:-1] + ["firefox"], capture_output=True, text=True)
+    assert wrong.returncode == 1
+    assert "NOT VERIFIED" in wrong.stdout
+
+
+def test_manual_workflow_checks_exact_revision() -> None:
+    root = MODULE_PATH.parents[2]
+    workflow = (root / ".github/workflows/web09-worker-smoke.yml").read_text(encoding="utf-8")
+    assert "TEST_COMMIT: ${{ github.sha }}" in workflow
+    assert '--expected-commit "$TEST_COMMIT" --expected-browser "$TEST_BROWSER"' in workflow
