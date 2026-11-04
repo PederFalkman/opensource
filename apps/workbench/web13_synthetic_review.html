@@ -36,7 +36,8 @@ import {scenarioAllowed,freshState,transition} from "./web13_pilot_state.mjs";
 import {createSyntheticEvidence} from "./web14_evidence.mjs";
 const $=id=>document.getElementById(id);
 let state=freshState(),worker=null,abort=null,serial=0,fullReport=null;
-let startMs=null,scenarioInFlight=null,wheelDigest=null;
+let startMs=null,scenarioInFlight=null,wheelDigest=null,deadline=null;
+const MAX_RUN_MS=300000;
 const running=()=>["verifying","loading","analyzing"].includes(state.stage);
 function display(message){
   $("run").disabled=running();$("cancel").disabled=!running();
@@ -51,7 +52,7 @@ function display(message){
     $("completeness").textContent=r.completeness==null?"N/A":(100*r.completeness).toFixed(1)+"%";
   }
 }
-function cleanup(){abort?.abort();abort=null;worker?.terminate();worker=null}
+function cleanup(){if(deadline!==null){clearTimeout(deadline);deadline=null}abort?.abort();abort=null;worker?.terminate();worker=null}
 function fail(id,message){
   if(id!==state.runId)return;
   state=transition(state,{type:"error",id,error:message});cleanup();fullReport=null;
@@ -69,6 +70,7 @@ $("run").onclick=async()=>{
   const id=String(++serial);
   state=transition(state,{type:"start",id,scenario});fullReport=null;
   startMs=performance.now();scenarioInFlight=scenario;wheelDigest=null;
+  deadline=setTimeout(()=>fail(id,"Run exceeded five-minute time limit"),MAX_RUN_MS);
   $("result").textContent="No report.";display("Verifying candidate package...");
   try {
     abort=new AbortController();
