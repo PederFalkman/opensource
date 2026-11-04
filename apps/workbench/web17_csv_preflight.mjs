@@ -21,11 +21,9 @@ export function inspectCsvText(text){
     cell="";fieldLength=0;state="start";
   }
   function finishRow(){
+    // Skip only physically empty lines. Quoted empty values are still records.
+    if(column===0 && cell==="" && state==="start")return;
     addField();
-    // Ignore wholly blank physical records, as in the preview parser.
-    if(column===1 && (!headers || headers[0]==="") && records===0){
-      headers=null;column=0;return;
-    }
     if(!headerSeen){
       if(!headers?.length || headers.some(h=>!h) ||
         new Set(headers).size!==headers.length)
