@@ -126,7 +126,27 @@ The Playwright WebKit result **is not evidence of Safari on macOS/iOS**, nor of 
 
 **Accounting boundary:** The metric includes the test Python process, Playwright subprocesses and browser processes; it may double-count shared resident pages. It is **not** browser-only RSS, proportional set size (PSS), unique set size (USS), Pyodide/WebAssembly heap, true unsampled peak memory or proof that the terminated Worker has released all allocations. Process count and how many processes provided RSS are reported, so missing `/proc` information is not silently represented as zero. The tool fails softly on non-Linux environments and records missing metrics rather than claiming success.
 
-The measurement is observational: no memory budget or successful reclamation is asserted. Repeat on stable runners/hardware and collect browser-specific data before introducing memory thresholds or claiming end-user readiness.
+The initial observational run is now recorded below. No memory budget or successful reclamation is asserted; repeat on stable runners/hardware before setting thresholds or claiming readiness.
+
+## First measured Linux Chromium process-tree RSS sample — 2026-11-04
+
+- Browser workflow: [41829269682](https://github.com/Solid-soup/opensource/actions/runs/41829269682); tested commit `b18d07da4e08f5a2a2308336be1457fa4efa6b1b`.
+- **PASS:** pending manifest/wheel and test-only active-Python cancellation, clean restart, 4/4 canonical parity, zero field differences and no browser page errors.
+- Python `/proc` sampler used a 200 ms polling interval, 55 process-tree samples, maximum observed process count 8.
+- Maximum **sampled sum of process VmRSS**: **1,059,491,840 bytes**.
+- One-off checkpoints (sums of VmRSS, not WebAssembly memory):
+
+| Checkpoint | Process-tree VmRSS sum (bytes) |
+|---|---:|
+| After cancelling manifest fetch | 698,556,416 |
+| After cancelling candidate wheel fetch | 705,421,312 |
+| After immediate cancellation | 785,166,336 |
+| After cancelling controlled active Python computation | 780,853,248 |
+| After four canonical reports | 1,056,792,576 |
+
+Each checkpoint included 8 processes providing RSS. These values include the Python test harness and Playwright/browser subprocesses, **may double-count shared memory**, and come from **one** Linux CI run. They **do not prove** a memory leak, browser-only peak, exact WASM heap allocation, or reclamation of Worker memory after termination. Sampled peak is not a continuously measured true peak. The browser stays open during the checkpoints; a separate controlled browser/worker baseline, repeated test runs and OS-specific metrics are required before setting resource limits.
+
+The expensive browser workflow was restored to `workflow_dispatch` only after the measurement to avoid extra browser downloads per commit.
 
 ## Next gates
 
