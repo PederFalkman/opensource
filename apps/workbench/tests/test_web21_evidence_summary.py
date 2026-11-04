@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import subprocess
+import sys
 from pathlib import Path
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "render_web13_evidence_summary.py"
@@ -87,3 +90,41 @@ def test_valid_source_commit_is_displayed_and_malformed_commit_is_rejected() -> 
     result["source_commit"] = "<untrusted>"
     assert MODULE.validated(result)[0] is False
     assert "<untrusted>" not in MODULE.summary(result)
+
+
+def test_malformed_nested_fields_never_crash_or_generate_pass() -> None:
+    malformed = [
+        {"browser": {"name": "chromium"}},
+        {"browser": ["chromium"]},
+        {"cases": [{"scenario": []}] * 4},
+        {"cases": [{"scenario": {"unexpected": 1}}] * 4},
+        {"negative_checks": [{"unexpected": 1}] * 5},
+        {"negative_checks": [["nested"]] * 5},
+        {"cases": [42, 42, 42, 42]},
+    ]
+    for update in malformed:
+        receipt = fixture()
+        receipt.update(update)
+        assert MODULE.validated(receipt)[0] is False
+        assert "Verification: **NOT VERIFIED**" in MODULE.summary(receipt)
+
+
+def test_boolean_difference_counter_is_rejected() -> None:
+    receipt = fixture()
+    receipt["cases"][0]["field_differences"] = False
+    assert MODULE.validated(receipt)[0] is False
+
+
+def test_cli_malformed_nested_json_fails_cleanly(tmp_path: Path) -> None:
+    receipt = fixture()
+    receipt["negative_checks"][0] = {"not": "a check"}
+    path = tmp_path / "receipt.json"
+    path.write_text(json.dumps(receipt), encoding="utf-8")
+    result = subprocess.run(
+        [sys.executable, str(MODULE_PATH), str(path)],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 1
+    assert "NOT VERIFIED" in result.stdout
+    assert "Traceback" not in result.stderr
