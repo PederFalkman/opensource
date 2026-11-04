@@ -33,6 +33,25 @@ test("candidate loader verifies real SHA-256 and same-origin fetches",async()=>{
   assert.equal(calls.length,2);
   assert(calls.every(x=>x.options.credentials==="omit"&&x.options.redirect==="error"));
 });
+test("candidate loader forwards AbortSignal to both network reads",async()=>{
+  const {fetchCandidateWheel}=await mod,controller=new AbortController(),seen=[];
+  await fetchCandidateWheel({
+    baseUrl:"http://127.0.0.1:8000/web09_worker_pilot.html",
+    cryptoFn:webcrypto,signal:controller.signal,
+    fetchFn:async(url,options)=>{
+      seen.push(options.signal);
+      return response(url.endsWith("/manifest.json")?manifest():bytes);
+    }
+  });
+  assert.equal(seen.length,2);
+  assert(seen.every(signal=>signal===controller.signal));
+});
+test("pilot cancel action aborts pending downloads",()=>{
+  const pilot=fs.readFileSync(path.join(root,"web09_worker_pilot.html"),"utf8");
+  assert(pilot.includes("downloadController?.abort()"));
+  assert(pilot.includes("signal:downloadController.signal"));
+});
+
 test("candidate loader rejects mutated binaries and untrusted manifests",async()=>{
   const {fetchCandidateWheel}=await mod;
   const run=(manifestResult,body)=>fetchCandidateWheel({
