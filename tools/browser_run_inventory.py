@@ -10,7 +10,8 @@ import re
 import sys
 import urllib.error
 import urllib.request
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 REPOSITORY = "Solid-soup/opensource"
 WORKFLOW = "web09-worker-smoke.yml"
@@ -23,8 +24,8 @@ API = "https://api.github.com"
 
 def api_json(path: str, token: str | None = None) -> dict[str, Any]:
     """Fetch a fixed-path GitHub API JSON object with bounded response size."""
-    if not path.startswith("/repos/Solid-soup/opensource/") or "?" in path and not (
-        path.startswith(f"/repos/{REPOSITORY}/actions/workflows/{WORKFLOW}/runs?")
+    if not path.startswith("/repos/Solid-soup/opensource/") or (
+        "?" in path and not path.startswith(f"/repos/{REPOSITORY}/actions/workflows/{WORKFLOW}/runs?")
     ):
         raise ValueError("Unsupported GitHub API path")
     headers = {
