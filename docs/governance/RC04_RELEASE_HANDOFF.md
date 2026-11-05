@@ -14,6 +14,9 @@
   require private review. This file does not make G1 pass.
 - `Private :: Do Not Upload` remains active. D6 is not approved for 0.17.0.
 
+For the exact read-only GitHub CLI discovery and artifact review commands,
+see [WEB-13 manual run verification](WEB13_MANUAL_RUN_VERIFICATION.md).
+
 ## Freeze and browser evidence
 Choose a candidate commit on `main` after all planned source/documentation
 changes have merged. Record its **full 40-character SHA**, and do not merge
