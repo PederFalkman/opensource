@@ -1,6 +1,6 @@
 # Legal ownership transition — Solid Soup AB
 
-**Internal working draft — intended ownership, not evidence of an executed assignment.**
+**Governance status record — signed assignment reported by the parties, privately held and not independently verified.**
 
 ## REPO/REPOS
 - `Solid-soup/opensource`
@@ -12,10 +12,14 @@ future development, licensing and publication of the Solid Soup software
 portfolio. The GitHub organization `Solid-soup` is a technical account name,
 not a separate legal person and not by itself proof of title.
 
-**Status: PERSONAL ASSIGNOR IDENTIFIED BY USER; EXECUTED ASSIGNMENT PENDING.**
-The intended assignor has stated that the relevant rights are held personally. This is a user-provided assertion, not independent chain-of-title evidence. Do not interpret this statement as a completed transfer, a change to historic
-release approvals, or proof that every contributor's rights have vested in
-Solid Soup AB. Do not invent a corporate registration number or effective date.
+**Status: AGREEMENT REPORTED SIGNED BY BOTH PARTIES (2026-11-05); PRIVATE VERIFICATION AND RIGHTS INVENTORY OUTSTANDING.**
+The individual assignor confirms personal ownership and reports that an IP
+assignment to Solid Soup AB has been signed by both parties. This statement is
+based on the assignor's report, not an independent examination of the signed
+agreement, its schedules, corporate authority, consideration or rights chain.
+The transfer's legal scope depends on the executed instrument and applicable
+law. No historical release decision, third-party contributor rights or G1
+sign-off is inferred. The agreement and personal identifiers remain private.
 
 ## Required evidence before G1 may be recorded as Solid Soup AB ownership
 1. Verify the company's registered legal name, organization number and
@@ -24,15 +28,13 @@ Solid Soup AB. Do not invent a corporate registration number or effective date.
    contractor arrangements, code created before incorporation, prior legal
    entities, external libraries, and any IP encumbrances or third-party
    licences. Exclude material that cannot lawfully be assigned.
-3. Prepare a separate written assignment from the individual rights holder to
-   Solid Soup AB. Cover only rights actually owned and transferable by the
-   individual. Use a private schedule of repositories, contributions and
-   exclusions, define consideration and effective date, and get signatures
-   from the individual and an authorized company representative. The same
-   person may sign in two capacities only with valid company authority and
-   applicable conflict-of-interest rules addressed. Retain executed agreements
-   privately, not in this public repository.
-   Obtain separate authorizations for any third-party contributor rights.
+3. Privately inspect the agreement reported as signed by both parties and its
+   actual asset schedule, consideration, effective date, and exclusions.
+   Confirm the signatory acted with valid corporate authority and applicable
+   conflicts-of-interest rules were addressed. Confirm that each transferred
+   right was actually owned and transferable by the individual. Retain signed
+   material privately, never in this public repository. Obtain separate
+   authorizations for third-party contributor rights where needed.
 4. Review contributor agreements and ensure future employee/contractor
    contributions vest in Solid Soup AB under appropriate written terms.
 5. Confirm the GitHub organization has at least two company-authorized owners
@@ -55,6 +57,10 @@ Solid Soup AB. Do not invent a corporate registration number or effective date.
   proprietary code.
 
 ## Action log
+- 2026-11-05: User confirmed that the private individual-to-Solid Soup AB
+  IP assignment was signed by both parties and the document was downloaded.
+  This is a reported execution, **not** independent verification of the
+  agreement or its legal scope. Private evidence and G1 rights review remain.
 - 2026-11-05: The intended assignor confirmed personal ownership in the
   conversation. An assignment instrument and schedules remain unsigned;
   no legal transfer, release approval or third-party rights verification
