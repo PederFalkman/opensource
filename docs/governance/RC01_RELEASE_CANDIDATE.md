@@ -28,31 +28,34 @@ The default report must say `NO_GO`, with missing browser receipts explicitly
 marked `NOT_VERIFIED`. It is a planning and review report, not a request to
 weaken gates.
 
-For each browser, first manually execute the workflow on the **same frozen
-revision** and obtain its local synthetic-only JSON receipt through an
-approved review procedure. The current Actions workflow prints a summary
-but does not retain or expose the complete JSON receipt as an artifact.
-Do not invent a receipt or enter the GitHub run link as if the raw receipt
-had been recovered. A green workflow alone is a useful signal, not proof
-that this aggregate tool has independently verified its run.
+For each browser, manually execute the WEB-09 workflow with target `web13`
+on the **same frozen revision**. RC-02 retains a **sanitized**
+`web13-synthetic-review.json` receipt for three days after a successful
+run. RC-03 binds the receipt to its GitHub run ID, validates the exact
+source commit and browser, and reads the downloaded ZIP directly.
+The unfiltered browser result remains ephemeral; neither the review artifact
+nor a green workflow proves publisher attestation or production readiness.
+Download each actual run artifact before its three-day expiry, review the
+corresponding Actions job and use the matching run URL. Do not invent evidence.
 
 When actual local receipts and run URLs have been obtained:
 
 ```bash
 python tools/release_candidate_matrix.py \
-  --receipt chromium=/review/chromium.json \
+  --receipt chromium=/review/chromium.zip \
   --run-url chromium=https://github.com/Solid-soup/opensource/actions/runs/RUN_ID \
-  --receipt firefox=/review/firefox.json \
+  --receipt firefox=/review/firefox.zip \
   --run-url firefox=https://github.com/Solid-soup/opensource/actions/runs/RUN_ID \
-  --receipt webkit=/review/webkit.json \
+  --receipt webkit=/review/webkit.zip \
   --run-url webkit=https://github.com/Solid-soup/opensource/actions/runs/RUN_ID \
   --require-browser-matrix > rc01-review.json
 ```
 
 Replace each `RUN_ID` with the corresponding GitHub Actions run number
 and each path with a real local receipt. The script compares every receipt
-with `git rev-parse HEAD` and its selected browser, and validates the
-complete WEB-13 synthetic test schema. If a PR has been merged after a
+with `git rev-parse HEAD`, its selected browser, and the run ID in the
+supplied GitHub Actions URL, and validates the complete WEB-13 synthetic
+schema. The ZIP must contain exactly the expected review JSON. If a PR has been merged after a
 browser test, retest the frozen candidate commit: the earlier test is not
 automatically applicable to the new HEAD.
 
@@ -75,8 +78,9 @@ job summary, wheel digest, exact source commit and network hosts.
 - **No automatic go:** This tool reports `NO_GO` deliberately; only
   authorized humans may decide publication after reviewing independent
   evidence. It makes no GitHub tags, releases or uploads.
-- **No cost escalation:** Browser workflows remain manually dispatched;
-  no new automatic runner or artifact upload was added.
+- **Cost control:** Browser workflows remain manually dispatched and do not
+  run on push or PR. Successful WEB-13 runs now retain a small sanitized
+  receipt for three days; no wheel or raw CSV is uploaded.
 - **No user data:** The Workbench Python Worker remains synthetic-only.
   Existing local CSV preflight does not transfer customer files to it.
 
@@ -84,3 +88,15 @@ job summary, wheel digest, exact source commit and network hosts.
 - 2026-11-04: RC-01 added read-only candidate matrix, exact-revision
   browser receipt checks, conservative blockers and offline tests.
   Publication guard and data permissions unchanged.
+
+## November 2026 ownership record
+- `docs/governance/SOLID_SOUP_AB_OWNERSHIP_TRANSITION.md` records the
+  individual's report that an assignment to Solid Soup AB was signed by
+  both parties. This is **not** independent confirmation of the signed
+  schedule, scope, authority, third-party rights or G1 sign-off.
+- Until reviewed, keep the legal ownership verification and the version-
+  specific publication decision D6 separate from automated release checks.
+
+## Change history — continued
+- 2026-11-05: Updated RC-01 handoff to match implemented RC-02/03 short-lived
+  ZIP artifacts, exact run-ID binding and reported signed ownership agreement.
