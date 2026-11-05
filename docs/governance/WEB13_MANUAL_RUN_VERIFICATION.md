@@ -13,6 +13,29 @@ This procedure reads GitHub-hosted run **metadata**; the existing
 receipts separately. Neither independently establishes G1–G7 or Workbench
 production readiness.
 
+## RC-06 automated read-only run inventory
+
+A standard-library Python tool can locate completed successful WEB-09
+manual runs and their non-expired synthetic review artifacts for a specific
+40-character commit, **without dispatching a workflow**:
+
+```bash
+python tools/browser_run_inventory.py --sha FULL_40_CHARACTER_SHA --strict > rc06-runs.json
+```
+
+The script queries the GitHub REST API for recent manual WEB-09 runs.
+It checks exact source SHA, completion status and the three artifact names.
+For a private repository, set `GH_TOKEN` or `GITHUB_TOKEN` in the
+environment with read-only Actions access; never print the token or commit it.
+For public repositories, anonymous API access may be rate-limited. Use
+`--pages 1` to reduce API calls, or up to `--pages 5` to search further
+back. A discovered run is labeled `RUN_METADATA_REVIEW_REQUIRED`, not PASS;
+this tool does not inspect artifact content, inputs or actual job logs.
+
+`--strict` exits 1 if one of the three browsers lacks a candidate and
+exits 2 on API errors. It never grants release approval. Continue with RC-01
+artifact validation and manual run inspection below.
+
 ## Step 1 — enumerate actual manual runs
 With GitHub CLI authenticated for the repository:
 
@@ -94,3 +117,8 @@ three days; re-run manually if expired.
 - 2026-11-05: Added bounded operator procedure for actual GitHub manual
   run discovery and artifact review. No workflow dispatch, publication or
   customer-data enablement.
+
+## Change history — continued
+- 2026-11-05: RC-06 added optional read-only Python/API inventory for all
+  three engine run IDs and non-expired artifacts on an exact source SHA.
+  Does not publish, rerun or automatically accept any browser evidence.
