@@ -12,8 +12,8 @@ future development, licensing and publication of the Solid Soup software
 portfolio. The GitHub organization `Solid-soup` is a technical account name,
 not a separate legal person and not by itself proof of title.
 
-**Status: PENDING DOCUMENTED CONFIRMATION AND, WHERE REQUIRED, ASSIGNMENT.**
-Do not interpret this statement as a completed transfer, a change to historic
+**Status: PERSONAL ASSIGNOR IDENTIFIED BY USER; EXECUTED ASSIGNMENT PENDING.**
+The intended assignor has stated that the relevant rights are held personally. This is a user-provided assertion, not independent chain-of-title evidence. Do not interpret this statement as a completed transfer, a change to historic
 release approvals, or proof that every contributor's rights have vested in
 Solid Soup AB. Do not invent a corporate registration number or effective date.
 
@@ -24,10 +24,15 @@ Solid Soup AB. Do not invent a corporate registration number or effective date.
    contractor arrangements, code created before incorporation, prior legal
    entities, external libraries, and any IP encumbrances or third-party
    licences. Exclude material that cannot lawfully be assigned.
-3. Obtain signed assignments or other legal basis for transfers from each
-   relevant current rights holder to Solid Soup AB, identifying the assets,
-   consideration where relevant, effective date, warranties and exclusions.
-   Retain the executed agreements privately, not in this public repository.
+3. Prepare a separate written assignment from the individual rights holder to
+   Solid Soup AB. Cover only rights actually owned and transferable by the
+   individual. Use a private schedule of repositories, contributions and
+   exclusions, define consideration and effective date, and get signatures
+   from the individual and an authorized company representative. The same
+   person may sign in two capacities only with valid company authority and
+   applicable conflict-of-interest rules addressed. Retain executed agreements
+   privately, not in this public repository.
+   Obtain separate authorizations for any third-party contributor rights.
 4. Review contributor agreements and ensure future employee/contractor
    contributions vest in Solid Soup AB under appropriate written terms.
 5. Confirm the GitHub organization has at least two company-authorized owners
@@ -50,5 +55,9 @@ Solid Soup AB. Do not invent a corporate registration number or effective date.
   proprietary code.
 
 ## Action log
+- 2026-11-05: The intended assignor confirmed personal ownership in the
+  conversation. An assignment instrument and schedules remain unsigned;
+  no legal transfer, release approval or third-party rights verification
+  is claimed. Do not publish legal identifiers or signature material here.
 - 2026-11-05: Requested that Solid Soup AB become the legal rights holder.
   Transition remains pending executed evidence and administrative review.
