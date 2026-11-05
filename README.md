@@ -43,4 +43,6 @@ cd ../.. && python tools/check_all.py   # every check from CONTRIBUTING.md, one 
   [release checklist](docs/governance/RELEASE_CHECKLIST.md),
   [third-party licences](docs/governance/THIRD_PARTY_LICENSES.md) and the
   [open release decisions](docs/governance/RELEASE_DECISIONS.md)
+- [Release-candidate handoff](docs/governance/RC04_RELEASE_HANDOFF.md): browser evidence and review gates
+- [Legal ownership transition](docs/governance/SOLID_SOUP_AB_OWNERSHIP_TRANSITION.md): reported signed assignment, private verification pending
 - [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
