@@ -111,7 +111,7 @@ def test_workflow_manual_only_pinned_upload_and_short_retention() -> None:
     assert "workflow_dispatch:" in workflow
     assert "\n  push:" not in workflow and "\n  pull_request:" not in workflow
     assert "export_web13_review_receipt.py" in workflow
-    assert "actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3" in workflow
+    assert "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9" in workflow
     assert "retention-days: 3" in workflow
     assert "if-no-files-found: error" in workflow
     assert workflow.count("success() && inputs.target == 'web13'") == 2
